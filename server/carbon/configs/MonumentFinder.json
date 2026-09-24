@@ -1,0 +1,95 @@
+{
+  "Command": "mf",
+  "Default custom monument settings": {
+    "Position": {
+      "Auto determine from monument marker": true,
+      "Auto determine from prevent building volume": false
+    },
+    "Rotation": {
+      "Auto determine from monument marker": true,
+      "Auto determine from prevent building volume": false
+    },
+    "Bounds": {
+      "Auto determine from monument marker": false,
+      "Auto determine from prevent building volume": false,
+      "Use custom bounds": true,
+      "Custom bounds": {
+        "Size": {
+          "x": 30.0,
+          "y": 30.0,
+          "z": 30.0,
+          "normalized": {
+            "x": 0.577350259,
+            "y": 0.577350259,
+            "z": 0.577350259,
+            "magnitude": 1.0,
+            "sqrMagnitude": 0.99999994
+          },
+          "magnitude": 51.961525,
+          "sqrMagnitude": 2700.0
+        },
+        "Center adjustment": {
+          "x": 0.0,
+          "y": 10.0,
+          "z": 0.0,
+          "normalized": {
+            "x": 0.0,
+            "y": 1.0,
+            "z": 0.0,
+            "magnitude": 1.0,
+            "sqrMagnitude": 1.0
+          },
+          "magnitude": 10.0,
+          "sqrMagnitude": 100.0
+        }
+      }
+    }
+  },
+  "Monuments": {
+    "example_monument": {
+      "Position": {
+        "Auto determine from monument marker": true,
+        "Auto determine from prevent building volume": false
+      },
+      "Rotation": {
+        "Auto determine from monument marker": true,
+        "Auto determine from prevent building volume": false
+      },
+      "Bounds": {
+        "Auto determine from monument marker": false,
+        "Auto determine from prevent building volume": false,
+        "Use custom bounds": true,
+        "Custom bounds": {
+          "Size": {
+            "x": 30.0,
+            "y": 30.0,
+            "z": 30.0,
+            "normalized": {
+              "x": 0.577350259,
+              "y": 0.577350259,
+              "z": 0.577350259,
+              "magnitude": 1.0,
+              "sqrMagnitude": 0.99999994
+            },
+            "magnitude": 51.961525,
+            "sqrMagnitude": 2700.0
+          },
+          "Center adjustment": {
+            "x": 0.0,
+            "y": 10.0,
+            "z": 0.0,
+            "normalized": {
+              "x": 0.0,
+              "y": 1.0,
+              "z": 0.0,
+              "magnitude": 1.0,
+              "sqrMagnitude": 1.0
+            },
+            "magnitude": 10.0,
+            "sqrMagnitude": 100.0
+          }
+        }
+      }
+    }
+  }
+}

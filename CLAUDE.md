@@ -13,11 +13,12 @@ uMod downloads, Nix (`flake.lock`), or the server writes everything else.
 
 The git repo (branch `main`) pushes to the private GitHub repo https://github.com/Bad3r/rust-server (`origin`). It
 tracks those files, `CLAUDE.md`, `LICENSE` (AGPL-3.0-or-later), `flake.lock`, and Carbon's `server/carbon/config.json`,
-`config.profiler.json`, `modules/*/config.json`, and each installed plugin's `plugins/<Name>.cs` and
-`configs/<Name>.json`. `.gitignore` is a whitelist: a new file needs its own `!` entry, plus one for each ignored
-parent directory. Everything tracked is pushed, so never whitelist the secrets `.rcon-password`,
-`config.webpanel.json`, or `relay_cfg.json`. Carbon rewrites its tracked configs on boot, after a self-update, and
-on `c.setmodule` or panel edits, so `git diff` shows what it changed.
+`config.profiler.json`, `modules/*/config.json`, each installed plugin's `plugins/<Name>.cs` and
+`configs/<Name>.json`, and the Monument Addons profile `data/MonumentAddons/Default.json`. `.gitignore` is a
+whitelist: a new file needs its own `!` entry, plus one for each ignored parent directory. Everything tracked is
+pushed, so never whitelist the secrets `.rcon-password`, `config.webpanel.json`, or `relay_cfg.json`. Carbon rewrites
+its tracked configs on boot, after a self-update, and on `c.setmodule` or panel edits, and Monument Addons rewrites
+its profile on in-game edits, so `git diff` shows what changed.
 
 ## Commands
 
@@ -177,6 +178,22 @@ version, channel, and Rust protocol.
   smelted item costs half the wood and yields half the charcoal. uMod's QuickSmelt 5.1.5 (2022) fails to compile
   here (`ItemModCookable` has no `CanBeCookedByAtTemperature`), and Furnace Splitter cannot speed anything up
   because `BaseOven.IncreaseCookTime` divides cook time across all cooking stacks.
+- Monument recyclers: `MonumentAddons.cs` is uMod's Monument Addons 0.21.4 and `MonumentFinder.cs` its required
+  Monument Finder 3.1.5, both by WhiteThunder under MIT. Update each with
+  `curl -fsSL -o server/carbon/plugins/<Name>.cs https://umod.org/plugins/<Name>.cs`. The `Default` profile in
+  `data/MonumentAddons/Default.json`, which Monument Addons enables on first load, places one `recycler_static` at
+  each monument type that has a map name and no vanilla recycler: 13 keyed by prefab short name (`fishing_village_a`,
+  `oilrig_1`, and so on), plus the Underwater Lab room `module_1200x1200_3way_ladder`, because lab interiors are
+  assembled from modules and an offset from the lab root misses on other layouts. Positions are local to
+  `MonumentInfo.transform` (the module's transform for the lab room) and come from a survey of this map that
+  spawned a recycler at each spot and checked overlap and ground contact. They apply to every future map, but a
+  monument type this map lacks gets none until someone places one in game. 21 monument types ship a recycler
+  already. Recyclers in a safe zone turn yellow, as vanilla ones do. Monument Addons respawns its entities from the
+  profile on every load and keeps them out of the `.sav`. `data/MonumentAddons.json` holds the enabled profiles and
+  each player's selected profile by SteamID, so it stays untracked. `c.grant group admin monumentaddons.admin`
+  unlocks the in-game commands `maspawn <entity>`, `makill`, `maundo`, `masave`, `mashow`, and `mahelp`. Skip the
+  bundled `MonumentsRecycler` example profile: its oil rig keys `OilrigAI` and `OilrigAI2` predate the rename to
+  `oilrig_2` and `oilrig_1` and match nothing.
 - Mono profiler: `config.profiler.json` enables it and tracks `Assembly-CSharp`, `Assembly-CSharp-firstpass`, and
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
   need a restart. `c.profile <seconds> -c` records calls, `c.profiler.print -t` exports a table to

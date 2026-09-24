@@ -1,0 +1,92 @@
+{
+  "Debug display settings": {
+    "Default display duration (seconds)": 60.0,
+    "Display distance": 100.0,
+    "Display distance abbreviated": 200.0,
+    "Max addons to show unabbreviated": 1,
+    "Entity color": "#FF00FF",
+    "Spawn point color": "#FF8000",
+    "Paste color": "#00FFFF",
+    "Custom addon color": "#00FF00",
+    "Custom monument color": "#00FF00",
+    "Inactive profile color": "#808080"
+  },
+  "Save entities between restarts/reloads to preserve their state throughout a wipe": {
+    "Enable saving for storage entities": false,
+    "Enable saving for non-storage entities": false,
+    "Override saving enabled by prefab": {}
+  },
+  "Automatically spawn a vending machine for these NPC shopkeeper prefabs": [
+    "assets/prefabs/npc/bandit/shopkeepers/bandit_shopkeeper.prefab",
+    "assets/prefabs/npc/bandit/shopkeepers/boat_shopkeeper.prefab",
+    "assets/prefabs/npc/bandit/shopkeepers/stables_shopkeeper.prefab",
+    "assets/prefabs/npc/waterwell/waterwell_shopkeeper.prefab"
+  ],
+  "Dynamic monuments": {
+    "Entity prefabs to consider as monuments": [
+      "assets/content/vehicles/boats/cargoship/cargoshiptest.prefab",
+      "assets/bundled/prefabs/deepsea/deepsea_floatingcity1.prefab",
+      "assets/bundled/prefabs/deepsea/deepsea_floatingcity2.prefab",
+      "assets/bundled/prefabs/deepsea/deepsea_floatingcity3.prefab",
+      "assets/bundled/prefabs/deepsea/deepsea_floatingcity4.prefab"
+    ]
+  },
+  "Spawn group global population limit by prefab": {},
+  "Addon defaults": {
+    "Spawn group defaults": {
+      "MaxPopulation": 1,
+      "SpawnPerTickMin": 1,
+      "SpawnPerTickMax": 2,
+      "RespawnDelayMin": 1500.0,
+      "RespawnDelayMax": 2100.0,
+      "InitialSpawn": true,
+      "PreventDuplicates": false,
+      "PauseScheduleWhileFull": false,
+      "RespawnWhenNearestPuzzleResets": false
+    },
+    "Spawn point defaults": {
+      "Exclusive": true,
+      "SnapToGround": true,
+      "CheckSpace": false,
+      "RandomRotation": false,
+      "RandomRadius": 0.0,
+      "PlayerDetectionRadius": 0.0
+    },
+    "Puzzle defaults": {
+      "PlayersBlockReset": true,
+      "PlayerDetectionRadius": 30.0,
+      "SecondsBetweenResets": 1800.0
+    }
+  },
+  "Deployable overrides": {
+    "arcade.machine.chippy": "assets/bundled/prefabs/static/chippyarcademachine.static.prefab",
+    "autoturret": "assets/content/props/sentry_scientists/sentry.bandit.static.prefab",
+    "bbq": "assets/bundled/prefabs/static/bbq.static.prefab",
+    "boombox": "assets/prefabs/voiceaudio/boombox/boombox.static.prefab",
+    "box.repair.bench": "assets/bundled/prefabs/static/repairbench_static.prefab",
+    "cctv.camera": "assets/prefabs/deployable/cctvcamera/cctv.static.prefab",
+    "chair": "assets/bundled/prefabs/static/chair.static.prefab",
+    "computerstation": "assets/prefabs/deployable/computerstation/computerstation.static.prefab",
+    "connected.speaker": "assets/prefabs/voiceaudio/hornspeaker/connectedspeaker.deployed.static.prefab",
+    "hobobarrel": "assets/bundled/prefabs/static/hobobarrel_static.prefab",
+    "microphonestand": "assets/prefabs/voiceaudio/microphonestand/microphonestand.deployed.static.prefab",
+    "modularcarlift": "assets/bundled/prefabs/static/modularcarlift.static.prefab",
+    "research.table": "assets/bundled/prefabs/static/researchtable_static.prefab",
+    "samsite": "assets/prefabs/npc/sam_site_turret/sam_static.prefab",
+    "small.oil.refinery": "assets/bundled/prefabs/static/small_refinery_static.prefab",
+    "telephone": "assets/bundled/prefabs/autospawn/phonebooth/phonebooth.static.prefab",
+    "vending.machine": "assets/prefabs/deployable/vendingmachine/npcvendingmachine.prefab",
+    "wall.frame.shopfront.metal": "assets/bundled/prefabs/static/wall.frame.shopfront.metal.static.prefab",
+    "workbench1": "assets/bundled/prefabs/static/workbench1.static.prefab",
+    "workbench2": "assets/bundled/prefabs/static/workbench2.static.prefab"
+  },
+  "Xmas tree decorations (item shortnames)": [
+    "xmas.decoration.baubels",
+    "xmas.decoration.candycanes",
+    "xmas.decoration.gingerbreadmen",
+    "xmas.decoration.lights",
+    "xmas.decoration.pinecone",
+    "xmas.decoration.star",
+    "xmas.decoration.tinsel"
+  ]
+}

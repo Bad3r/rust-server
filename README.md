@@ -34,6 +34,8 @@ Press Ctrl+C to stop.
   Fuel and charcoal per smelted item both drop by half, since the multiplier scales cook progress only.
 - Player-placed doors close 5 seconds after opening, via uMod's Auto Doors ([AutoDoors.cs](server/carbon/plugins/AutoDoors.cs)).
   Chat command `/ad` toggles it per player, and `/ad <5-10>` changes the delay.
+- Every monument with a map name has a recycler: uMod's Monument Addons ([MonumentAddons.cs](server/carbon/plugins/MonumentAddons.cs)) and Monument Finder ([MonumentFinder.cs](server/carbon/plugins/MonumentFinder.cs)) add one from the [Default profile](server/carbon/data/MonumentAddons/Default.json) wherever vanilla ships none.
+  That covers the fishing villages, Ranch, Large Barn, Apartment Complex, Abandoned Military Base, Missile Silo, the three quarries, both oil rigs, and an Underwater Lab room; recyclers in a safe zone are the yellow kind, as at Outpost.
 - Vehicles do not decay: [server.cfg](server/server/pve/cfg/server.cfg) sets every vehicle decay convar and the idle workcart despawn timer to 1e9 minutes, about 1900 years of uptime.
   Emptied ore and fuel wagons still despawn 10 minutes after unloading, so full ones keep respawning.
 - Rust+ is off: [server.cfg](server/server/pve/cfg/server.cfg) sets `app.port -1`, which disables the companion server.
@@ -46,6 +48,8 @@ Press Ctrl+C to stop.
   A fresh clone with no install exits with an error telling you to run once without it.
 - `CARBON=0 ./start.sh` starts vanilla RustDedicated, without Carbon, for example when an edge build breaks after a Rust update.
 - [CLAUDE.md](CLAUDE.md) has an RCON helper function for sending commands over WebRCON on port 28016.
+- Monument Addons edits happen in game once `c.grant group admin monumentaddons.admin` has run over RCON: `maspawn <entity>` places an addon where you look, `makill` removes one, and `mashow` shows nearby ones.
+  Edits land in the Default profile, so `git diff` shows them.
 - Back up `server/server/pve/` before anything risky, only while the server is stopped.
   It holds the world and player progress, which cannot be regenerated.
 - A Facepunch force-wipe update bumps the save protocol number, and the server then generates a fresh world.
@@ -54,7 +58,7 @@ Press Ctrl+C to stop.
 ## Repository layout
 
 [.gitignore](.gitignore) is a whitelist: only paths re-included with `!` are tracked, and every ignored parent directory needs its own `!` entry.
-Tracked paths include [CLAUDE.md](CLAUDE.md), [LICENSE](LICENSE), [start.sh](start.sh), [harmony/](harmony/), [scripts/](scripts/), [flake.nix](flake.nix), [flake.lock](flake.lock), [.github/](.github/), [server.cfg](server/server/pve/cfg/server.cfg), and Carbon's `config.json`, `config.profiler.json`, `modules/*/config.json`, `plugins/<Name>.cs`, and `configs/<Name>.json`.
+Tracked paths include [CLAUDE.md](CLAUDE.md), [LICENSE](LICENSE), [start.sh](start.sh), [harmony/](harmony/), [scripts/](scripts/), [flake.nix](flake.nix), [flake.lock](flake.lock), [.github/](.github/), [server.cfg](server/server/pve/cfg/server.cfg), and Carbon's `config.json`, `config.profiler.json`, `modules/*/config.json`, `plugins/<Name>.cs`, `configs/<Name>.json`, and the Monument Addons profile `data/MonumentAddons/Default.json`.
 Everything else under `server/`, plus `home/`, `steamcmd/`, and `backups/`, is a generated install, cache, or world state, and stays untracked.
 `.rcon-password`, `server/carbon/config.webpanel.json`, and `server/server/pve/cfg/relay_cfg.json` hold secrets and are never tracked.
 
@@ -89,3 +93,4 @@ Full operator notes, including the RCON helper, Carbon internals, and world-stat
 
 [AGPL-3.0-or-later](LICENSE).
 The vendored [AutoDoors.cs](server/carbon/plugins/AutoDoors.cs) is uMod's [Auto Doors](https://umod.org/plugins/auto-doors) plugin under the MIT license.
+The vendored [MonumentAddons.cs](server/carbon/plugins/MonumentAddons.cs) and [MonumentFinder.cs](server/carbon/plugins/MonumentFinder.cs) are WhiteThunder's uMod plugins [Monument Addons](https://umod.org/plugins/monument-addons) and [Monument Finder](https://umod.org/plugins/monument-finder), both under the MIT license.

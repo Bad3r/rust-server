@@ -1,0 +1,258 @@
+{
+  "Name": "Default",
+  "SchemaVersion": 2.0,
+  "MonumentData": {
+    "fishing_village_c": {
+      "Entities": [
+        {
+          "Id": "8ac9c9af-f9a7-4de8-b292-a0ca4a9a2448",
+          "Position": {
+            "x": -4.243,
+            "y": 2.008,
+            "z": 4.243
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 180.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "fishing_village_b": {
+      "Entities": [
+        {
+          "Id": "49fa985b-0a98-43a4-b5c9-a62ad4ba51cd",
+          "Position": {
+            "x": -3.0,
+            "y": 2.0,
+            "z": 0.0
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 90.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "fishing_village_a": {
+      "Entities": [
+        {
+          "Id": "df628c14-d82e-4a91-a085-5e0fc18af561",
+          "Position": {
+            "x": 2.121,
+            "y": 1.99,
+            "z": -2.122
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "desert_military_base_d": {
+      "Entities": [
+        {
+          "Id": "52832c8c-5413-444b-ac0a-493da2ffe16e",
+          "Position": {
+            "x": 0.0,
+            "y": -0.011,
+            "z": 0.0
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 90.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "apartments_complex_1": {
+      "Entities": [
+        {
+          "Id": "c5c46531-1399-4a5c-b273-ad7d7be94963",
+          "Position": {
+            "x": 3.126,
+            "y": 0.362,
+            "z": -17.726
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "nuclear_missile_silo": {
+      "Entities": [
+        {
+          "Id": "dc367e12-825d-4bff-ac1c-9479300aa13e",
+          "Position": {
+            "x": 3.126,
+            "y": 46.355,
+            "z": 17.727
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 180.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "stables_a": {
+      "Entities": [
+        {
+          "Id": "84743495-f375-425a-a0f2-f7c438e7e29a",
+          "Position": {
+            "x": -2.121,
+            "y": 3.046,
+            "z": 2.121
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 90.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "mining_quarry_c": {
+      "Entities": [
+        {
+          "Id": "12b1d753-013e-4f48-b313-33cd35452c7f",
+          "Position": {
+            "x": 2.121,
+            "y": -0.011,
+            "z": 2.121
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 270.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "mining_quarry_a": {
+      "Entities": [
+        {
+          "Id": "03282beb-d27b-4d77-809a-5176230aac21",
+          "Position": {
+            "x": 6.364,
+            "y": 1.714,
+            "z": -6.364
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 270.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "mining_quarry_b": {
+      "Entities": [
+        {
+          "Id": "81b8bda1-6e4c-4df0-a5e8-a670f8540469",
+          "Position": {
+            "x": 0.0,
+            "y": 1.714,
+            "z": -3.0
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "stables_b": {
+      "Entities": [
+        {
+          "Id": "47af78ac-092c-4cf7-8cb0-aeca66beb114",
+          "Position": {
+            "x": -6.364,
+            "y": 3.015,
+            "z": -6.364
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "oilrig_1": {
+      "Entities": [
+        {
+          "Id": "ca13a1d2-ac95-4988-b8fa-a0c69f9903c5",
+          "Position": {
+            "x": 0.0,
+            "y": 36.145,
+            "z": -6.0
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "oilrig_2": {
+      "Entities": [
+        {
+          "Id": "daff9659-f44f-496c-9765-7ae2dff4fcdc",
+          "Position": {
+            "x": 4.243,
+            "y": 27.02,
+            "z": 4.243
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 180.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    },
+    "module_1200x1200_3way_ladder": {
+      "Entities": [
+        {
+          "Id": "466b5364-a53f-4695-afff-ddd1ea3f523d",
+          "Position": {
+            "x": -1.463,
+            "y": -0.634,
+            "z": 7.356
+          },
+          "RotationAngles": {
+            "x": 0.0,
+            "y": 180.0,
+            "z": 0.0
+          },
+          "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
+        }
+      ]
+    }
+  }
+}
