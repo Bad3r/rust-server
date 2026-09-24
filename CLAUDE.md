@@ -242,7 +242,8 @@ version, channel, and Rust protocol.
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
   need a restart. `c.profile <seconds> -c` records calls, `c.profiler.print -t` exports a table to
   `server/carbon/profiles/`, and `c.find profile` lists the other flags (the docs warn that timing capture is
-  expensive). Unity's own `Profiler Disabled!` log line is unrelated.
+  expensive). The `Profiler Disabled!` log line is unrelated: Rust's `ServerProfiler` logs it unless the command
+  line has `-enableProfiler`.
 
 ## Server state
 
@@ -258,6 +259,8 @@ whole directory, only while the server is stopped, before anything risky; earlie
 - The world is `proceduralmap.<worldsize>.<seed>.<save protocol>.sav`. `.sav.1` and `.sav.2` are the two previous
   saves (`server.saveinterval 300`). Changing `server.seed` or `server.worldsize` in `start.sh` starts a fresh
   world under a new file name.
+- `proceduralmap.<worldsize>.<seed>.<save protocol>.map` caches the generated map, and `Loading World` reads it in
+  under a second. `Generating procedural map of size ...` still appears on every boot.
 - `*.db` files are SQLite in WAL mode, and most data currently sits in the `*.db-wal` files (for example,
   `player.states.288.db` is 4 KB with a 160 KB WAL). Never delete a `-wal` file or copy a `.db` without it.
 - `288` is the save protocol (`Protocol: 2633.288.1` in the log is network.save.report). A Facepunch force-wipe
@@ -275,15 +278,34 @@ whole directory, only while the server is stopped, before anything risky; earlie
 
 ## Expected log noise
 
+steamcmd's output and the native Steam lines below go only to stdout, which `start.sh` shows next to `server.log`.
+
 - `Command 'batchmode'`, `'insecure'`, `'logfile'`, and `'rcon.password' not found`, three times each: the server
   replays argv through the console at three bootstrap stages, and those tokens are not convars.
 - `[HarmonyLoader] Couldn't unload mod 'Ipv4Only': not loaded`: the loader always unloads a mod before loading it.
-- `Nexus endpoint and/or secret key is not set` and missing TOD or TextMeshPro shaders: headless server defaults.
+- `Nexus endpoint and/or secret key is not set`: no Nexus (Facepunch's linked-server feature) is configured.
+- `Forcing GfxDevice: Null`, missing TOD or TextMeshPro shaders, `HDR Render Texture not supported`, and `3D Noise
+  requires higher shader capabilities`: the dedicated build renders nothing and runs Unity's Null graphics device.
+- `AsyncResourceUpload failed.`, six times right after the Carbon version banner: Unity's asynchronous resource
+  upload fails during scene load, before any plugin loads, and the boot continues. `Facepunch.Output.LogHandler`
+  keeps this line and the shader and HDR lines off the RCON stream.
+- `The referenced script (Unknown) on this Behaviour is missing!` and its `input_redirector.prefab` twin: that prefab
+  in the `AssetScene-bootstrap` scene of `assetscenes.bundle` holds the client-only `InputRedirector` component,
+  which the server's `Assembly-CSharp.dll` lacks.
+- `CreateBoundSocket: failed to create socket, error EAFNOSUPPORT (97)`, once inside steamcmd's
+  `Loading Steam API...OK` and once before `SteamServer Initialized`: Steam's native `steamclient.so` also tries
+  IPv6, which this host rejects, and carries on over IPv4. `Ipv4Only` patches only Mono.
+- `[S_API FAIL] Tried to access Steam interface SteamNetworkingUtils004 before SteamAPI_Init succeeded.` and
+  `SteamInternal_SetMinidumpSteamID: ... [API loaded no]`: the server runs only the game server API, and
+  Facepunch.Steamworks resolves `ISteamNetworkingUtils` through `SteamAPI_SteamNetworkingUtils_SteamAPI_v004`, which
+  tries the client interface first.
+- `[ImageDatabase] The server identifier has changed` and `[Image Library] The CommunityEntity instance ID has
+  changed!`: both key stored images to the network ID of `CommunityEntity`, which the `pve` save keeps, and record
+  it in the shared `server/carbon/`. A boot of any other identity rewrites that record, so the next `pve` boot logs
+  both lines and stores the images again.
 - `[Codefling] Failed fetching vendor. Error code 404!`: Carbon's Codefling plugin browser endpoint answers 404.
 - `Carbon Analytics are ON`, and `gpath.c:115: assertion 'filename != NULL' failed` on stdout: Carbon defaults; the
   assertion appears only with Carbon and does not stop the boot.
-- `AsyncResourceUpload failed.`, six times right after the Carbon version banner: every boot logs it before any
-  plugin loads, and the boot continues.
 
 `An address incompatible with the requested protocol was used` is no longer noise: it means `Ipv4Only` did not load
 or no longer finds Mono's fields. Check the `[HarmonyLoader ...]` and `[Ipv4Only]` lines near the top of the log.
