@@ -60,10 +60,11 @@ resolve_field() {
   local cand decl
   for cand in "${candidates[@]}"; do
     decompile_type "$cand" || continue
-    # [=;] : a ServerVar field with an implicit default (an int or bool with no explicit initializer, e.g.
-    # ConVar.App.port) decompiles as "public static int port;", with no "=" at all.
+    # A ServerVar field with an implicit default (an int or bool with no explicit initializer, e.g.
+    # ConVar.App.port) decompiles as "public static int port;", with no "=" at all, and a ServerVar property
+    # (ConVar.Server.gamemode) ends its line at the name, with the accessor block on the next line.
     decl_re="(public|private|internal|protected)([[:space:]]+static)?[[:space:]]+[A-Za-z_<>]+[[:space:]]+"
-    decl="$(grep -nE "${decl_re}${field}[[:space:]]*[=;]" "$classes_dir/$cand.cs" | head -1)"
+    decl="$(grep -nE "${decl_re}${field}[[:space:]]*([=;{]|$)" "$classes_dir/$cand.cs" | head -1)"
     if [[ -n "$decl" ]]; then
       resolved_class="$cand"
       resolved_declline="$(cut -d: -f1 <<<"$decl")"
@@ -91,14 +92,19 @@ while read -r name value; do
   line="$(printf '%s\n' "$matches" | head -1 | cut -d: -f1)"
   block="$(sed -n "${line},$((line + 14))p" "$consolegen")"
 
-  setline="$(printf '%s\n' "$block" | grep -m1 -E '^\s*[A-Za-z_][A-Za-z0-9_.]*\s*=\s*str\.To[A-Za-z]+\(\)\s*;')"
+  # String convars assign the raw argument ("ConVar.Server.gamemode = str;"); the rest convert it first.
+  setline="$(printf '%s\n' "$block" |
+    grep -m1 -E '^\s*[A-Za-z_][A-Za-z0-9_.]*\s*=\s*str(\.To[A-Za-z]+\(\))?\s*;')"
   if [[ -z "$setline" ]]; then
     echo "FAIL  $name -> no SetOveride assignment found near ConsoleGen.cs:$line"
     fail=1
     continue
   fi
   backing="$(printf '%s\n' "$setline" | sed -E 's/^[[:space:]]*([A-Za-z_][A-Za-z0-9_.]*)[[:space:]]*=.*/\1/')"
-  vartype="$(printf '%s\n' "$setline" | sed -E 's/.*str\.To([A-Za-z]+)\(\).*/\1/')"
+  vartype=String
+  if [[ "$setline" =~ str\.To([A-Za-z]+)\(\) ]]; then
+    vartype="${BASH_REMATCH[1]}"
+  fi
   class="${backing%.*}"
   field="${backing##*.}"
 

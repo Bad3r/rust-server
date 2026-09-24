@@ -45,9 +45,9 @@ on in-game edits, so `git diff` shows what changed.
   local install instead, in a few seconds. `PLUGINS_DIR` compiles another directory in place of
   `server/carbon/plugins`, such as `scripts/monument-addons` for the survey tool that must not sit there.
 - `scripts/check-convars.sh`: resolve every convar in `server.cfg` through a fresh `ilspycmd` decompile of
-  `ConsoleGen.cs` to the `[ServerVar]` field it sets, exiting 1 on a name a Rust update renamed or removed (the server
-  only logs `Command '<name>' not found` for those). It reads the local install unless `MANAGED_DIR` points
-  elsewhere, and checks names, not what a convar now does.
+  `ConsoleGen.cs` to the `[ServerVar]` field or property it sets, exiting 1 on a name a Rust update renamed or
+  removed (the server only logs `Command '<name>' not found` for those). It reads the local install unless
+  `MANAGED_DIR` points elsewhere, and checks names, not what a convar now does.
 
 Send an RCON command and print its reply. WebRCON listens on `127.0.0.1:28016`. Filter on the request
 `Identifier` so server log broadcasts on the same socket are dropped. The call always takes the full 3 s timeout
