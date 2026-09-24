@@ -7,14 +7,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A local Rust (the Facepunch game) dedicated server, Steam app 258550, on NixOS. It hosts a small PvE world for
 the Rust client running under Proton as `RustClient.exe` with EAC off, modded with Carbon (edge channel). There is
 no test suite. The hand-maintained files are `start.sh`, `harmony/Ipv4Only.cs`, and
-`server/server/pve/cfg/server.cfg`; steamcmd, the mod build in `start.sh`, Carbon, or the server writes everything
-else.
+`server/server/pve/cfg/server.cfg`; steamcmd, the mod build in `start.sh`, Carbon, uMod downloads, or the server
+writes everything else.
 
 A local git repo (branch `main`, no remote) tracks those files, `CLAUDE.md`, and Carbon's `server/carbon/config.json`,
-`config.profiler.json`, and `modules/*/config.json`. `.gitignore` is a whitelist: a new file needs its own `!` entry,
-plus one for each ignored parent directory. Never whitelist the secrets `.rcon-password`, `config.webpanel.json`, or
-`relay_cfg.json`. Carbon rewrites its tracked configs on boot, after a self-update, and on `c.setmodule` or panel
-edits, so `git diff` shows what it changed.
+`config.profiler.json`, `modules/*/config.json`, and each installed plugin's `plugins/<Name>.cs` and
+`configs/<Name>.json`. `.gitignore` is a whitelist: a new file needs its own `!` entry, plus one for each ignored
+parent directory. Never whitelist the secrets `.rcon-password`, `config.webpanel.json`, or `relay_cfg.json`. Carbon
+rewrites its tracked configs on boot, after a self-update, and on `c.setmodule` or panel edits, so `git diff` shows
+what it changed.
 
 ## Commands
 
@@ -138,6 +139,10 @@ version, channel, and Rust protocol.
     .Config.Items = (($d[0].Items | with_entries(select(.value > 1 and (.key | IN($b[]) | not)))) + .Config.Items)' \
     config.json >config.json.new && mv config.json.new config.json
   ```
+- Plugins (config in `configs/<Name>.json`, runtime data in `data/`): `AutoDoors.cs` is uMod's Auto Doors 3.3.12;
+  update it with `curl -fsSL -o server/carbon/plugins/AutoDoors.cs https://umod.org/plugins/AutoDoors.cs`. It closes
+  owned doors 5 s after they open for every player, with no permission needed; `/ad` toggles it per player,
+  `/ad <5-10>` sets the delay, and `/ad h` lists the per-door and per-type options.
 - Mono profiler: `config.profiler.json` enables it and tracks `Assembly-CSharp`, `Assembly-CSharp-firstpass`, and
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
   need a restart. `c.profile <seconds> -c` records calls, `c.profiler.print -t` exports a table to

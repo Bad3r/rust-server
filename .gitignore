@@ -25,3 +25,9 @@
 !/server/carbon/modules/
 /server/carbon/modules/*/*
 !/server/carbon/modules/*/config.json
+!/server/carbon/plugins/
+/server/carbon/plugins/*
+!/server/carbon/plugins/AutoDoors.cs
+!/server/carbon/configs/
+/server/carbon/configs/*
+!/server/carbon/configs/AutoDoors.json
