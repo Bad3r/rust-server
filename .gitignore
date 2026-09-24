@@ -1,10 +1,12 @@
-# Whitelist: everything else is steamcmd, Carbon, or server output, world state, or a secret (.rcon-password,
+# Whitelist: everything else is steamcmd, Carbon, server, or tool output, world state, or a secret (.rcon-password,
 # server/carbon/config.webpanel.json, server/server/pve/cfg/relay_cfg.json). Git cannot re-include a file under an
 # ignored directory, so every parent directory of a tracked file is re-included on its own line.
 /*
 !/.gitignore
 !/CLAUDE.md
 !/LICENSE
+!/flake.lock
+!/flake.nix
 !/start.sh
 !/harmony/
 
