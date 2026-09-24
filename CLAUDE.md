@@ -32,9 +32,13 @@ on `c.setmodule` or panel edits, so `git diff` shows what it changed.
   pre-commit hooks. `nix develop -c pre-commit run --all-files` runs every hook, and `nix flake check` runs them in
   the build sandbox.
 - `scripts/check-mods.sh`: compile `harmony/Ipv4Only.cs` with `start.sh`'s `mcs` flags and each plugin with Roslyn
-  `csc` the way Carbon does (the define symbols from `server/carbon/config.json`, and the assemblies it lists under
-  `Publicizer` made public with Carbon's bundled AsmResolver). It downloads `RustDedicated_Data/Managed` of the
-  public build (Linux depot 258552, about 25 MB) and the Carbon edge archive into a temp directory on every run.
+  `csc` the way Carbon does: `-langversion:preview`, `-unsafe+`, the define symbols from `server/carbon/config.json`
+  plus Carbon's always-on `UNIX`, and the assemblies it lists under `Publicizer` made public with Carbon's bundled
+  AsmResolver, which also gains the `BasePlayer.IPlayer` field Carbon injects into `Assembly-CSharp.dll` at boot
+  (`Carbon.Publicizer.AssemblyCSharp.InjectIPlayer` in Carbon.Startup.dll). The script takes `csc` from
+  `nixpkgs#roslyn`, listed before `nixpkgs#mono` since both provide one, and exits if it ever resolves below
+  Roslyn 4. It downloads `RustDedicated_Data/Managed` of the public build (Linux depot 258552, about 25 MB) and the
+  Carbon edge archive into a temp directory on every run.
   `MANAGED_DIR=server/RustDedicated_Data/Managed CARBON_DIR=server/carbon/managed scripts/check-mods.sh` checks the
   local install instead, in a few seconds.
 

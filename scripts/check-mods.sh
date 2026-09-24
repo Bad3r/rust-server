@@ -6,9 +6,18 @@ set -euo pipefail
 
 # Every tool comes from nixpkgs, so only nix, curl, and tar need to be on PATH.
 if [[ -z "${CHECK_MODS_SHELL:-}" ]]; then
+  # roslyn before mono: both ship bin/csc and the first listed wins on PATH. mono's is its bundled Roslyn 3.9
+  # (C# 9 at most); roslyn's 4.14 csc.exe still runs on mono, which also provides mcs.
   exec nix shell --extra-experimental-features "nix-command flakes" \
-    nixpkgs#depotdownloader nixpkgs#jq nixpkgs#mono nixpkgs#roslyn \
+    nixpkgs#depotdownloader nixpkgs#jq nixpkgs#roslyn nixpkgs#mono \
     -c env CHECK_MODS_SHELL=1 bash "${BASH_SOURCE[0]}" "$@"
+fi
+
+# mono's csc shadowing roslyn's again would fail C# 10+ plugin syntax with a bare CS1003.
+csc_version="$(csc -version 2>&1)"
+if [[ ! "$csc_version" =~ ^([0-9]+)\. ]] || ((BASH_REMATCH[1] < 4)); then
+  echo "csc resolved to $(command -v csc), version $csc_version; need Roslyn 4+, not mono's bundled csc" >&2
+  exit 1
 fi
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -80,11 +89,12 @@ else
   failed=1
 fi
 
-# Carbon compiles plugins with Roslyn, the define symbols in its config, and publicized copies of the listed game
+# Carbon compiles plugins with Roslyn (LanguageVersion.Preview, allowUnsafe, and "UNIX" added to the define symbols
+# in its config: Carbon.Jobs.ScriptCompilationThread in Carbon.dll) against publicized copies of the listed game
 # assemblies, which it rewrites in memory at boot with its bundled AsmResolver. The same library rewrites on-disk
 # copies here, so plugins that touch non-public members (BaseOven.cookingTemperature, for one) compile as in game.
 config="$root/server/carbon/config.json"
-symbols="$(jq -r '.Compiler.ConditionalCompilationSymbols | join(",")' "$config")"
+symbols="$(jq -r '.Compiler.ConditionalCompilationSymbols | join(",")' "$config"),UNIX"
 mapfile -t publicized < <(jq -r '.Publicizer.PublicizedAssemblies[]' "$config")
 jq -r '.Publicizer.PublicizerMemberIgnores[]' "$config" >"$work_dir/ignores.txt"
 
@@ -98,12 +108,16 @@ using AsmResolver.PE.DotNet.Metadata.Tables.Rows;
 
 class Publicizer
 {
-    // Usage: publicizer.exe <out-dir> <ignore-regex-file> <in.dll>...
+    // Usage: publicizer.exe <out-dir> <ignore-regex-file> <carbon-common.dll> <in.dll>...
     static int Main(string[] args)
     {
         var ignores = File.ReadAllLines(args[1]).Where(l => l.Length > 0).Select(l => new Regex(l)).ToArray();
         Directory.CreateDirectory(args[0]);
-        foreach (var inPath in args.Skip(2))
+        // Carbon.Publicizer.AssemblyCSharp.InjectIPlayer (Carbon.Startup.dll) adds this same field to BasePlayer
+        // at boot, sourcing the type from Carbon.Common.dll; plugins like MonumentAddons.cs read player.IPlayer.
+        var iPlayerType = ModuleDefinition.FromFile(args[2]).GetAllTypes()
+            .First(t => t.Namespace == "Oxide.Core.Libraries.Covalence" && t.Name == "IPlayer");
+        foreach (var inPath in args.Skip(3))
         {
             var module = ModuleDefinition.FromFile(inPath);
             foreach (var type in module.GetAllTypes())
@@ -123,6 +137,16 @@ class Publicizer
                     field.Attributes |= FieldAttributes.Public;
                 }
             }
+            if (Path.GetFileName(inPath) == "Assembly-CSharp.dll")
+            {
+                var basePlayer = module.GetAllTypes().First(t => t.Name == "BasePlayer" && !t.IsNested);
+                if (!basePlayer.Fields.Any(f => f.Name == "IPlayer"))
+                {
+                    var imported = module.DefaultImporter.ImportType(iPlayerType);
+                    var attrs = FieldAttributes.Public | FieldAttributes.NotSerialized;
+                    basePlayer.Fields.Add(new FieldDefinition("IPlayer", attrs, imported.ToTypeSignature()));
+                }
+            }
             module.Write(Path.Combine(args[0], Path.GetFileName(inPath)));
         }
         return 0;
@@ -140,7 +164,7 @@ for name in "${publicized[@]}"; do
   publicize_inputs+=("$managed_dir/$name")
 done
 MONO_PATH="$carbon_lib" mono "$work_dir/publicizer.exe" "$work_dir/publicized" "$work_dir/ignores.txt" \
-  "${publicize_inputs[@]}"
+  "$carbon_dir/Carbon.Common.dll" "${publicize_inputs[@]}"
 
 # Carbon's own copies of shared dependencies (0Harmony.dll, System.* polyfills) win over the game's, as in its
 # compiler, and the publicized copies replace the game's originals.
@@ -168,8 +192,8 @@ done < <(find "$managed_dir" -maxdepth 1 -name '*.dll' | sort)
 refs_joined="$(IFS=, && echo "${refs[*]}")"
 
 while IFS= read -r src; do
-  if csc -nologo -target:library -nostdlib+ -noconfig -define:"$symbols" -reference:"$refs_joined" \
-    -out:"$work_dir/$(basename "$src" .cs).dll" "$src"; then
+  if csc -nologo -target:library -nostdlib+ -noconfig -langversion:preview -unsafe+ -define:"$symbols" \
+    -reference:"$refs_joined" -out:"$work_dir/$(basename "$src" .cs).dll" "$src"; then
     echo "OK ${src#"$root"/}"
   else
     echo "FAIL ${src#"$root"/}"
