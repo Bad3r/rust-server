@@ -7,9 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A local Rust (the Facepunch game) dedicated server, Steam app 258550, on NixOS. It hosts a small PvE world for
 the Rust client running under Proton as `RustClient.exe` with EAC off, modded with Carbon (edge channel). There is
 no test suite; the checks are the hooks and workflows in Development and CI below. The hand-maintained files are
-`start.sh`, `harmony/Ipv4Only.cs`, `server/server/pve/cfg/server.cfg`, `server/carbon/plugins/SmeltSpeed.cs`,
-`scripts/check-mods.sh`, `flake.nix`, `.github/`, and `README.md`; steamcmd, the mod build in `start.sh`, Carbon,
-uMod downloads, Nix (`flake.lock`), or the server writes everything else.
+`start.sh`, `harmony/Ipv4Only.cs`, `server/server/pve/cfg/server.cfg`, `server/carbon/plugins/SmeltSpeed.cs` and
+`SkinsCatalog.cs`, `scripts/`, `docs/`, `flake.nix`, `.github/`, and `README.md`; steamcmd, the mod build in
+`start.sh`, Carbon, uMod downloads, Nix (`flake.lock`), or the server writes everything else.
 
 The git repo (branch `main`) pushes to the private GitHub repo https://github.com/Bad3r/rust-server (`origin`). It
 tracks those files, `CLAUDE.md`, `LICENSE` (AGPL-3.0-or-later), `flake.lock`, and Carbon's `server/carbon/config.json`,
@@ -221,6 +221,10 @@ version, channel, and Rust protocol.
   `ItemSkinDirectory` ids substitute a different item with skin 0 (`autoturret` 10479 becomes
   `industrial.autoturret`), and Skins handles that. Without the plugin, `inventory.give <item> <amount> <condition>
   <skinid>` from a connected admin's F1 console creates a skinned item.
+- Skin research: `docs/skin-ownership-gates.md` records the three ownership gates in `Assembly-CSharp` (grade skins,
+  item skins, DLC items), the vanilla admin bypasses, and Facepunch's DLC clause with its test-server exception.
+  `scripts/skin-grades.py`, `skin-freeitems.py`, and `skin-coverage.py` regenerate its bundle data with
+  `uv run --with UnityPy python3 scripts/<name>.py` in about 8 s each.
 - Mono profiler: `config.profiler.json` enables it and tracks `Assembly-CSharp`, `Assembly-CSharp-firstpass`, and
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
   need a restart. `c.profile <seconds> -c` records calls, `c.profiler.print -t` exports a table to

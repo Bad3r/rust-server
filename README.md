@@ -64,7 +64,7 @@ Press Ctrl+C to stop.
 ## Repository layout
 
 [.gitignore](.gitignore) is a whitelist: only paths re-included with `!` are tracked, and every ignored parent directory needs its own `!` entry.
-Tracked paths include [CLAUDE.md](CLAUDE.md), [LICENSE](LICENSE), [start.sh](start.sh), [harmony/](harmony/), [scripts/](scripts/), [flake.nix](flake.nix), [flake.lock](flake.lock), [.github/](.github/), [server.cfg](server/server/pve/cfg/server.cfg), and Carbon's `config.json`, `config.profiler.json`, `modules/*/config.json`, `plugins/<Name>.cs`, `configs/<Name>.json`, and the Monument Addons profile `data/MonumentAddons/Default.json`.
+Tracked paths include [CLAUDE.md](CLAUDE.md), [LICENSE](LICENSE), [start.sh](start.sh), [harmony/](harmony/), [scripts/](scripts/), [docs/](docs/), [flake.nix](flake.nix), [flake.lock](flake.lock), [.github/](.github/), [server.cfg](server/server/pve/cfg/server.cfg), and Carbon's `config.json`, `config.profiler.json`, `modules/*/config.json`, `plugins/<Name>.cs`, `configs/<Name>.json`, and the Monument Addons profile `data/MonumentAddons/Default.json`.
 Everything else under `server/`, plus `home/`, `steamcmd/`, and `backups/`, is a generated install, cache, or world state, and stays untracked.
 `.rcon-password`, `server/carbon/config.webpanel.json`, and `server/server/pve/cfg/relay_cfg.json` hold secrets and are never tracked.
 `server/carbon/configs/ImageLibrary.json` stays untracked too, because its `Steam API key` setting would be pushed with it.
