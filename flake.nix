@@ -26,6 +26,7 @@
         "(^|/)\\.rcon-password$"
         "(^|/)config\\.webpanel\\.json$"
         "(^|/)relay_cfg\\.json$"
+        "(^|/)ImageLibrary\\.json$"
         "(^|/)users\\.cfg$"
         "(^|/)serverauto\\.cfg$"
         "(^|/)oxide\\.[^/]*\\.data$"

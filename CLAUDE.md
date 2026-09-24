@@ -16,9 +16,10 @@ tracks those files, `CLAUDE.md`, `LICENSE` (AGPL-3.0-or-later), `flake.lock`, an
 `config.profiler.json`, `modules/*/config.json`, each installed plugin's `plugins/<Name>.cs` and
 `configs/<Name>.json`, and the Monument Addons profile `data/MonumentAddons/Default.json`. `.gitignore` is a
 whitelist: a new file needs its own `!` entry, plus one for each ignored parent directory. Everything tracked is
-pushed, so never whitelist the secrets `.rcon-password`, `config.webpanel.json`, or `relay_cfg.json`. Carbon rewrites
-its tracked configs on boot, after a self-update, and on `c.setmodule` or panel edits, and Monument Addons rewrites
-its profile on in-game edits, so `git diff` shows what changed.
+pushed, so never whitelist the secrets `.rcon-password`, `config.webpanel.json`, and `relay_cfg.json`, or
+`configs/ImageLibrary.json`, whose empty `Steam API key` setting would carry a key. Carbon rewrites its tracked
+configs on boot, after a self-update, and on `c.setmodule` or panel edits, and Monument Addons rewrites its profile
+on in-game edits, so `git diff` shows what changed.
 
 ## Commands
 
@@ -194,6 +195,19 @@ version, channel, and Rust protocol.
   unlocks the in-game commands `maspawn <entity>`, `makill`, `maundo`, `masave`, `mashow`, and `mahelp`. Skip the
   bundled `MonumentsRecycler` example profile: its oil rig keys `OilrigAI` and `OilrigAI2` predate the rename to
   `oilrig_2` and `oilrig_1` and match nothing.
+- Building skins: `BuildingSkins.cs` is uMod's Building Skins 2.0.12 by Marat and `ImageLibrary.cs` its required
+  Image Library 2.0.67 by Absolut and K1lly0u, both MIT, updated with the same `curl` pattern; Building Skins
+  unloads itself when Image Library is missing. `/bskin` stores a skin per grade, and the `OnHammerHit` and
+  `OnStructureUpgrade` hooks apply it through `BuildingBlock.ChangeGradeAndSkin`, which checks no ownership; only the
+  `DoUpgradeToGrade` RPC rejects unowned skins (`SkinNotOwned`). Its default table covers every grade skin in this
+  build: Frontier 10232 and Gingerbread 2 (wood); Adobe 10220, Brick 10223, Brutalist 10225, Jungle 10326, and Crypt
+  10472 (stone); Shipping Container 10221 (metal); Space 10430 (top tier). At load, Image Library downloads item
+  icons from `cdn.rusthelp.com` and the skin images from `i.ibb.co` and `i.postimg.cc`. In 2.0.12 the bulk path
+  `UpgradeSkin` (`/bskin build`, `/bskin all`, the tool cupboard button) skips blocks whose skin the player owns on
+  Steam, an inverted check at `BuildingSkins.cs:545`. Vanilla's `skin_looking`, `skin_radius`, `upgrade_looking`,
+  and `upgrade_radius` apply skins without a plugin, but only from a connected admin's F1 console (over RCON they
+  throw a NullReferenceException on `arg.Player().eyes`), and they refuse Gingerbread, whose grade asset has
+  `enabledInStandalone` 0.
 - Mono profiler: `config.profiler.json` enables it and tracks `Assembly-CSharp`, `Assembly-CSharp-firstpass`, and
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
   need a restart. `c.profile <seconds> -c` records calls, `c.profiler.print -t` exports a table to

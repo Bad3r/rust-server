@@ -36,6 +36,9 @@ Press Ctrl+C to stop.
   Chat command `/ad` toggles it per player, and `/ad <5-10>` changes the delay.
 - Every monument with a map name has a recycler: uMod's Monument Addons ([MonumentAddons.cs](server/carbon/plugins/MonumentAddons.cs)) and Monument Finder ([MonumentFinder.cs](server/carbon/plugins/MonumentFinder.cs)) add one from the [Default profile](server/carbon/data/MonumentAddons/Default.json) wherever vanilla ships none.
   That covers the fishing villages, Ranch, Large Barn, Apartment Complex, Abandoned Military Base, Missile Silo, the three quarries, both oil rigs, and an Underwater Lab room; recyclers in a safe zone are the yellow kind, as at Outpost.
+- Every building skin works without owning it, via uMod's Building Skins ([BuildingSkins.cs](server/carbon/plugins/BuildingSkins.cs)) and its required Image Library ([ImageLibrary.cs](server/carbon/plugins/ImageLibrary.cs)).
+  `/bskin` picks a skin per grade, and the next hammer hit or upgrade applies it; `/bskin build` and the tool cupboard's "Change building skin" button reskin a whole base.
+  It needs `c.grant group admin buildingskins.use` over RCON once, plus `buildingskins.build`, `.all`, `.tc`, and `.admin` for the bulk and admin paths.
 - Vehicles do not decay: [server.cfg](server/server/pve/cfg/server.cfg) sets every vehicle decay convar and the idle workcart despawn timer to 1e9 minutes, about 1900 years of uptime.
   Emptied ore and fuel wagons still despawn 10 minutes after unloading, so full ones keep respawning.
 - Rust+ is off: [server.cfg](server/server/pve/cfg/server.cfg) sets `app.port -1`, which disables the companion server.
@@ -61,6 +64,7 @@ Press Ctrl+C to stop.
 Tracked paths include [CLAUDE.md](CLAUDE.md), [LICENSE](LICENSE), [start.sh](start.sh), [harmony/](harmony/), [scripts/](scripts/), [flake.nix](flake.nix), [flake.lock](flake.lock), [.github/](.github/), [server.cfg](server/server/pve/cfg/server.cfg), and Carbon's `config.json`, `config.profiler.json`, `modules/*/config.json`, `plugins/<Name>.cs`, `configs/<Name>.json`, and the Monument Addons profile `data/MonumentAddons/Default.json`.
 Everything else under `server/`, plus `home/`, `steamcmd/`, and `backups/`, is a generated install, cache, or world state, and stays untracked.
 `.rcon-password`, `server/carbon/config.webpanel.json`, and `server/server/pve/cfg/relay_cfg.json` hold secrets and are never tracked.
+`server/carbon/configs/ImageLibrary.json` stays untracked too, because its `Steam API key` setting would be pushed with it.
 
 ## Development
 
@@ -69,7 +73,7 @@ nix develop
 ```
 
 `flake.nix` provides `shellcheck`, `actionlint`, `jq`, `gitleaks`, `websocat`, and `nixfmt`.
-It installs git-hooks.nix pre-commit hooks: `shellcheck`, `actionlint`, JSON validity, `nixfmt`, `gitleaks` on staged changes, and a guard that refuses server secrets and world state (`.rcon-password`, `config.webpanel.json`, `relay_cfg.json`, `users.cfg`, saves, databases, logs, `home/`, `steamcmd/`, `backups/`).
+It installs git-hooks.nix pre-commit hooks: `shellcheck`, `actionlint`, JSON validity, `nixfmt`, `gitleaks` on staged changes, and a guard that refuses server secrets and world state (`.rcon-password`, `config.webpanel.json`, `relay_cfg.json`, `ImageLibrary.json`, `users.cfg`, saves, databases, logs, `home/`, `steamcmd/`, `backups/`).
 `nix flake check` runs the same hooks.
 
 Never pass `path:.` to flake commands, such as `nix develop path:.` or `nix flake check path:.`, in a checkout that holds a server install.
@@ -94,3 +98,4 @@ Full operator notes, including the RCON helper, Carbon internals, and world-stat
 [AGPL-3.0-or-later](LICENSE).
 The vendored [AutoDoors.cs](server/carbon/plugins/AutoDoors.cs) is uMod's [Auto Doors](https://umod.org/plugins/auto-doors) plugin under the MIT license.
 The vendored [MonumentAddons.cs](server/carbon/plugins/MonumentAddons.cs) and [MonumentFinder.cs](server/carbon/plugins/MonumentFinder.cs) are WhiteThunder's uMod plugins [Monument Addons](https://umod.org/plugins/monument-addons) and [Monument Finder](https://umod.org/plugins/monument-finder), both under the MIT license.
+The vendored [BuildingSkins.cs](server/carbon/plugins/BuildingSkins.cs) and [ImageLibrary.cs](server/carbon/plugins/ImageLibrary.cs) are uMod's [Building Skins](https://umod.org/plugins/building-skins) by Marat and [Image Library](https://umod.org/plugins/image-library) by Absolut and K1lly0u, both under the MIT license.
