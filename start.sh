@@ -30,6 +30,7 @@ if [[ ! -x "$server/RustDedicated" ]]; then
 fi
 
 # Harmony mod that makes Mono's sockets IPv4-only on this ipv6.disable=1 host; see harmony/Ipv4Only.cs.
+# scripts/check-mods.sh repeats this mcs invocation; change both together.
 mod_src="$root/harmony/Ipv4Only.cs"
 mod_dll="$server/HarmonyMods/Ipv4Only.dll"
 if [[ ! "$mod_dll" -nt "$mod_src" ]]; then

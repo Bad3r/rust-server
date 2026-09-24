@@ -1,0 +1,51 @@
+name: Mods
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - harmony/**
+      - server/carbon/plugins/**
+      - server/carbon/config.json
+      - scripts/check-mods.sh
+      - .github/workflows/mods.yml
+  pull_request:
+    paths:
+      - harmony/**
+      - server/carbon/plugins/**
+      - server/carbon/config.json
+      - scripts/check-mods.sh
+      - .github/workflows/mods.yml
+  schedule:
+    # Facepunch ships Rust updates on Thursdays; catches game or Carbon changes that break the mods.
+    - cron: "0 6 * * 5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mods-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-mods:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
+        with:
+          determinate: false
+          extra-conf: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+            fallback = true
+
+      - name: Check mods compile
+        run: bash scripts/check-mods.sh

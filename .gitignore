@@ -8,6 +8,7 @@
 !/LICENSE
 !/flake.lock
 !/flake.nix
+!/scripts/
 !/start.sh
 !/harmony/
 
