@@ -76,7 +76,7 @@ nix develop
 ```
 
 `flake.nix` provides `shellcheck`, `actionlint`, `jq`, `gitleaks`, `websocat`, and `nixfmt`.
-It installs git-hooks.nix pre-commit hooks: `shellcheck`, `actionlint`, JSON validity, `nixfmt`, `gitleaks` on staged changes, and a guard that refuses server secrets and world state (`.rcon-password`, `config.webpanel.json`, `relay_cfg.json`, `ImageLibrary.json`, `users.cfg`, saves, databases, logs, `home/`, `steamcmd/`, `backups/`).
+It installs git-hooks.nix pre-commit hooks: `shellcheck`, `actionlint`, JSON validity, `nixfmt`, `gitleaks` on staged changes, and a guard that refuses server secrets and world state (`.rcon-password`, `config.webpanel.json`, `relay_cfg.json`, `ImageLibrary.json`, `users.cfg`, saves, databases, logs, `home/`, `steamcmd/`, `backups/`), and a check that keeps the local Building Skins fix in place.
 `nix flake check` runs the same hooks.
 
 Never pass `path:.` to flake commands, such as `nix develop path:.` or `nix flake check path:.`, in a checkout that holds a server install.
@@ -107,5 +107,5 @@ Full operator notes, including the RCON helper, Carbon internals, and world-stat
 [AGPL-3.0-or-later](LICENSE).
 The vendored [AutoDoors.cs](server/carbon/plugins/AutoDoors.cs) is uMod's [Auto Doors](https://umod.org/plugins/auto-doors) plugin under the MIT license.
 The vendored [MonumentAddons.cs](server/carbon/plugins/MonumentAddons.cs) and [MonumentFinder.cs](server/carbon/plugins/MonumentFinder.cs) are WhiteThunder's uMod plugins [Monument Addons](https://umod.org/plugins/monument-addons) and [Monument Finder](https://umod.org/plugins/monument-finder), both under the MIT license.
-The vendored [BuildingSkins.cs](server/carbon/plugins/BuildingSkins.cs) and [ImageLibrary.cs](server/carbon/plugins/ImageLibrary.cs) are uMod's [Building Skins](https://umod.org/plugins/building-skins) by Marat and [Image Library](https://umod.org/plugins/image-library) by Absolut and K1lly0u, both under the MIT license.
+The vendored [BuildingSkins.cs](server/carbon/plugins/BuildingSkins.cs) and [ImageLibrary.cs](server/carbon/plugins/ImageLibrary.cs) are uMod's [Building Skins](https://umod.org/plugins/building-skins) by Marat and [Image Library](https://umod.org/plugins/image-library) by Absolut and K1lly0u, both under the MIT license; BuildingSkins.cs carries one local fix, described in CLAUDE.md.
 The vendored [Skins.cs](server/carbon/plugins/Skins.cs) is uMod's [Skins](https://umod.org/plugins/skins) plugin by misticos under the MIT license.

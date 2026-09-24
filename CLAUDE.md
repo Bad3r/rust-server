@@ -213,9 +213,13 @@ version, channel, and Rust protocol.
   `DoUpgradeToGrade` RPC rejects unowned skins (`SkinNotOwned`). Its default table covers every grade skin in this
   build: Frontier 10232 and Gingerbread 2 (wood); Adobe 10220, Brick 10223, Brutalist 10225, Jungle 10326, and Crypt
   10472 (stone); Shipping Container 10221 (metal); Space 10430 (top tier). At load, Image Library downloads item
-  icons from `cdn.rusthelp.com` and the skin images from `i.ibb.co` and `i.postimg.cc`. In 2.0.12 the bulk path
-  `UpgradeSkin` (`/bskin build`, `/bskin all`, the tool cupboard button) skips blocks whose skin the player owns on
-  Steam, an inverted check at `BuildingSkins.cs:545`. Vanilla's `skin_looking`, `skin_radius`, `upgrade_looking`,
+  icons from `cdn.rusthelp.com` and the skin images from `i.ibb.co` and `i.postimg.cc`. The vendored 2.0.12 carries
+  one temporary local fix: its bulk path `UpgradeSkin` (`/bskin build`, `/bskin all`, the tool cupboard button)
+  skipped every block whose chosen skin the player owns on Steam, through a copy of the `HasItem` early return that
+  only makes sense in `OnStructureUpgrade`, where vanilla then applies the owned skin itself. The fix deletes that
+  line; the `building-skins-owned-skip` pre-commit hook refuses a `BuildingSkins.cs` that has it again, so re-apply
+  the deletion after updating, and drop both once an upstream release removes the line (umod.org support thread
+  55864 reports it). Vanilla's `skin_looking`, `skin_radius`, `upgrade_looking`,
   and `upgrade_radius` apply skins without a plugin, but only from a connected admin's F1 console (over RCON they
   throw a NullReferenceException on `arg.Player().eyes`), and they refuse Gingerbread, whose grade asset has
   `enabledInStandalone` 0.
@@ -326,9 +330,9 @@ host and also works in CI. The examples run from the repo root with `m=server/Ru
 
 `flake.nix` pins nixpkgs and git-hooks.nix in `flake.lock` (refresh with `nix flake update`). Once `nix develop` has
 installed them, the hooks run on every commit: shellcheck, actionlint, check-json (the Carbon configs must parse),
-nixfmt, gitleaks on the staged content, and `forbidden-paths`, which refuses secrets, saves, databases, logs,
-`home/`, `steamcmd/`, and `backups/` even when force-added. Keep `guardedPathPatterns` in `flake.nix` in step with
-the secret files named in this document.
+nixfmt, gitleaks on the staged content, `forbidden-paths`, which refuses secrets, saves, databases, logs,
+`home/`, `steamcmd/`, and `backups/` even when force-added, and `building-skins-owned-skip` (see Carbon). Keep
+`guardedPathPatterns` in `flake.nix` in step with the secret files named in this document.
 
 Flake commands read this checkout through the default git fetch, which copies only tracked files, so a new file
 needs at least `git add -N` before Nix sees it. Never pass `path:.` (`nix develop path:.`, `nix flake check path:.`)

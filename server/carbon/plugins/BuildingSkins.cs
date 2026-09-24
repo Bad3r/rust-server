@@ -542,7 +542,6 @@ namespace Oxide.Plugins
                 if (!gradesSkin.TryGetValue(block.grade, out var skinId) || skinId == null) continue;
                 var skinID = GetPlayerSkinID(player, block.grade);
                 var playerData = storedData.PlayerData[player.userID.Get()];
-                if (skinID != 0 && player.blueprints.steamInventory.HasItem((int)skinID)) continue;
                 if (block.SecondsSinceAttacked < 30f) continue;
                 if (block.skinID != 0 && block.grade.ToString() == "Metal" && !playerData.RandomColor) block.SetCustomColour((uint)player.GetInfoInt("client.SelectedShippingContainerBlockColour", 0));
                 if (block.skinID == skinID) continue;

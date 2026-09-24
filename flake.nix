@@ -66,6 +66,16 @@
             entry = "forbidden-paths: secret or generated Carbon/world state staged; see CLAUDE.md";
             files = lib.concatStringsSep "|" guardedPathPatterns;
           };
+
+          # Temporary: drop once an upstream Building Skins release removes this line (see CLAUDE.md).
+          building-skins-owned-skip = {
+            enable = true;
+            name = "building-skins-owned-skip";
+            description = "Refuse a BuildingSkins.cs that lost the local bulk-reskin fix.";
+            language = "pygrep";
+            entry = "steamInventory\\.HasItem\\(\\(int\\)skinID\\)\\) continue;";
+            files = "^server/carbon/plugins/BuildingSkins\\.cs$";
+          };
         };
       };
     in
