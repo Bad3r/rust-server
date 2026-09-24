@@ -277,6 +277,8 @@ version, channel, and Rust protocol.
   `developerflag.status` (RCON, or F1 for an admin or developer) prints each player's flag, reported value, and
   effective level. The flag also turns the chat name orange and makes `inventory.give` reply "you silently gave
   yourself". Facepunch's developers also get auth level 3; admin rights here still come from `users.cfg`.
+  `docs/developer-and-admin-switches.md` starts with the client command and lists everything else the flag changes,
+  the other client settings the server trusts (`global.god`, `player.infiniteammo`, and more), and creative mode.
 - Mono profiler: `config.profiler.json` enables it and tracks `Assembly-CSharp`, `Assembly-CSharp-firstpass`, and
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
   need a restart. `c.profile <seconds> -c` records calls, `c.profiler.print -t` exports a table to

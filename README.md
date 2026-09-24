@@ -47,6 +47,7 @@ Press Ctrl+C to stop.
   The server then accepts any skin when crafting, reskinning at a repair bench, or upgrading a building, and any DLC item.
   After joining, run `client.skins_access 1` in the F1 console, and the game's own menus list every skin; the client does not keep the setting between sessions, and `developerflag.status` over RCON shows the state.
   It needs `c.grant user <SteamID> developerflag.use` over RCON once.
+  [docs/developer-and-admin-switches.md](docs/developer-and-admin-switches.md) covers the client command, what else developer mode changes, other hidden client switches such as god mode and infinite ammo, and the built-in creative mode.
 - Vehicles do not decay: [server.cfg](server/server/pve/cfg/server.cfg) sets every vehicle decay convar and the idle workcart despawn timer to 1e9 minutes, about 1900 years of uptime.
   Emptied ore and fuel wagons still despawn 10 minutes after unloading, so full ones keep respawning.
 - Rust+ is off: [server.cfg](server/server/pve/cfg/server.cfg) sets `app.port -1`, which disables the companion server.
