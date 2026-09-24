@@ -1,0 +1,19 @@
+{
+  "Enabled": true,
+  "TrackCalls": true,
+  "SourceViewer": false,
+  "Assemblies": [
+    "Assembly-CSharp",
+    "Assembly-CSharp-firstpass"
+  ],
+  "Plugins": [
+    "*"
+  ],
+  "Modules": [
+    "*"
+  ],
+  "Extensions": [
+    "*"
+  ],
+  "Harmony": []
+}
