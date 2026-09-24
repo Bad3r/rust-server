@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Compiles harmony/Ipv4Only.cs and the Carbon plugins against the public Rust build and the Carbon edge build, the
 # way start.sh and Carbon's runtime compiler do, without the 6 GB server install. Exits non-zero if any compile fails.
-# MANAGED_DIR (a RustDedicated_Data/Managed dir) and CARBON_DIR (a carbon/managed dir) replace the downloads.
+# MANAGED_DIR (a RustDedicated_Data/Managed dir) and CARBON_DIR (a carbon/managed dir) replace the downloads, and
+# PLUGINS_DIR replaces server/carbon/plugins, for tools such as scripts/monument-addons that must not live there.
 set -euo pipefail
 
 # Every tool comes from nixpkgs, so only nix, curl, and tar need to be on PATH.
@@ -21,6 +22,12 @@ if [[ ! "$csc_version" =~ ^([0-9]+)\. ]] || ((BASH_REMATCH[1] < 4)); then
 fi
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+plugins_dir="${PLUGINS_DIR:-$root/server/carbon/plugins}"
+mapfile -t plugin_sources < <(find "$plugins_dir" -maxdepth 1 -name '*.cs' | sort)
+if ((${#plugin_sources[@]} == 0)); then
+  echo "no *.cs plugins in $plugins_dir" >&2
+  exit 1
+fi
 work_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir"' EXIT
 failed=0
@@ -191,7 +198,7 @@ while IFS= read -r f; do
 done < <(find "$managed_dir" -maxdepth 1 -name '*.dll' | sort)
 refs_joined="$(IFS=, && echo "${refs[*]}")"
 
-while IFS= read -r src; do
+for src in "${plugin_sources[@]}"; do
   if csc -nologo -target:library -nostdlib+ -noconfig -langversion:preview -unsafe+ -define:"$symbols" \
     -reference:"$refs_joined" -out:"$work_dir/$(basename "$src" .cs).dll" "$src"; then
     echo "OK ${src#"$root"/}"
@@ -199,6 +206,6 @@ while IFS= read -r src; do
     echo "FAIL ${src#"$root"/}"
     failed=1
   fi
-done < <(find "$root/server/carbon/plugins" -maxdepth 1 -name '*.cs' | sort)
+done
 
 exit "$failed"

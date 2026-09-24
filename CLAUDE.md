@@ -42,7 +42,8 @@ on in-game edits, so `git diff` shows what changed.
   Roslyn 4. It downloads `RustDedicated_Data/Managed` of the public build (Linux depot 258552, about 25 MB) and the
   Carbon edge archive into a temp directory on every run.
   `MANAGED_DIR=server/RustDedicated_Data/Managed CARBON_DIR=server/carbon/managed scripts/check-mods.sh` checks the
-  local install instead, in a few seconds.
+  local install instead, in a few seconds. `PLUGINS_DIR` compiles another directory in place of
+  `server/carbon/plugins`, such as `scripts/monument-addons` for the survey tool that must not sit there.
 - `scripts/check-convars.sh`: resolve every convar in `server.cfg` through a fresh `ilspycmd` decompile of
   `ConsoleGen.cs` to the `[ServerVar]` field it sets, exiting 1 on a name a Rust update renamed or removed (the server
   only logs `Command '<name>' not found` for those). It reads the local install unless `MANAGED_DIR` points
@@ -202,7 +203,9 @@ version, channel, and Rust protocol.
   each player's selected profile by SteamID, so it stays untracked. `c.grant group admin monumentaddons.admin`
   unlocks the in-game commands `maspawn <entity>`, `makill`, `maundo`, `masave`, `mashow`, and `mahelp`. Skip the
   bundled `MonumentsRecycler` example profile: its oil rig keys `OilrigAI` and `OilrigAI2` predate the rename to
-  `oilrig_2` and `oilrig_1` and match nothing.
+  `oilrig_2` and `oilrig_1` and match nothing. `docs/monument-survey.md` covers redoing the placements after a wipe
+  with `scripts/monument-addons/MonumentSurvey.cs`, a plugin that goes into `server/carbon/plugins/` only for the
+  survey session, and `make-profile.sh`, which turns its output into a profile.
 - Building skins: `BuildingSkins.cs` is uMod's Building Skins 2.0.12 by Marat and `ImageLibrary.cs` its required
   Image Library 2.0.67 by Absolut and K1lly0u, both MIT, updated with the same `curl` pattern; Building Skins
   unloads itself when Image Library is missing. `/bskin` stores a skin per grade, and the `OnHammerHit` and
