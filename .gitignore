@@ -28,6 +28,8 @@
 !/server/carbon/plugins/
 /server/carbon/plugins/*
 !/server/carbon/plugins/AutoDoors.cs
+!/server/carbon/plugins/SmeltSpeed.cs
 !/server/carbon/configs/
 /server/carbon/configs/*
 !/server/carbon/configs/AutoDoors.json
+!/server/carbon/configs/SmeltSpeed.json

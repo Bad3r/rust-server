@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A local Rust (the Facepunch game) dedicated server, Steam app 258550, on NixOS. It hosts a small PvE world for
 the Rust client running under Proton as `RustClient.exe` with EAC off, modded with Carbon (edge channel). There is
-no test suite. The hand-maintained files are `start.sh`, `harmony/Ipv4Only.cs`, and
-`server/server/pve/cfg/server.cfg`; steamcmd, the mod build in `start.sh`, Carbon, uMod downloads, or the server
-writes everything else.
+no test suite. The hand-maintained files are `start.sh`, `harmony/Ipv4Only.cs`, `server/server/pve/cfg/server.cfg`,
+and `server/carbon/plugins/SmeltSpeed.cs`; steamcmd, the mod build in `start.sh`, Carbon, uMod downloads, or the
+server writes everything else.
 
 A local git repo (branch `main`, no remote) tracks those files, `CLAUDE.md`, and Carbon's `server/carbon/config.json`,
 `config.profiler.json`, `modules/*/config.json`, and each installed plugin's `plugins/<Name>.cs` and
@@ -142,7 +142,12 @@ version, channel, and Rust protocol.
 - Plugins (config in `configs/<Name>.json`, runtime data in `data/`): `AutoDoors.cs` is uMod's Auto Doors 3.3.12;
   update it with `curl -fsSL -o server/carbon/plugins/AutoDoors.cs https://umod.org/plugins/AutoDoors.cs`. It closes
   owned doors 5 s after they open for every player, with no permission needed; `/ad` toggles it per player,
-  `/ad <5-10>` sets the delay, and `/ad h` lists the per-door and per-type options.
+  `/ad <5-10>` sets the delay, and `/ad h` lists the per-door and per-type options. `SmeltSpeed.cs` is local: it
+  multiplies the vanilla `BaseOven.smeltSpeed` of every oven that cooks at 1000 or hotter (all furnaces and
+  refineries) by 2, and unloading it restores the prefab values. Fuel burns at the vanilla rate per second, so each
+  smelted item costs half the wood and yields half the charcoal. uMod's QuickSmelt 5.1.5 (2022) fails to compile
+  here (`ItemModCookable` has no `CanBeCookedByAtTemperature`), and Furnace Splitter cannot speed anything up
+  because `BaseOven.IncreaseCookTime` divides cook time across all cooking stacks.
 - Mono profiler: `config.profiler.json` enables it and tracks `Assembly-CSharp`, `Assembly-CSharp-firstpass`, and
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
   need a restart. `c.profile <seconds> -c` records calls, `c.profiler.print -t` exports a table to
