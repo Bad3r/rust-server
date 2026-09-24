@@ -1,0 +1,30 @@
+{
+  "Enabled": true,
+  "Config": {
+    "Quarry": {
+      "*": 2.0
+    },
+    "Excavator": {
+      "*": 2.0
+    },
+    "Pickup": {
+      "*": 2.0,
+      "seed.black.berry": 1.0,
+      "seed.blue.berry": 1.0,
+      "seed.corn": 1.0,
+      "seed.green.berry": 1.0,
+      "seed.hemp": 1.0,
+      "seed.potato": 1.0,
+      "seed.pumpkin": 1.0,
+      "seed.red.berry": 1.0,
+      "seed.white.berry": 1.0,
+      "seed.yellow.berry": 1.0
+    },
+    "Gather": {
+      "*": 2.0,
+      "skull.wolf": 1.0,
+      "skull.human": 1.0
+    }
+  },
+  "Version": "318327852"
+}
