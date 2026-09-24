@@ -32,14 +32,14 @@ Two tools:
 
 All write to `server/carbon/data/MonumentSurvey/`, creating the directory if needed.
 
-| Command | Output | Purpose |
-| --- | --- | --- |
-| `survey.dump` | `dump.json` | every monument and recycler on the map, with recycler-to-monument assignment |
-| `survey.solve [filter]` | `placements.json` | one placement search per in-scope monument type missing a recycler |
-| `survey.labdump` | `labdump.json` | every `DungeonBaseLink` (lab module) with its transform and per-shortName counts |
-| `survey.labscan` | `labscan.json` | quick best-candidate check for every single-occurrence lab module, no spawn |
-| `survey.labsolve <name>` | `labsolve.json` | full spawn-verified placement search for one lab module |
-| `survey.labprobe <name>` | `labprobe.json` | raw `RaycastAll` dump through one module, for calibrating probe ranges |
+| Command                  | Output            | Purpose                                                                          |
+| ------------------------ | ----------------- | -------------------------------------------------------------------------------- |
+| `survey.dump`            | `dump.json`       | every monument and recycler on the map, with recycler-to-monument assignment     |
+| `survey.solve [filter]`  | `placements.json` | one placement search per in-scope monument type missing a recycler               |
+| `survey.labdump`         | `labdump.json`    | every `DungeonBaseLink` (lab module) with its transform and per-shortName counts |
+| `survey.labscan`         | `labscan.json`    | quick best-candidate check for every single-occurrence lab module, no spawn      |
+| `survey.labsolve <name>` | `labsolve.json`   | full spawn-verified placement search for one lab module                          |
+| `survey.labprobe <name>` | `labprobe.json`   | raw `RaycastAll` dump through one module, for calibrating probe ranges           |
 
 ## Two physics bugs it hit
 
@@ -78,7 +78,7 @@ best-effort candidate (most instances clean) if none is perfect.
 ## Monument Addons profile schema and aliasing facts
 
 - Profile shape: `{Name, SchemaVersion, MonumentData: {<key>: {Entities: [{Id, Position, RotationAngles,
-  PrefabName}]}}}`. Position and rotation are local to the monument's own transform (Euler degrees), matching
+PrefabName}]}}}`. Position and rotation are local to the monument's own transform (Euler degrees), matching
   `Transform.TransformPoint`/`InverseTransformPoint` for the unscaled case.
 - The `MonumentData` key is the monument's prefab shortName (`Path.GetFileNameWithoutExtension`) for an ordinary
   `MonumentInfo` monument. Monument Finder's `NormalMonumentAdapter` never assigns an Alias to these, so no

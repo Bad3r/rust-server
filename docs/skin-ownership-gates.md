@@ -3,7 +3,7 @@
 Facts below were verified against Rust dedicated server build 25454815 (`buildid` in
 `server/steamapps/appmanifest_258550.acf`), checked 2026-09-24. A Rust update can move line numbers or rename
 fields; regenerate research with `scripts/skin-grades.py`, `scripts/skin-freeitems.py`, `scripts/skin-coverage.py`
-(below), or `ilspycmd` against a fresh decompile (CLAUDE.md "Host tools") rather than trusting stale line numbers.
+(below), or `ilspycmd` against a fresh decompile rather than trusting stale line numbers.
 
 ## Why this matters
 
@@ -28,12 +28,12 @@ plugins, not DLC, and is unrelated to the ownership gates below.
 
 ## The three ownership gates
 
-Source: `Assembly-CSharp.dll`, decompiled with `ilspycmd` (CLAUDE.md "Host tools").
+Source: `Assembly-CSharp.dll`, decompiled with `ilspycmd`
 
 1. Building-grade skins: `BuildingBlock.DoUpgradeToGrade` (`[RPC_Server]`, fired by the client's grade-upgrade RPC)
    blocks with a `ConstructionErrors.SkinNotOwned` toast when `!constructionGrade.gradeBase.alwaysUnlock &&
-   constructionGrade.gradeBase.skin != 0L &&
-   !player.blueprints.steamInventory.HasItem((int)constructionGrade.gradeBase.skin)`.
+constructionGrade.gradeBase.skin != 0L &&
+!player.blueprints.steamInventory.HasItem((int)constructionGrade.gradeBase.skin)`.
 2. Item/workshop skins (crafting, repair bench reskins, and the other skin pickers):
    `PlayerBlueprints.CheckSkinOwnership(skinItemId, player)`, called from `CanCraft` and `RepairBench.ChangeSkin`,
    returns true if `ItemSkinDirectory.FindByInventoryDefinitionId(skinItemId)` resolves to an `ItemSkin` whose
