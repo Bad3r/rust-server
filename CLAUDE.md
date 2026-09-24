@@ -6,16 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A local Rust (the Facepunch game) dedicated server, Steam app 258550, on NixOS. It hosts a small PvE world for
 the Rust client running under Proton as `RustClient.exe` with EAC off, modded with Carbon (edge channel). There is
-no test suite. The hand-maintained files are `start.sh`, `harmony/Ipv4Only.cs`, `server/server/pve/cfg/server.cfg`,
-and `server/carbon/plugins/SmeltSpeed.cs`; steamcmd, the mod build in `start.sh`, Carbon, uMod downloads, or the
-server writes everything else.
+no test suite; the checks are the hooks and workflows in Development and CI below. The hand-maintained files are
+`start.sh`, `harmony/Ipv4Only.cs`, `server/server/pve/cfg/server.cfg`, `server/carbon/plugins/SmeltSpeed.cs`,
+`scripts/check-mods.sh`, `flake.nix`, `.github/`, and `README.md`; steamcmd, the mod build in `start.sh`, Carbon,
+uMod downloads, Nix (`flake.lock`), or the server writes everything else.
 
-A local git repo (branch `main`, no remote) tracks those files, `CLAUDE.md`, and Carbon's `server/carbon/config.json`,
+The git repo (branch `main`) pushes to the private GitHub repo https://github.com/Bad3r/rust-server (`origin`). It
+tracks those files, `CLAUDE.md`, `LICENSE` (AGPL-3.0-or-later), `flake.lock`, and Carbon's `server/carbon/config.json`,
 `config.profiler.json`, `modules/*/config.json`, and each installed plugin's `plugins/<Name>.cs` and
 `configs/<Name>.json`. `.gitignore` is a whitelist: a new file needs its own `!` entry, plus one for each ignored
-parent directory. Never whitelist the secrets `.rcon-password`, `config.webpanel.json`, or `relay_cfg.json`. Carbon
-rewrites its tracked configs on boot, after a self-update, and on `c.setmodule` or panel edits, so `git diff` shows
-what it changed.
+parent directory. Everything tracked is pushed, so never whitelist the secrets `.rcon-password`,
+`config.webpanel.json`, or `relay_cfg.json`. Carbon rewrites its tracked configs on boot, after a self-update, and
+on `c.setmodule` or panel edits, so `git diff` shows what it changed.
 
 ## Commands
 
@@ -26,6 +28,15 @@ what it changed.
   137 after a clean save is normal because `quit` ends with `Process.Kill()` on itself.
 - Join from the client: F1 console, `client.connect 127.0.0.1:28015`. In chat, `/cp` opens Carbon's admin panel.
 - Lint after editing `start.sh`: `bash -n start.sh && shellcheck start.sh` (the current script passes both).
+- `nix develop`: shell with shellcheck, actionlint, jq, gitleaks, websocat, and nixfmt; entering it installs the
+  pre-commit hooks. `nix develop -c pre-commit run --all-files` runs every hook, and `nix flake check` runs them in
+  the build sandbox.
+- `scripts/check-mods.sh`: compile `harmony/Ipv4Only.cs` with `start.sh`'s `mcs` flags and each plugin with Roslyn
+  `csc` the way Carbon does (the define symbols from `server/carbon/config.json`, and the assemblies it lists under
+  `Publicizer` made public with Carbon's bundled AsmResolver). It downloads `RustDedicated_Data/Managed` of the
+  public build (Linux depot 258552, about 25 MB) and the Carbon edge archive into a temp directory on every run.
+  `MANAGED_DIR=server/RustDedicated_Data/Managed CARBON_DIR=server/carbon/managed scripts/check-mods.sh` checks the
+  local install instead, in a few seconds.
 
 Send an RCON command and print its reply. WebRCON listens on `127.0.0.1:28016`. Filter on the request
 `Identifier` so server log broadcasts on the same socket are dropped. The call always takes the full 3 s timeout
@@ -143,8 +154,9 @@ version, channel, and Rust protocol.
     .Config.Items = (($d[0].Items | with_entries(select(.value > 1 and (.key | IN($b[]) | not)))) + .Config.Items)' \
     config.json >config.json.new && mv config.json.new config.json
   ```
-- Plugins (config in `configs/<Name>.json`, runtime data in `data/`): `AutoDoors.cs` is uMod's Auto Doors 3.3.12;
-  update it with `curl -fsSL -o server/carbon/plugins/AutoDoors.cs https://umod.org/plugins/AutoDoors.cs`. It closes
+- Plugins (config in `configs/<Name>.json`, runtime data in `data/`): `AutoDoors.cs` is uMod's Auto Doors 3.3.12,
+  MIT-licensed on uMod, which the README's License section records; a new third-party plugin needs the same entry.
+  Update it with `curl -fsSL -o server/carbon/plugins/AutoDoors.cs https://umod.org/plugins/AutoDoors.cs`. It closes
   owned doors 5 s after they open for every player, with no permission needed; `/ad` toggles it per player,
   `/ad <5-10>` sets the delay, and `/ad h` lists the per-door and per-type options. `SmeltSpeed.cs` is local: it
   multiplies the vanilla `BaseOven.smeltSpeed` of every oven that cooks at 1000 or hotter (all furnaces and
@@ -202,9 +214,34 @@ whole directory, only while the server is stopped, before anything risky; earlie
 `An address incompatible with the requested protocol was used` is no longer noise: it means `Ipv4Only` did not load
 or no longer finds Mono's fields. Check the `[HarmonyLoader ...]` and `[Ipv4Only]` lines near the top of the log.
 
+## Development and CI
+
+`flake.nix` pins nixpkgs and git-hooks.nix in `flake.lock` (refresh with `nix flake update`). Once `nix develop` has
+installed them, the hooks run on every commit: shellcheck, actionlint, check-json (the Carbon configs must parse),
+nixfmt, gitleaks on the staged content, and `forbidden-paths`, which refuses secrets, saves, databases, logs,
+`home/`, `steamcmd/`, and `backups/` even when force-added. Keep `guardedPathPatterns` in `flake.nix` in step with
+the secret files named in this document.
+
+Flake commands read this checkout through the default git fetch, which copies only tracked files, so a new file
+needs at least `git add -N` before Nix sees it. Never pass `path:.` (`nix develop path:.`, `nix flake check path:.`)
+in a checkout that holds the server install: it copies the untracked install and its secret files into the
+world-readable Nix store.
+
+- `CI` (`.github/workflows/ci.yml`) runs on pushes to `main`, pull requests, and manual dispatch: `nix flake check`,
+  then gitleaks over the full history, which catches a secret that a later commit removed.
+- `Mods` (`.github/workflows/mods.yml`) runs `scripts/check-mods.sh` when `harmony/`, `server/carbon/plugins/`,
+  `server/carbon/config.json`, the script, or the workflow changes, and every Friday at 06:00 UTC to catch a
+  Thursday Rust update or a Carbon edge build that breaks the mods. A failed scheduled run notifies the account
+  that last changed its `cron` line.
+- Actions are pinned to full commit SHAs with a version comment. Dependabot opens weekly update PRs labeled
+  `Dependencies` and `CI`.
+- Rulesets and branch protection need GitHub Pro on a private repo (the API answers HTTP 403), so CI reports
+  failures but blocks nothing.
+
 ## Validating changes
 
-Run the lint commands above. For runtime behavior, run `SKIP_UPDATE=1 ./start.sh`, wait for
+Run `nix develop -c pre-commit run --all-files`, and `scripts/check-mods.sh` after changing C# code or Carbon's
+compiler settings. For runtime behavior, run `SKIP_UPDATE=1 ./start.sh`, wait for
 `Server startup complete`, press Ctrl+C, and confirm the final
 `Server stopped (exit 137). Last save this run: Saved ...` line. This runs the real world with autosaves every
 300 s, so back up `server/server/pve/` first when testing the shutdown path.
