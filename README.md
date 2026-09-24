@@ -34,6 +34,8 @@ Press Ctrl+C to stop.
   Fuel and charcoal per smelted item both drop by half, since the multiplier scales cook progress only.
 - Player-placed doors close 5 seconds after opening, via uMod's Auto Doors ([AutoDoors.cs](server/carbon/plugins/AutoDoors.cs)).
   Chat command `/ad` toggles it per player, and `/ad <5-10>` changes the delay.
+- Vehicles do not decay: [server.cfg](server/server/pve/cfg/server.cfg) sets every vehicle decay convar and the idle workcart despawn timer to 1e9 minutes, about 1900 years of uptime.
+  Emptied ore and fuel wagons still despawn 10 minutes after unloading, so full ones keep respawning.
 - Rust+ is off: [server.cfg](server/server/pve/cfg/server.cfg) sets `app.port -1`, which disables the companion server.
 - EAC is off for the Proton client: the launch passes `-insecure` and `server.encryption 0`.
 - Carbon's admin panel opens in chat with `/cp`.

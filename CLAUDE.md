@@ -95,6 +95,15 @@ or `+` as a new switch, and `ConsoleSystem.UpdateValuesFromCommandLine` replays 
 `+app.port -1` ran as `app.port 1`. Such settings go in `server/server/pve/cfg/server.cfg`, which holds
 `app.port -1`: `CompanionServer.Server.Initialize` returns early for negative ports, so Rust+ stays off.
 
+`server.cfg` also turns vehicle decay off by setting every vehicle decay convar (`playerhelicopter`, `playerboat`,
+`motorrowboat`, `tugboat`, `basesubmarine`, `snowmobile`, `basesiegeweapon`, `ridablehorse`, `bike`,
+`hotairballoon`, `modularcar`) and `traincar.decayminutes`, the idle workcart despawn timer, to 1e9 minutes. Each
+decay tick of about 60 s removes `MaxHealth / decayminutes`, so 0 destroys a vehicle on its first tick instead of
+disabling decay. PT boats and kayaks read the `motorrowboat` values, and the diver propulsion vehicle reads the
+`basesubmarine` ones. `traincarunloadable.decayminutesafterunload` stays at 10: emptied ore and fuel wagons must
+despawn, or they fill `traincar.population` and full wagons stop respawning. None of these convars is saved to
+`serverauto.cfg`.
+
 ## IPv4-only host
 
 The host boots with `ipv6.disable=1`. Unity's Mono sets `Socket.OSSupportsIPv6` from a build-time platform flag
