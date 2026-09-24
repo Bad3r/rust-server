@@ -100,6 +100,12 @@ After a Rust update, check that every convar in [server.cfg](server/server/pve/c
 scripts/check-convars.sh
 ```
 
+[docs/game-modes.md](docs/game-modes.md) describes the ten game modes `server.gamemode` accepts; after a Rust update, compare it with:
+
+```bash
+uv run --with UnityPy python3 scripts/game-modes.py
+```
+
 Full operator notes, including the RCON helper, Carbon internals, and world-state layout, live in [CLAUDE.md](CLAUDE.md).
 
 ## License

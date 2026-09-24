@@ -48,6 +48,10 @@ on in-game edits, so `git diff` shows what changed.
   `ConsoleGen.cs` to the `[ServerVar]` field or property it sets, exiting 1 on a name a Rust update renamed or
   removed (the server only logs `Command '<name>' not found` for those). It reads the local install unless
   `MANAGED_DIR` points elsewhere, and checks names, not what a convar now does.
+- `uv run --with UnityPy python3 scripts/game-modes.py`: print each game mode in `GameModeManifest` (the values
+  `server.gamemode` takes) with its shortname, convar overrides, feature list, and settings that differ from
+  `vanilla`, then the map generation overrides in `RustDedicated_Data/resources.assets`, in about 20 s.
+  `docs/game-modes.md` summarizes that output and the code that applies a mode.
 
 Send an RCON command and print its reply. WebRCON listens on `127.0.0.1:28016`. Filter on the request
 `Identifier` so server log broadcasts on the same socket are dropped. The call always takes the full 3 s timeout
