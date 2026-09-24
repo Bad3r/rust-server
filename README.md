@@ -94,6 +94,12 @@ Run the same check locally against the installed server and Carbon in a few seco
 MANAGED_DIR=server/RustDedicated_Data/Managed CARBON_DIR=server/carbon/managed scripts/check-mods.sh
 ```
 
+After a Rust update, check that every convar in [server.cfg](server/server/pve/cfg/server.cfg) still exists:
+
+```bash
+scripts/check-convars.sh
+```
+
 Full operator notes, including the RCON helper, Carbon internals, and world-state layout, live in [CLAUDE.md](CLAUDE.md).
 
 ## License

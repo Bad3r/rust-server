@@ -43,6 +43,10 @@ on in-game edits, so `git diff` shows what changed.
   Carbon edge archive into a temp directory on every run.
   `MANAGED_DIR=server/RustDedicated_Data/Managed CARBON_DIR=server/carbon/managed scripts/check-mods.sh` checks the
   local install instead, in a few seconds.
+- `scripts/check-convars.sh`: resolve every convar in `server.cfg` through a fresh `ilspycmd` decompile of
+  `ConsoleGen.cs` to the `[ServerVar]` field it sets, exiting 1 on a name a Rust update renamed or removed (the server
+  only logs `Command '<name>' not found` for those). It reads the local install unless `MANAGED_DIR` points
+  elsewhere, and checks names, not what a convar now does.
 
 Send an RCON command and print its reply. WebRCON listens on `127.0.0.1:28016`. Filter on the request
 `Identifier` so server log broadcasts on the same socket are dropped. The call always takes the full 3 s timeout
@@ -108,7 +112,8 @@ decay tick of about 60 s removes `MaxHealth / decayminutes`, so 0 destroys a veh
 disabling decay. PT boats and kayaks read the `motorrowboat` values, and the diver propulsion vehicle reads the
 `basesubmarine` ones. `traincarunloadable.decayminutesafterunload` stays at 10: emptied ore and fuel wagons must
 despawn, or they fill `traincar.population` and full wagons stop respawning. None of these convars is saved to
-`serverauto.cfg`.
+`serverauto.cfg`. `docs/vehicle-decay-convars.md` lists each convar's backing field and vanilla default, the
+`BaseBoat.WaterVehicleDecay` formula, and which vehicle classes reuse another class's fields.
 
 ## IPv4-only host
 
