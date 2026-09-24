@@ -45,25 +45,29 @@ never print it. Rust masks it as `******` in the logged command line.
 
 ## How start.sh works
 
-1. Runs `steamcmd.sh +app_update 258550` under `steam-run` with `HOME=$root/home`, so steamcmd never touches the
-   real `~/.steam` of the running Steam client. It updates on every start because the Steam client auto-updates
-   and refuses servers on an older network protocol.
-2. Builds `server/HarmonyMods/Ipv4Only.dll` from `harmony/Ipv4Only.cs` with nixpkgs `mcs` when the DLL is missing
+1. Creates `home/`, then, unless `SKIP_UPDATE=1`, runs `steamcmd.sh +app_update 258550` under `steam-run` with
+   `HOME=$root/home`, so steamcmd never touches the real `~/.steam` of the running Steam client. It updates on every
+   start because the Steam client auto-updates and refuses servers on an older network protocol. `steamcmd/` is
+   untracked, so on a fresh clone it first extracts Valve's `steamcmd_linux.tar.gz` there.
+2. Exits with an error when `server/RustDedicated` is missing, which happens only on a fresh clone started with
+   `SKIP_UPDATE=1`.
+3. Builds `server/HarmonyMods/Ipv4Only.dll` from `harmony/Ipv4Only.cs` with nixpkgs `mcs` when the DLL is missing
    or older than the source. It compiles against the game's own `RustDedicated_Data/Managed/` assemblies, including
    the `netstandard.dll` facade that `UnityEngine.CoreModule` needs.
-3. Unless `CARBON=0`, extracts the Carbon edge archive into `server/` when `server/carbon.sh` is missing and
-   launches through `bash ./carbon.sh` (see Carbon below).
-4. Creates `.rcon-password` if missing and rotates `server.log` to `server.log.prev`. `websocat` is expected on
+4. Unless `CARBON=0`, extracts the Carbon edge archive into `server/` when `server/carbon.sh` is missing and
+   launches through `bash ./carbon.sh` (see Carbon below). The archive holds only binaries and empty directories, so
+   on a fresh clone extraction keeps the checked-out Carbon configs and plugins.
+5. Creates `.rcon-password` if missing and rotates `server.log` to `server.log.prev`. `websocat` is expected on
    `PATH` (installed on the host system profile).
-5. Launches `setsid env HOME=$root/home steam-run bash ./carbon.sh ...` (or `./RustDedicated` with `CARBON=0`) in
+6. Launches `setsid env HOME=$root/home steam-run bash ./carbon.sh ...` (or `./RustDedicated` with `CARBON=0`) in
    the background. The exported `LD_LIBRARY_PATH` covers `RustDedicated_Data/Plugins{,/x86_64}` for the vanilla
    path; `carbon.sh` replaces it. RustDedicated has no signal handler, so a terminal Ctrl+C would kill it unsaved;
    `setsid` keeps it out of the terminal's process group. Facepunch's `server/runds.sh` is unused.
-6. The `stop()` trap kills the process group instead of quitting while `Server startup complete` is absent from
+7. The `stop()` trap kills the process group instead of quitting while `Server startup complete` is absent from
    the log, because `quit` saves synchronously and during startup writes the half-loaded world over the `.sav`.
    After startup it sends `quit` over WebRCON with `websocat -u -1` (fire and forget) and kills the group if that
    fails, losing progress since the last autosave.
-7. After exit it prints the last `^Saved [0-9,]+ ents` line of the run.
+8. After exit it prints the last `^Saved [0-9,]+ ents` line of the run.
 
 `stop()` and the exit summary parse those two exact log strings. If a Rust update changes them, Ctrl+C degrades
 to an unsaved kill.

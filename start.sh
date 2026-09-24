@@ -9,11 +9,24 @@ server="$root/server"
 log="$root/server.log"
 rcon_port=28016
 
+mkdir -p "$root/home"
+
 # Steam auto-updates the client, and the client refuses servers on an older protocol.
 # HOME is redirected so steamcmd never touches ~/.steam of the running Steam client.
 if [[ "${SKIP_UPDATE:-0}" != 1 ]]; then
+  # steamcmd is untracked; Valve documents this tarball at developer.valvesoftware.com/wiki/SteamCMD.
+  if [[ ! -x "$root/steamcmd/steamcmd.sh" ]]; then
+    mkdir -p "$root/steamcmd"
+    curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz |
+      tar -xz -C "$root/steamcmd"
+  fi
   HOME="$root/home" steam-run "$root/steamcmd/steamcmd.sh" \
     +force_install_dir "$server" +login anonymous +app_update 258550 +quit
+fi
+
+if [[ ! -x "$server/RustDedicated" ]]; then
+  echo "error: $server/RustDedicated not found; run once without SKIP_UPDATE to install the server." >&2
+  exit 1
 fi
 
 # Harmony mod that makes Mono's sockets IPv4-only on this ipv6.disable=1 host; see harmony/Ipv4Only.cs.
