@@ -238,21 +238,30 @@ version, channel, and Rust protocol.
   throw a NullReferenceException on `arg.Player().eyes`), and they refuse Gingerbread, whose grade asset has
   `enabledInStandalone` 0.
 - Item skins: `Skins.cs` is uMod's Skins 2.2.5 by misticos (MIT), and `SkinsCatalog.cs` is local. `/skin` opens a
-  loot panel of skinned copies of the held item, and taking one applies it through `ItemManager.Create`, which checks
-  no ownership. Skins calls `OnSkinsFetch` before merging its config's `Skins` list, which stays empty:
-  `SkinsCatalog.cs` adds every `ItemSkinDirectory.ForItem` id and, for each definition with a `workshopid` in
-  `Steamworks.SteamInventory.Definitions` (loaded from Steam about 15 s after `OnServerInitialized`), the value
-  `ItemDefinition.FindSkin` gives an item: its `workshopdownload`. The 73 legacy definitions (itemdefid 10032 to
-  10143) have none, and vanilla gives an item their `ItemSkinDirectory` id, which is already listed. Their
-  `workshopid` is an old upload: the 13 the client downloaded here were 5 to 191 MB, had no `manifest.txt`, and
-  failed with `Invalid skin manifest`. Each boot logs `[Skins Catalog] indexed 160 items, 6396 skins` on this build
-  and warns if Steam yields no workshop skins or a definition resolves to no skin. The plugin reads
-  `workshopdownload` itself because `FindSkin` reads it through a `PlatformService` cache that updates in an
-  `OnDefinitionsUpdated` handler registered after the plugin's on a cold boot. Steam keys all 102 LR-300 workshop
-  skins by the item's prefab name, `lr300.item`, not its shortname `rifle.lr300`, so the plugin also matches prefab
-  names, as `ItemDefinition.skins2` does. 157 of the 472 `ItemSkinDirectory` ids substitute a different item with
-  skin 0 (`autoturret` 10479 becomes `industrial.autoturret`), and Skins handles that. Without the plugin,
-  `inventory.give <item> <amount> <condition> <skinid>` from a connected admin's F1 console creates a skinned item.
+  36-slot loot panel; an item dropped in its first slot fills the others with skinned copies, 35 a page, and taking
+  one applies it through `ItemManager.Create`, which checks no ownership. Skins calls `OnSkinsFetch` before merging
+  its config's `Skins` list, which stays empty: `SkinsCatalog.cs` adds every `ItemSkinDirectory.ForItem` id and, for
+  each definition with a `workshopid` in `Steamworks.SteamInventory.Definitions` (loaded from Steam about 15 s after
+  `OnServerInitialized`), the value `ItemDefinition.FindSkin` gives an item: its `workshopdownload`. The 73 legacy
+  definitions (itemdefid 10032 to 10143) have none, and vanilla gives an item their `ItemSkinDirectory` id, which is
+  already listed. Their `workshopid` is an old upload: the 13 the client downloaded here were 5 to 191 MB, had no
+  `manifest.txt`, and failed with `Invalid skin manifest`. On this build each boot logs
+  `[Skins Catalog] indexed 160 items, 6396 skins` and warns if Steam yields no workshop skins or a definition resolves
+  to no skin. The plugin reads `workshopdownload` itself because `FindSkin` reads it through a `PlatformService`
+  cache that updates in an `OnDefinitionsUpdated` handler registered after the plugin's on a cold boot. Steam keys
+  all 102 LR-300 workshop skins by the item's prefab name, `lr300.item`, not its shortname `rifle.lr300`, so the
+  plugin also matches prefab names, as `ItemDefinition.skins2` does. 157 of the 472 `ItemSkinDirectory` ids
+  substitute a different item with skin 0 (`autoturret` 10479 becomes `industrial.autoturret`), and Skins handles
+  that. Without the plugin, `inventory.give <item> <amount> <condition> <skinid>` from a connected admin's F1 console
+  creates a skinned item.
+- Client skin loading: an `ItemSkinDirectory` skin is game content. A workshop skin goes through
+  `Rust.Workshop.WorkshopSkin` (the server's `Rust.Workshop.dll` has it, with `LoadFromWorkshop` emptied), which
+  reads `Assets/Skins/<id>/` from the client's `Bundles/textures/textures.<n>.bundle`, `n` being the id's
+  hundred-millions digit, when that bundle has it, and otherwise has Steam download the workshop item into
+  `steamapps/workshop/content/252490/<id>/`, where it stays between sessions. The bundles of the client installed here
+  hold 5651 skins (9.8 GB), and 274 catalog skins are missing from them. `ItemQueueCoroutine` loads one skin at a
+  time and polls a download once a second for up to 60 s, so each missing skin costs about 5 s the first time an icon
+  or model needs it, and every icon queued behind it waits. The server cannot ship that content.
 - Skin research: `docs/skin-ownership-gates.md` records the three ownership gates in `Assembly-CSharp` (grade skins,
   item skins, DLC items), the vanilla admin bypasses, and Facepunch's DLC clause with its test-server exception.
   `scripts/skin-grades.py`, `skin-freeitems.py`, and `skin-coverage.py` regenerate its bundle data with

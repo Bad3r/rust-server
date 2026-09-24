@@ -41,8 +41,9 @@ Press Ctrl+C to stop.
 - Every building skin works without owning it, via uMod's Building Skins ([BuildingSkins.cs](server/carbon/plugins/BuildingSkins.cs)) and its required Image Library ([ImageLibrary.cs](server/carbon/plugins/ImageLibrary.cs)).
   `/bskin` picks a skin per grade, and the next hammer hit or upgrade applies it; `/bskin build` and the tool cupboard's "Change building skin" button reskin a whole base.
   It needs `c.grant group admin buildingskins.use` over RCON once, plus `buildingskins.build`, `.all`, `.tc`, and `.admin` for the bulk and admin paths.
-- Every item skin works without owning it, via uMod's Skins ([Skins.cs](server/carbon/plugins/Skins.cs)): `/skin` shows skinned copies of the held item, and taking one applies it.
+- Every item skin works without owning it, via uMod's Skins ([Skins.cs](server/carbon/plugins/Skins.cs)): `/skin` opens a panel, an item dropped in its first slot fills the rest with skinned copies, and taking one applies it.
   The local [SkinsCatalog.cs](server/carbon/plugins/SkinsCatalog.cs) feeds it every skin the server knows, the game's own skin directory plus every approved store skin from Steam, about 6,400 across 160 items.
+  The game client ships most of them, but the few hundred newest download from the Steam Workshop the first time the client shows them, one at a time and about 5 seconds each; Steam keeps them afterwards, so each one waits only once.
   It needs `c.grant group admin skins.use` over RCON once, plus `skins.admin` for `/skin add` and `/skin remove`.
 - Vehicles do not decay: [server.cfg](server/server/pve/cfg/server.cfg) sets every vehicle decay convar and the idle workcart despawn timer to 1e9 minutes, about 1900 years of uptime.
   Emptied ore and fuel wagons still despawn 10 minutes after unloading, so full ones keep respawning.
