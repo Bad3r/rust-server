@@ -39,6 +39,8 @@
 !/server/carbon/plugins/ImageLibrary.cs
 !/server/carbon/plugins/MonumentAddons.cs
 !/server/carbon/plugins/MonumentFinder.cs
+!/server/carbon/plugins/Skins.cs
+!/server/carbon/plugins/SkinsCatalog.cs
 !/server/carbon/plugins/SmeltSpeed.cs
 !/server/carbon/configs/
 /server/carbon/configs/*
@@ -46,6 +48,7 @@
 !/server/carbon/configs/BuildingSkins.json
 !/server/carbon/configs/MonumentAddons.json
 !/server/carbon/configs/MonumentFinder.json
+!/server/carbon/configs/Skins.json
 !/server/carbon/configs/SmeltSpeed.json
 !/server/carbon/data/
 /server/carbon/data/*

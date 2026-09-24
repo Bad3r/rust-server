@@ -149,6 +149,9 @@ version, channel, and Rust protocol.
   `plugins/` (drop Oxide `.cs` plugins here; they hot-load), `data/` (Oxide-format `oxide.groups.data` and
   `oxide.users.data`), and `logs/Carbon.Core.log` (timestamped). `config.webpanel.json` has the web panel disabled
   and holds a generated account password; treat it as secret. All identities in `server/` share this directory.
+  The `admin` group, which Carbon gives auth level 2, holds `monumentaddons.admin`, the five `buildingskins.*`
+  permissions, `skins.use`, and `skins.admin` in `data/oxide.groups.data`, which is untracked, so a fresh install
+  needs each `c.grant group admin <permission>` once.
 - Modules: `Admin` (`/cp` or `/cpanel`, auth level 2) and its UI helpers, `GatherManager`, and `StackManager` are
   on. `AdminExtensions` (admin chat commands such as `/tpm`), `Vanish`, `Hammer`, `Whitelist`, `SelectiveEAC`, and
   `AutoWipe` are off; toggle them in the panel's Modules tab or with `c.setmodule <Name> 0|1`. Keep `AutoWipe` off:
@@ -208,6 +211,16 @@ version, channel, and Rust protocol.
   and `upgrade_radius` apply skins without a plugin, but only from a connected admin's F1 console (over RCON they
   throw a NullReferenceException on `arg.Player().eyes`), and they refuse Gingerbread, whose grade asset has
   `enabledInStandalone` 0.
+- Item skins: `Skins.cs` is uMod's Skins 2.2.5 by misticos (MIT), and `SkinsCatalog.cs` is local. `/skin` opens a
+  loot panel of skinned copies of the held item, and taking one applies it through `ItemManager.Create`, which checks
+  no ownership. Skins calls `OnSkinsFetch` before merging its config's `Skins` list, which stays empty:
+  `SkinsCatalog.cs` adds every `ItemSkinDirectory.ForItem` id and the `workshopid` of every approved definition in
+  `Steamworks.SteamInventory.Definitions`, which the server loads from Steam about 15 s after
+  `OnServerInitialized`. Each boot logs `[Skins Catalog] indexed 160 items, 6367 skins` on this build and warns if
+  Steam yields no workshop skins; the one unmapped Steam shortname, `lr300.item`, is Facepunch data. 157 of the 472
+  `ItemSkinDirectory` ids substitute a different item with skin 0 (`autoturret` 10479 becomes
+  `industrial.autoturret`), and Skins handles that. Without the plugin, `inventory.give <item> <amount> <condition>
+  <skinid>` from a connected admin's F1 console creates a skinned item.
 - Mono profiler: `config.profiler.json` enables it and tracks `Assembly-CSharp`, `Assembly-CSharp-firstpass`, and
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
   need a restart. `c.profile <seconds> -c` records calls, `c.profiler.print -t` exports a table to
