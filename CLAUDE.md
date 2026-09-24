@@ -192,6 +192,8 @@ whole directory, only while the server is stopped, before anything risky; earlie
 - `[Codefling] Failed fetching vendor. Error code 404!`: Carbon's Codefling plugin browser endpoint answers 404.
 - `Carbon Analytics are ON`, and `gpath.c:115: assertion 'filename != NULL' failed` on stdout: Carbon defaults; the
   assertion appears only with Carbon and does not stop the boot.
+- `AsyncResourceUpload failed.`, six times right after the Carbon version banner: every boot logs it before any
+  plugin loads, and the boot continues.
 
 `An address incompatible with the requested protocol was used` is no longer noise: it means `Ipv4Only` did not load
 or no longer finds Mono's fields. Check the `[HarmonyLoader ...]` and `[Ipv4Only]` lines near the top of the log.
