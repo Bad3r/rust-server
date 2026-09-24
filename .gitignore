@@ -6,6 +6,7 @@
 !/.github/
 !/CLAUDE.md
 !/LICENSE
+!/README.md
 !/flake.lock
 !/flake.nix
 !/scripts/
