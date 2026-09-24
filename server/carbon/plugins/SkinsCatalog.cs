@@ -3,7 +3,7 @@ using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
 {
-    [Info("Skins Catalog", "local", "1.0.0")]
+    [Info("Skins Catalog", "local", "1.0.1")]
     [Description("Feeds uMod Skins every ItemSkinDirectory and approved Steam Workshop skin id at runtime")]
     public class SkinsCatalog : RustPlugin
     {
@@ -45,12 +45,18 @@ namespace Oxide.Plugins
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var map = new Dictionary<string, List<ulong>>();
+            // Steam keys some workshop skins by the item's prefab name (lr300.item for rifle.lr300).
+            // ItemDefinition.skins2 matches either name; ItemManager.FindItemDefinition knows only shortnames.
+            var byPrefabName = new Dictionary<string, ItemDefinition>();
             var unmapped = new HashSet<string>();
             var unmappedHits = 0;
             var steamSkins = 0;
 
             foreach (var def in ItemManager.itemList)
             {
+                if (!byPrefabName.ContainsKey(def.name))
+                    byPrefabName[def.name] = def;
+
                 var skins = ItemSkinDirectory.ForItem(def);
                 if (skins.Length == 0)
                     continue;
@@ -77,7 +83,7 @@ namespace Oxide.Plugins
                     continue;
 
                 var itemDef = ItemManager.FindItemDefinition(itemShortName);
-                if (itemDef == null)
+                if (itemDef == null && !byPrefabName.TryGetValue(itemShortName, out itemDef))
                 {
                     unmappedHits++;
                     unmapped.Add(itemShortName);
@@ -104,8 +110,8 @@ namespace Oxide.Plugins
                 ? "unknown"
                 : $"{UnityEngine.Time.realtimeSinceStartup - _serverInitializedAt:0.0}s after OnServerInitialized";
             Puts($"indexed {map.Count} items, {totalSkins} skins ({sw.ElapsedMilliseconds}ms build time, " +
-                 $"{sinceStartup}); {unmappedHits} Steam definitions had an itemshortname not found by " +
-                 $"ItemManager ({unmapped.Count} distinct: {string.Join(", ", unmapped)})");
+                 $"{sinceStartup}); {unmappedHits} Steam definitions matched no item shortname or prefab name " +
+                 $"({unmapped.Count} distinct: {string.Join(", ", unmapped)})");
             if (definitions.Length > 0 && steamSkins == 0)
                 PrintWarning($"none of {definitions.Length} Steam definitions yielded a workshop skin; " +
                              "check the itemshortname and workshopid property names");

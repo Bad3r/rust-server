@@ -228,9 +228,10 @@ version, channel, and Rust protocol.
   no ownership. Skins calls `OnSkinsFetch` before merging its config's `Skins` list, which stays empty:
   `SkinsCatalog.cs` adds every `ItemSkinDirectory.ForItem` id and the `workshopid` of every approved definition in
   `Steamworks.SteamInventory.Definitions`, which the server loads from Steam about 15 s after
-  `OnServerInitialized`. Each boot logs `[Skins Catalog] indexed 160 items, 6367 skins` on this build and warns if
-  Steam yields no workshop skins; the one unmapped Steam shortname, `lr300.item`, is Facepunch data. 157 of the 472
-  `ItemSkinDirectory` ids substitute a different item with skin 0 (`autoturret` 10479 becomes
+  `OnServerInitialized`. Each boot logs `[Skins Catalog] indexed 160 items, 6469 skins` on this build and warns if
+  Steam yields no workshop skins. Steam keys all 102 LR-300 workshop skins by the item's prefab name, `lr300.item`,
+  not its shortname `rifle.lr300`, so the plugin also matches prefab names, as `ItemDefinition.skins2` does. 157 of
+  the 472 `ItemSkinDirectory` ids substitute a different item with skin 0 (`autoturret` 10479 becomes
   `industrial.autoturret`), and Skins handles that. Without the plugin, `inventory.give <item> <amount> <condition>
   <skinid>` from a connected admin's F1 console creates a skinned item.
 - Skin research: `docs/skin-ownership-gates.md` records the three ownership gates in `Assembly-CSharp` (grade skins,
