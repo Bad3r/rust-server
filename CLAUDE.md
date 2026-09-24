@@ -214,6 +214,45 @@ whole directory, only while the server is stopped, before anything risky; earlie
 `An address incompatible with the requested protocol was used` is no longer noise: it means `Ipv4Only` did not load
 or no longer finds Mono's fields. Check the `[HarmonyLoader ...]` and `[Ipv4Only]` lines near the top of the log.
 
+## Host tools
+
+The NixOS system profile puts these on `PATH`, mostly for reading game code and data. `start.sh` and
+`scripts/check-mods.sh` get Mono through `nix shell nixpkgs#mono` instead, which resolves to the same Mono on this
+host and also works in CI. The examples run from the repo root with `m=server/RustDedicated_Data/Managed`.
+
+- `ilspycmd --disable-updatecheck -r "$m" -t BaseOven "$m/Assembly-CSharp.dll"` decompiles one type to stdout, and
+  `-p -o <dir>` writes the whole assembly as a project in under 15 s. Without `--disable-updatecheck` it checks
+  online for a release and prints `You are not using the latest version`, which the nixpkgs build gets even when
+  current. `-il` ignores `-t` and disassembles the whole assembly (over 2 million lines for `Assembly-CSharp.dll`),
+  so write it to a file and cut one class out with `sed -n '/^\.class .* BaseOven$/,/^} \/\/ end of class BaseOven$/p'`.
+- Mono provides `mono`, `mcs`, and `monodis`. `monodis` prints metadata tables: `--assemblyref` (what a DLL links
+  against, such as the built `Ipv4Only.dll`), `--assembly` (name and version, such as
+  `server/carbon/managed/Carbon.Common.dll`), and `--typedef`. `mcs` checks that a changed `harmony/Ipv4Only.cs`
+  still compiles: run the `start.sh` command with `-out:` in a scratch directory. `scripts/check-mods.sh` remains the
+  full check.
+- `AssetRipper` exports Unity bundles. It serves a web UI on `127.0.0.1`, and `--headless` stops it from opening a
+  browser. A Unity-project export writes each prefab as YAML, so `rg` finds item fields such as `stackable`,
+  `cookTime`, or `lowTemp` in `ExportedProject/Assets/prefabs/**/<name>.item.prefab`:
+
+  ```bash
+  AssetRipper --headless --port 18765 >/tmp/assetripper.log 2>&1 &
+  pid=$!
+  for _ in {1..30}; do curl -fs -o /dev/null http://127.0.0.1:18765/ && break; sleep 1; done
+  out=$(mktemp -d)/items
+  curl -fsS --data-urlencode "Path=$PWD/server/Bundles/shared/items.preload.bundle" http://127.0.0.1:18765/LoadFile
+  curl -fsS --data-urlencode "Path=$out" http://127.0.0.1:18765/Export/UnityProject
+  kill "$pid"
+  ```
+
+  Each request returns when its work is done. An export deletes a non-empty target directory recursively, and
+  `--headless` skips the confirmation, so always export to a fresh path like `$out`, never into the repo or
+  `server/`. Load one bundle at a time: `content.bundle` and `monuments.bundle` are gigabytes each. The exported
+  `Scripts/` are dummy classes because no assemblies were loaded, and `/swagger` on the same port documents the rest
+  of the HTTP API.
+- UnityPy reads the same bundles from Python with `uv run --with UnityPy python <script>`. Rust's bundles ship type
+  trees, so `obj.read_typetree()` returns a MonoBehaviour's fields without the game assemblies.
+- `websocat` is the WebRCON client behind `start.sh`'s `quit` and the `rcon` helper above; `nix develop` has it too.
+
 ## Development and CI
 
 `flake.nix` pins nixpkgs and git-hooks.nix in `flake.lock` (refresh with `nix flake update`). Once `nix develop` has
