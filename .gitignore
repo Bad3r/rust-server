@@ -1,0 +1,27 @@
+# Whitelist: everything else is steamcmd, Carbon, or server output, world state, or a secret (.rcon-password,
+# server/carbon/config.webpanel.json, server/server/pve/cfg/relay_cfg.json). Git cannot re-include a file under an
+# ignored directory, so every parent directory of a tracked file is re-included on its own line.
+/*
+!/.gitignore
+!/CLAUDE.md
+!/start.sh
+!/harmony/
+
+!/server/
+/server/*
+
+!/server/server/
+/server/server/*
+!/server/server/pve/
+/server/server/pve/*
+!/server/server/pve/cfg/
+/server/server/pve/cfg/*
+!/server/server/pve/cfg/server.cfg
+
+!/server/carbon/
+/server/carbon/*
+!/server/carbon/config.json
+!/server/carbon/config.profiler.json
+!/server/carbon/modules/
+/server/carbon/modules/*/*
+!/server/carbon/modules/*/config.json
