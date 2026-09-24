@@ -3,6 +3,7 @@
 # ignored directory, so every parent directory of a tracked file is re-included on its own line.
 /*
 !/.gitignore
+!/.github/
 !/CLAUDE.md
 !/LICENSE
 !/flake.lock
