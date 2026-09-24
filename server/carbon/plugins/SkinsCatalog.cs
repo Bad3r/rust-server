@@ -1,14 +1,17 @@
 using System.Collections.Generic;
+using System.Linq;
 using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
 {
-    [Info("Skins Catalog", "local", "1.0.1")]
+    [Info("Skins Catalog", "local", "1.0.2")]
     [Description("Feeds uMod Skins every ItemSkinDirectory and approved Steam Workshop skin id at runtime")]
     public class SkinsCatalog : RustPlugin
     {
         // Skins merges the ids OnSkinsFetch adds with its config list. Approved workshop skins come from the Steam
-        // inventory definitions the server downloads at boot; their workshopid property is the value Item.skin takes.
+        // inventory definitions the server downloads at boot. As in ItemDefinition.FindSkin, Item.skin takes a
+        // definition's workshopdownload, or its ItemSkinDirectory id when it has none. FindSkin itself reads a
+        // PlatformService cache whose OnDefinitionsUpdated handler subscribes after this plugin's on a cold boot.
         // Steamworks.SteamInventory stays qualified: a bare SteamInventory is Rust's per-player ownership component.
         [PluginReference]
         private Plugin Skins;
@@ -51,6 +54,8 @@ namespace Oxide.Plugins
             var unmapped = new HashSet<string>();
             var unmappedHits = 0;
             var steamSkins = 0;
+            var builtIn = 0;
+            var unresolved = new List<int>();
 
             foreach (var def in ItemManager.itemList)
             {
@@ -78,8 +83,8 @@ namespace Oxide.Plugins
                 if (string.IsNullOrEmpty(itemShortName))
                     continue;
 
-                var workshopId = def.GetProperty<ulong>("workshopid");
-                if (workshopId == 0uL)
+                // ItemDefinition.skins2, the item's list of Steam skins, takes the definitions with a workshopid.
+                if (def.GetProperty<ulong>("workshopid") == 0uL)
                     continue;
 
                 var itemDef = ItemManager.FindItemDefinition(itemShortName);
@@ -91,11 +96,25 @@ namespace Oxide.Plugins
                 }
 
                 List<ulong> list;
-                if (!map.TryGetValue(itemDef.shortname, out list))
-                    map[itemDef.shortname] = list = new List<ulong>();
-                if (!list.Contains(workshopId))
+                map.TryGetValue(itemDef.shortname, out list);
+                var skinId = def.GetProperty<ulong>("workshopdownload");
+                if (skinId == 0uL)
                 {
-                    list.Add(workshopId);
+                    // Legacy definitions (itemdefid 10032 to 10143), whose skin is the ItemSkinDirectory id ForItem
+                    // added above. Their workshopid is an old upload that vanilla never applies; the 13 the client
+                    // downloaded here (up to 191 MB each) had no manifest.txt and never loaded.
+                    if (list != null && list.Contains((ulong)def.Id))
+                        builtIn++;
+                    else
+                        unresolved.Add(def.Id);
+                    continue;
+                }
+
+                if (list == null)
+                    map[itemDef.shortname] = list = new List<ulong>();
+                if (!list.Contains(skinId))
+                {
+                    list.Add(skinId);
                     steamSkins++;
                 }
             }
@@ -110,11 +129,15 @@ namespace Oxide.Plugins
                 ? "unknown"
                 : $"{UnityEngine.Time.realtimeSinceStartup - _serverInitializedAt:0.0}s after OnServerInitialized";
             Puts($"indexed {map.Count} items, {totalSkins} skins ({sw.ElapsedMilliseconds}ms build time, " +
-                 $"{sinceStartup}); {unmappedHits} Steam definitions matched no item shortname or prefab name " +
+                 $"{sinceStartup}); {builtIn} definitions without a workshopdownload use their ItemSkinDirectory id; " +
+                 $"{unmappedHits} Steam definitions matched no item shortname or prefab name " +
                  $"({unmapped.Count} distinct: {string.Join(", ", unmapped)})");
+            if (unresolved.Count > 0)
+                PrintWarning($"skipped {unresolved.Count} definitions with neither a workshopdownload nor an " +
+                             $"ItemSkinDirectory entry for their item: {string.Join(", ", unresolved.Take(20))}");
             if (definitions.Length > 0 && steamSkins == 0)
                 PrintWarning($"none of {definitions.Length} Steam definitions yielded a workshop skin; " +
-                             "check the itemshortname and workshopid property names");
+                             "check the itemshortname, workshopid, and workshopdownload property names");
 
             // Skins caches each item's list per player on first open and never refetches it.
             if (Skins != null)
