@@ -10,7 +10,8 @@ rules in its prefab data, not in code, so rerun the script after a Rust update a
 uv run --with UnityPy python3 scripts/game-modes.py
 ```
 
-This server runs `primitive`; see [Primitive on this server](#primitive-on-this-server).
+This server runs vanilla, with no `server.gamemode`. It ran `primitive` for part of 2026-09-24; see
+[Primitive on this server](#primitive-on-this-server).
 
 ## How a mode is applied
 
@@ -144,22 +145,24 @@ at capture point entities. `weapontest` turns off sleeping, wounding, bleeding, 
 
 ## Primitive on this server
 
-`server.gamemode primitive` is in `server/server/pve/cfg/server.cfg`. The world from before the switch is in
-`backups/pve-20260924T184111/`, taken while the server was stopped. A boot logs `Gamemode Convar :primitive` and
-`Game created! type was : assets/prefabs/gamemodes/primitive.prefab`, and echoes the overrides (`server.era:
-"Primitive"`, `Disabled event 'cargo'`, and the rest) each time a cfg pass sets the convar and once more when the
-mode spawns.
+For part of 2026-09-24, `server/server/pve/cfg/server.cfg` held `server.gamemode primitive`. The world from before
+the switch is in `backups/pve-20260924T184111/`, taken while the server was stopped. A boot logged
+`Gamemode Convar :primitive` and `Game created! type was : assets/prefabs/gamemodes/primitive.prefab`, and echoed the
+overrides (`server.era: "Primitive"`, `Disabled event 'cargo'`, and the rest) each time a cfg pass set the convar and
+once more when the mode spawned.
 
-- The cached map keeps its oil rigs, missile silo, excavator, underwater labs, and train tunnels, and the Monument
-  Addons recyclers placed there stay. Only a newly generated world, started with the mode set, drops them.
-- `server.cfg` sets the era before the save loads, so world loot containers keep their saved contents and restock
-  from primitive loot tables as they respawn. A live `server.era` change instead re-rolls every `LootContainer` at
+- The cached map kept its oil rigs, missile silo, excavator, underwater labs, and train tunnels, and the Monument
+  Addons recyclers placed there stayed. Only a newly generated world, started with the mode set, drops them.
+- `server.cfg` set the era before the save loaded, so world loot containers kept their saved contents and restocked
+  from primitive loot tables as they respawned. A live `server.era` change instead re-rolls every `LootContainer` at
   once and enforces spawn limits (`ConVar.Server.OnEraChanged()`).
-- Existing items and buildings stay. The era gates what can be crafted, researched, repaired, recycled, bought, or
-  racked, and the overrides stop upgrades to metal and armored.
-- To revert, remove the `server.gamemode` line while the server is stopped, then restore the saved overrides. Either
-  copy `cfg/serverauto.cfg` back from the backup, which also undoes every other saved convar changed since, or set
-  this world's earlier values in `server.cfg` for one boot: `server.era None`, `decay.upgrade_metal_enabled True`,
-  `decay.upgrade_hqm_enabled True`, `npc.vendor_minicopter_enabled True`, `npc.vendor_scrap_heli_enabled True`,
-  `npc.vendor_attack_heli_enabled True`, and `server.workbenchtaxrate1`, `2`, and `3` at 0. The unsaved overrides
-  (`ridablehorse.population`, `ai.scientist_spawners_enabled`, and the three events) reset on restart.
+- Existing items and buildings stayed. The era gated what could be crafted, researched, repaired, recycled, bought,
+  or racked, and the overrides stopped upgrades to metal and armored.
+- The revert, the same day, removed the `server.gamemode` line while the server was stopped, then set the saved
+  overrides in `cfg/serverauto.cfg` back to this world's earlier values: `server.era None`,
+  `decay.upgrade_metal_enabled True`, `decay.upgrade_hqm_enabled True`, `npc.vendor_minicopter_enabled True`,
+  `npc.vendor_scrap_heli_enabled True`, `npc.vendor_attack_heli_enabled True`, and `server.workbenchtaxrate1`, `2`,
+  and `3` at 0. No other saved convar had changed since the switch, so `server.cfg` and `serverauto.cfg` then matched
+  the backup byte for byte. The unsaved overrides (`ridablehorse.population`, `ai.scientist_spawners_enabled`, and
+  the three events) reset on restart. Containers filled while the mode ran keep primitive-era loot until they
+  respawn from vanilla tables.

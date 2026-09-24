@@ -28,8 +28,6 @@ Press Ctrl+C to stop.
 
 ## Gameplay changes
 
-- The world runs Facepunch's primitive game mode: `server.gamemode primitive` in [server.cfg](server/server/pve/cfg/server.cfg) limits weapons to bows and melee, blocks metal and armored building, and turns off the helicopter vendors, scientists, and the patrol helicopter, cargo ship, and Bradley events.
-  This map keeps its oil rigs, Missile Silo, excavator, and Underwater Labs, which primitive removes only from a newly generated map; [docs/game-modes.md](docs/game-modes.md) covers the details, how to revert, and the other nine modes.
 - Gather rates are 2x for trees, ore nodes, corpses, planted crops, fishing, ground pickups, and quarry or excavator output, via Carbon's GatherManager module.
 - Stack sizes are 2x for every item that stacks in vanilla, via Carbon's StackManager module.
 - Furnaces and refineries smelt 2x faster, via [SmeltSpeed.cs](server/carbon/plugins/SmeltSpeed.cs).
