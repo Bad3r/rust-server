@@ -4,12 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-A local Rust (the Facepunch game) dedicated server, Steam app 258550, on NixOS. It hosts a small PvE world for
-the Rust client running under Proton as `RustClient.exe` with EAC off, modded with Carbon (edge channel). There is
-no test suite; the checks are the hooks and workflows in Development and CI below. The hand-maintained files are
-`start.sh`, `harmony/Ipv4Only.cs`, `server/server/pve/cfg/server.cfg`, `server/carbon/plugins/SmeltSpeed.cs` and
-`SkinsCatalog.cs`, `scripts/`, `docs/`, `flake.nix`, `.github/`, and `README.md`; steamcmd, the mod build in
-`start.sh`, Carbon, uMod downloads, Nix (`flake.lock`), or the server writes everything else.
+A local Rust (the Facepunch game) dedicated server, Steam app 258550, on NixOS. It hosts a small PvE world in the
+primitive game mode for the Rust client running under Proton as `RustClient.exe` with EAC off, modded with Carbon
+(edge channel). There is no test suite; the checks are the hooks and workflows in Development and CI below. The
+hand-maintained files are `start.sh`, `harmony/Ipv4Only.cs`, `server/server/pve/cfg/server.cfg`,
+`server/carbon/plugins/SmeltSpeed.cs` and `SkinsCatalog.cs`, `scripts/`, `docs/`, `flake.nix`, `.github/`, and
+`README.md`; steamcmd, the mod build in `start.sh`, Carbon, uMod downloads, Nix (`flake.lock`), or the server writes
+everything else.
 
 The git repo (branch `main`) pushes to the private GitHub repo https://github.com/Bad3r/rust-server (`origin`). It
 tracks those files, `CLAUDE.md`, `LICENSE` (AGPL-3.0-or-later), `flake.lock`, and Carbon's `server/carbon/config.json`,
@@ -119,6 +120,15 @@ disabling decay. PT boats and kayaks read the `motorrowboat` values, and the div
 despawn, or they fill `traincar.population` and full wagons stop respawning. None of these convars is saved to
 `serverauto.cfg`. `docs/vehicle-decay-convars.md` lists each convar's backing field and vanilla default, the
 `BaseBoat.WaterVehicleDecay` formula, and which vehicle classes reuse another class's fields.
+
+`server.cfg` also sets `server.gamemode primitive`, Facepunch's primitive rule set. Its `server.era primitive`
+restricts weapons to bows and melee by gating crafting, research, loot, and vendors, and its other overrides block
+metal and armored upgrades, disable the helicopter vendors and scientist spawners, and turn off the patrol
+helicopter, cargo ship, and Bradley events. The convar's setter applies them while the cfg loads, before the save.
+The saved overrides reach `serverauto.cfg` at `quit` and stay after the line is removed, and the monument removals
+of its `primitive_world` config act only on a newly generated map, so this world keeps its oil rigs, silo,
+excavator, labs, and tunnels. `docs/game-modes.md` covers all ten modes, what primitive changed here, and how to
+revert; `backups/pve-20260924T184111/` is the world from before the switch.
 
 ## IPv4-only host
 

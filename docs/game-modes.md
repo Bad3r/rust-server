@@ -10,6 +10,8 @@ rules in its prefab data, not in code, so rerun the script after a Rust update a
 uv run --with UnityPy python3 scripts/game-modes.py
 ```
 
+This server runs `primitive`; see [Primitive on this server](#primitive-on-this-server).
+
 ## How a mode is applied
 
 - `server.gamemode <name>`: a `[ServerVar]` property on `ConVar.Server`, not saved to `serverauto.cfg`, so it lives
@@ -135,7 +137,29 @@ crafting recipes moved to the T2 workbench.
 
 `BaseGameMode.CheckGameConditions()` ends a round once a team or player reaches `numScoreForVictory` in
 `victoryScoreName`, which for `onedeath` is one death. All six set `useCustomSpawns`, so `ServerMgr` takes each spawn
-from `BaseGameMode.GetPlayerSpawn()`, which picks among objects tagged `spawnpoint` and indexes an empty array (an
-exception) on a map without any; the KOTH modes also need capture point entities, so these modes need a map built
-for them. `weapontest` turns off sleeping, wounding, bleeding, and temperature, respawns in 0.1 s at 100 health,
-heals after 4 s, tops up magazines, and shows a kill feed; `teamdeathmatch` also turns off sleeping.
+from `BaseGameMode.GetPlayerSpawn()`, which picks among objects tagged `spawnpoint` and throws on a map without any
+(this procedural map has 16: every mode logs `Installed : 16spawn points.` when it starts). The KOTH modes also score
+at capture point entities. `weapontest` turns off sleeping, wounding, bleeding, and temperature, respawns in 0.1 s at
+100 health, heals after 4 s, tops up magazines, and shows a kill feed; `teamdeathmatch` also turns off sleeping.
+
+## Primitive on this server
+
+`server.gamemode primitive` is in `server/server/pve/cfg/server.cfg`. The world from before the switch is in
+`backups/pve-20260924T184111/`, taken while the server was stopped. A boot logs `Gamemode Convar :primitive` and
+`Game created! type was : assets/prefabs/gamemodes/primitive.prefab`, and echoes the overrides (`server.era:
+"Primitive"`, `Disabled event 'cargo'`, and the rest) each time a cfg pass sets the convar and once more when the
+mode spawns.
+
+- The cached map keeps its oil rigs, missile silo, excavator, underwater labs, and train tunnels, and the Monument
+  Addons recyclers placed there stay. Only a newly generated world, started with the mode set, drops them.
+- `server.cfg` sets the era before the save loads, so world loot containers keep their saved contents and restock
+  from primitive loot tables as they respawn. A live `server.era` change instead re-rolls every `LootContainer` at
+  once and enforces spawn limits (`ConVar.Server.OnEraChanged()`).
+- Existing items and buildings stay. The era gates what can be crafted, researched, repaired, recycled, bought, or
+  racked, and the overrides stop upgrades to metal and armored.
+- To revert, remove the `server.gamemode` line while the server is stopped, then restore the saved overrides. Either
+  copy `cfg/serverauto.cfg` back from the backup, which also undoes every other saved convar changed since, or set
+  this world's earlier values in `server.cfg` for one boot: `server.era None`, `decay.upgrade_metal_enabled True`,
+  `decay.upgrade_hqm_enabled True`, `npc.vendor_minicopter_enabled True`, `npc.vendor_scrap_heli_enabled True`,
+  `npc.vendor_attack_heli_enabled True`, and `server.workbenchtaxrate1`, `2`, and `3` at 0. The unsaved overrides
+  (`ridablehorse.population`, `ai.scientist_spawners_enabled`, and the three events) reset on restart.
