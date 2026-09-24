@@ -271,8 +271,9 @@ version, channel, and Rust protocol.
   `client.skins_access` value in the connection's client info, and every skin and DLC ownership check reads it before
   Steam ownership: 1 passes all three gates of `docs/skin-ownership-gates.md`, -1 fails them, and 0 keeps ownership.
   The client reports that convar on connect and through `global.setinfo`, and its `cfg/client.cfg` does not keep it,
-  so the plugin writes 1 into the client info when it sets the flag. The client is an IL2CPP build that was not
-  decompiled; run `client.skins_access 1` in its F1 console after joining so its own copy of the checks agrees.
+  so the plugin writes 1 into the client info when it sets the flag. The IL2CPP client runs its own copy of the
+  checks against its local convar: after `client.skins_access 1` in F1, its menus listed unowned skins and crafting
+  applied them (in-game test, 2026-09-24). Run it after every join.
   `developerflag.status` (RCON, or F1 for an admin or developer) prints each player's flag, reported value, and
   effective level. The flag also turns the chat name orange and makes `inventory.give` reply "you silently gave
   yourself". Facepunch's developers also get auth level 3; admin rights here still come from `users.cfg`.

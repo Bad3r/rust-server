@@ -45,7 +45,7 @@ Press Ctrl+C to stop.
   It needs `c.grant group admin skins.use` over RCON once, plus `skins.admin` for `/skin add` and `/skin remove`.
 - The owner's account gets Rust's developer flag, via the local [DeveloperFlag.cs](server/carbon/plugins/DeveloperFlag.cs), which turns on the game's own "all skins unlocked" mode.
   The server then accepts any skin when crafting, reskinning at a repair bench, or upgrading a building, and any DLC item.
-  After joining, run `client.skins_access 1` in the F1 console, since the client does not keep it; `developerflag.status` over RCON shows the state.
+  After joining, run `client.skins_access 1` in the F1 console, and the game's own menus list every skin; the client does not keep the setting between sessions, and `developerflag.status` over RCON shows the state.
   It needs `c.grant user <SteamID> developerflag.use` over RCON once.
 - Vehicles do not decay: [server.cfg](server/server/pve/cfg/server.cfg) sets every vehicle decay convar and the idle workcart despawn timer to 1e9 minutes, about 1900 years of uptime.
   Emptied ore and fuel wagons still despawn 10 minutes after unloading, so full ones keep respawning.

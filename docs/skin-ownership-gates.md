@@ -56,7 +56,9 @@ and the connection's client info holds `client.skins_access`: 1 passes every gat
 them (`AllSkinsLocked`), and any other value keeps the checks above. Vanilla sets the flag only from Facepunch's own
 `DeveloperList` on connect, together with auth level 3, and no console command sets it, so a normal server admin
 cannot reach this path. `DeveloperFlag.cs` sets it for `developerflag.use` and writes 1 into the client info (CLAUDE.md,
-Developer flag).
+Developer flag). The client applies the same override with its own `client.skins_access` convar: in an in-game test
+on 2026-09-24, a player with the flag and that convar at 1 saw unowned skins in the game's menus and crafted them.
+uMod's Faux Admin sets the same flag for its fake admins, so it opens this path too, though it never sets the convar.
 
 ## Vanilla admin bypass
 
