@@ -8,9 +8,9 @@ A local Rust (the Facepunch game) dedicated server, Steam app 258550, on NixOS. 
 primitive game mode for the Rust client running under Proton as `RustClient.exe` with EAC off, modded with Carbon
 (edge channel). There is no test suite; the checks are the hooks and workflows in Development and CI below. The
 hand-maintained files are `start.sh`, `harmony/Ipv4Only.cs`, `server/server/pve/cfg/server.cfg`,
-`server/carbon/plugins/SmeltSpeed.cs` and `SkinsCatalog.cs`, `scripts/`, `docs/`, `flake.nix`, `.github/`, and
-`README.md`; steamcmd, the mod build in `start.sh`, Carbon, uMod downloads, Nix (`flake.lock`), or the server writes
-everything else.
+`server/carbon/plugins/SmeltSpeed.cs`, `SkinsCatalog.cs`, and `DeveloperFlag.cs`, `scripts/`, `docs/`, `flake.nix`,
+`.github/`, and `README.md`; steamcmd, the mod build in `start.sh`, Carbon, uMod downloads, Nix (`flake.lock`), or the
+server writes everything else.
 
 The git repo (branch `main`) pushes to the private GitHub repo https://github.com/Bad3r/rust-server (`origin`). It
 tracks those files, `CLAUDE.md`, `LICENSE` (AGPL-3.0-or-later), `flake.lock`, and Carbon's `server/carbon/config.json`,
@@ -171,7 +171,9 @@ version, channel, and Rust protocol.
   and holds a generated account password; treat it as secret. All identities in `server/` share this directory.
   The `admin` group, which Carbon gives auth level 2, holds `monumentaddons.admin`, the five `buildingskins.*`
   permissions, `skins.use`, and `skins.admin` in `data/oxide.groups.data`, which is untracked, so a fresh install
-  needs each `c.grant group admin <permission>` once.
+  needs each `c.grant group admin <permission>` once. The owner's SteamID (the `ownerid` in `cfg/users.cfg`) holds
+  `developerflag.use` as a user grant in the untracked `data/oxide.users.data`, restored with
+  `c.grant user <SteamID> developerflag.use`.
 - Modules: `Admin` (`/cp` or `/cpanel`, auth level 2) and its UI helpers, `GatherManager`, and `StackManager` are
   on. `AdminExtensions` (admin chat commands such as `/tpm`), `Vanish`, `Hammer`, `Whitelist`, `SelectiveEAC`, and
   `AutoWipe` are off; toggle them in the panel's Modules tab or with `c.setmodule <Name> 0|1`. Keep `AutoWipe` off:
@@ -266,6 +268,17 @@ version, channel, and Rust protocol.
   item skins, DLC items), the vanilla admin bypasses, and Facepunch's DLC clause with its test-server exception.
   `scripts/skin-grades.py`, `skin-freeitems.py`, and `skin-coverage.py` regenerate its bundle data with
   `uv run --with UnityPy python3 scripts/<name>.py` in about 8 s each.
+- Developer flag: `DeveloperFlag.cs` is local. It sets Rust's `IsDeveloper` player flag on every player with
+  `developerflag.use` in `OnPlayerConnected`, which runs after `BasePlayer.PlayerInit` resets the flag from Facepunch's
+  `DeveloperList`, and unloading it restores that value. With the flag, `BasePlayer.GetSkinsAccessLevel` returns the
+  `client.skins_access` value in the connection's client info, and every skin and DLC ownership check reads it before
+  Steam ownership: 1 passes all three gates of `docs/skin-ownership-gates.md`, -1 fails them, and 0 keeps ownership.
+  The client reports that convar on connect and through `global.setinfo`, and its `cfg/client.cfg` does not keep it,
+  so the plugin writes 1 into the client info when it sets the flag. The client is an IL2CPP build that was not
+  decompiled; run `client.skins_access 1` in its F1 console after joining so its own copy of the checks agrees.
+  `developerflag.status` (RCON, or F1 for an admin or developer) prints each player's flag, reported value, and
+  effective level. The flag also turns the chat name orange and makes `inventory.give` reply "you silently gave
+  yourself". Facepunch's developers also get auth level 3; admin rights here still come from `users.cfg`.
 - Mono profiler: `config.profiler.json` enables it and tracks `Assembly-CSharp`, `Assembly-CSharp-firstpass`, and
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
   need a restart. `c.profile <seconds> -c` records calls, `c.profiler.print -t` exports a table to

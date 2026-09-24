@@ -17,10 +17,10 @@ enforcement started 7 August 2025.
 
 This server is a private, local-only test server that grants every skin on purpose: `BuildingSkins.cs` bypasses gate
 1 below through `BuildingBlock.ChangeGradeAndSkin`, and `Skins.cs` with the local `SkinsCatalog.cs` bypasses gate 2
-through `ItemManager.Create`, offering every `ItemSkinDirectory` and approved Steam Workshop skin. The guideline lets
-"Servers that are set up for testing of game mechanics" grant Facepunch DLC for testing purposes only; a public,
-listed server running this setup would break clause 3(c). No installed plugin touches DLC-gated items, so gate 3 is
-intact.
+through `ItemManager.Create`, offering every `ItemSkinDirectory` and approved Steam Workshop skin. The local
+`DeveloperFlag.cs` opens the shared override below, which passes all three gates, DLC included, for players with
+`developerflag.use`. The guideline lets "Servers that are set up for testing of game mechanics" grant Facepunch DLC
+for testing purposes only; a public, listed server running this setup would break clause 3(c).
 
 A separate support article (<https://support.facepunchstudios.com/hc/en-us/articles/360009062817>, "Updated March
 04, 2026") classifies plugins into the "Community" vs "Modded" server-browser section; it covers gameplay/UI
@@ -52,8 +52,11 @@ server-side Steamworks query keyed on the player's Steam ID, independent of anyt
 
 All three gates share one override: `BasePlayer.AllSkinsUnlocked` / `DefaultSkinAccess`
 (`BasePlayer.GetSkinsAccessLevel`) grants non-default access only when the player has the `IsDeveloper` player flag
-(set from Facepunch's own `DeveloperList` on connect, not admin-grantable) and the connection has set
-`client.skins_access`; a normal server admin cannot reach this path.
+and the connection's client info holds `client.skins_access`: 1 passes every gate (`AllSkinsUnlocked`), -1 fails
+them (`AllSkinsLocked`), and any other value keeps the checks above. Vanilla sets the flag only from Facepunch's own
+`DeveloperList` on connect, together with auth level 3, and no console command sets it, so a normal server admin
+cannot reach this path. `DeveloperFlag.cs` sets it for `developerflag.use` and writes 1 into the client info (CLAUDE.md,
+Developer flag).
 
 ## Vanilla admin bypass
 

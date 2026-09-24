@@ -45,6 +45,10 @@ Press Ctrl+C to stop.
   The local [SkinsCatalog.cs](server/carbon/plugins/SkinsCatalog.cs) feeds it every skin the server knows, the game's own skin directory plus every approved store skin from Steam, about 6,400 across 160 items.
   The game client ships most of them, but the few hundred newest download from the Steam Workshop the first time the client shows them, one at a time and about 5 seconds each; Steam keeps them afterwards, so each one waits only once.
   It needs `c.grant group admin skins.use` over RCON once, plus `skins.admin` for `/skin add` and `/skin remove`.
+- The owner's account gets Rust's developer flag, via the local [DeveloperFlag.cs](server/carbon/plugins/DeveloperFlag.cs), which turns on the game's own "all skins unlocked" mode.
+  The server then accepts any skin when crafting, reskinning at a repair bench, or upgrading a building, and any DLC item.
+  After joining, run `client.skins_access 1` in the F1 console, since the client does not keep it; `developerflag.status` over RCON shows the state.
+  It needs `c.grant user <SteamID> developerflag.use` over RCON once.
 - Vehicles do not decay: [server.cfg](server/server/pve/cfg/server.cfg) sets every vehicle decay convar and the idle workcart despawn timer to 1e9 minutes, about 1900 years of uptime.
   Emptied ore and fuel wagons still despawn 10 minutes after unloading, so full ones keep respawning.
 - Rust+ is off: [server.cfg](server/server/pve/cfg/server.cfg) sets `app.port -1`, which disables the companion server.
