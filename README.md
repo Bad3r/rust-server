@@ -66,12 +66,14 @@ Press Ctrl+C to stop.
   It holds the world and player progress, which cannot be regenerated.
 - A Facepunch force-wipe update bumps the save protocol number, and the server then generates a fresh world.
   Blueprints, deaths, and identities use a separate version number and survive the wipe.
+- Before choosing a new seed, `uv run scripts/seed-scan.py --random 24 --jobs 4` generates random seeds on throwaway servers next to the live one and ranks them in `seedscan/<size>/index.html`, with every map rendered and labeled.
+  [docs/map-seeds.md](docs/map-seeds.md) covers what the seed and the world size decide, and how to switch the world to a new seed.
 
 ## Repository layout
 
 [.gitignore](.gitignore) is a whitelist: only paths re-included with `!` are tracked, and every ignored parent directory needs its own `!` entry.
 Tracked paths include [CLAUDE.md](CLAUDE.md), [LICENSE](LICENSE), [start.sh](start.sh), [harmony/](harmony/), [scripts/](scripts/), [docs/](docs/), [flake.nix](flake.nix), [flake.lock](flake.lock), [.github/](.github/), [server.cfg](server/server/pve/cfg/server.cfg), and Carbon's `config.json`, `config.profiler.json`, `modules/*/config.json`, `plugins/<Name>.cs`, `configs/<Name>.json`, and the Monument Addons profile `data/MonumentAddons/Default.json`.
-Everything else under `server/`, plus `home/`, `steamcmd/`, and `backups/`, is a generated install, cache, or world state, and stays untracked.
+Everything else under `server/`, plus `home/`, `steamcmd/`, `backups/`, and `seedscan/`, is a generated install, cache, world state, or tool output, and stays untracked.
 `.rcon-password`, `server/carbon/config.webpanel.json`, and `server/server/pve/cfg/relay_cfg.json` hold secrets and are never tracked.
 `server/carbon/configs/ImageLibrary.json` stays untracked too, because its `Steam API key` setting would be pushed with it.
 
@@ -82,7 +84,7 @@ nix develop
 ```
 
 `flake.nix` provides `shellcheck`, `actionlint`, `jq`, `gitleaks`, `websocat`, and `nixfmt`.
-It installs git-hooks.nix pre-commit hooks: `shellcheck`, `actionlint`, JSON validity, `nixfmt`, `gitleaks` on staged changes, and a guard that refuses server secrets and world state (`.rcon-password`, `config.webpanel.json`, `relay_cfg.json`, `ImageLibrary.json`, `users.cfg`, saves, databases, logs, `home/`, `steamcmd/`, `backups/`), and a check that keeps the local Building Skins fix in place.
+It installs git-hooks.nix pre-commit hooks: `shellcheck`, `actionlint`, JSON validity, `nixfmt`, `gitleaks` on staged changes, and a guard that refuses server secrets and world state (`.rcon-password`, `config.webpanel.json`, `relay_cfg.json`, `ImageLibrary.json`, `users.cfg`, saves, databases, logs, `home/`, `steamcmd/`, `backups/`, `seedscan/`), and a check that keeps the local Building Skins fix in place.
 `nix flake check` runs the same hooks.
 
 Never pass `path:.` to flake commands, such as `nix develop path:.` or `nix flake check path:.`, in a checkout that holds a server install.

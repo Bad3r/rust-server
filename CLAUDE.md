@@ -52,6 +52,11 @@ on in-game edits, so `git diff` shows what changed.
   `server.gamemode` takes) with its shortname, convar overrides, feature list, and settings that differ from
   `vanilla`, then the map generation overrides in `RustDedicated_Data/resources.assets`, in about 20 s.
   `docs/game-modes.md` summarizes that output and the code that applies a mode.
+- `uv run scripts/seed-scan.py --random 24 --jobs 4`: generate random seeds (or the ones given) at the worldsize
+  in `start.sh` or `--size`, each on a throwaway vanilla server next to the live one, and rank them in
+  `seedscan/<size>/index.html` by missing monuments and land share, with every map rendered and labeled. Output
+  stays untracked in `seedscan/`. `docs/map-seeds.md` covers the script, what the seed and the size decide, the
+  `world.configstring` generation settings, and switching the pve world to a new seed.
 
 Send an RCON command and print its reply. WebRCON listens on `127.0.0.1:28016`. Filter on the request
 `Identifier` so server log broadcasts on the same socket are dropped. The call always takes the full 3 s timeout
@@ -299,7 +304,7 @@ whole directory, only while the server is stopped, before anything risky; earlie
 
 - The world is `proceduralmap.<worldsize>.<seed>.<save protocol>.sav`. `.sav.1` and `.sav.2` are the two previous
   saves (`server.saveinterval 300`). Changing `server.seed` or `server.worldsize` in `start.sh` starts a fresh
-  world under a new file name.
+  world under a new file name, and the old files stay (see `docs/map-seeds.md`).
 - `proceduralmap.<worldsize>.<seed>.<save protocol>.map` caches the generated map, and `Loading World` reads it in
   under a second. `Generating procedural map of size ...` still appears on every boot.
 - `*.db` files are SQLite in WAL mode, and most data currently sits in the `*.db-wal` files (for example,
@@ -395,7 +400,8 @@ host and also works in CI. The examples run from the repo root with `m=server/Ru
 `flake.nix` pins nixpkgs and git-hooks.nix in `flake.lock` (refresh with `nix flake update`). Once `nix develop` has
 installed them, the hooks run on every commit: shellcheck, actionlint, check-json (the Carbon configs must parse),
 nixfmt, gitleaks on the staged content, `forbidden-paths`, which refuses secrets, saves, databases, logs,
-`home/`, `steamcmd/`, and `backups/` even when force-added, and `building-skins-owned-skip` (see Carbon). Keep
+`home/`, `steamcmd/`, `backups/`, and `seedscan/` even when force-added, and `building-skins-owned-skip` (see
+Carbon). Keep
 `guardedPathPatterns` in `flake.nix` in step with the secret files named in this document.
 
 Flake commands read this checkout through the default git fetch, which copies only tracked files, so a new file

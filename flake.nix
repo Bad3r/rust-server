@@ -38,6 +38,7 @@
         "^home/"
         "^steamcmd/"
         "^backups/"
+        "^seedscan/"
       ];
 
       pre-commit = git-hooks.lib.${system}.run {
