@@ -98,8 +98,16 @@ PrefabName}]}}}`. Position and rotation are local to the monument's own transfor
 
 ## Map-specific provenance
 
-The raw survey output behind the current `Default.json` (seed 783331605, worldsize 3500, buildid 25454815) is
-kept untracked under `research/monument-addons/survey-783331605/` on the host that ran it, so a fresh clone lacks
-it. Treat it as a worked example of the JSON shapes above. The profile's monument-relative positions carry over to
-a new map, but after a map wipe or a Facepunch force-wipe update, re-run `survey.solve` to cover monument types this
-map lacked and to re-verify every placement against the new terrain.
+The current `Default.json` comes from a re-survey on seed 1970515526 (worldsize 3500, buildid 25454815) on
+2026-09-25, after the switch from seed 783331605, whose survey produced the profile of commit `cbfef8e`. Both raw
+outputs are kept untracked under `research/monument-addons/survey-<seed>/` on the host that ran them, so a fresh
+clone lacks them. Treat them as worked examples of the JSON shapes above.
+
+The re-survey ran `survey.solve` with the profile disabled (`maprofile disable Default` works over RCON, as the
+server console holds every permission), so every placement was verified on the new terrain instead of carried
+over: 9 of the 13 earlier spots moved to a different verified candidate, and `swamp_c` (Abandoned Cabins) got
+its first entry. That map's lab has no `module_1200x1200_3way_ladder` room, so the profile also keys
+`moonpool_1200x1500_3way`, the room submarines dock in, from `survey.labsolve`; a lab that holds both rooms gets
+two recyclers, and one with neither gets none. After the next map wipe or force-wipe update, repeat that: disable
+the profile, `survey.solve`, `survey.labdump` for the room counts, and `survey.labsolve` for a room the new lab
+holds once.

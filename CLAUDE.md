@@ -210,12 +210,14 @@ version, channel, and Rust protocol.
   Monument Finder 3.1.5, both by WhiteThunder under MIT. Update each with
   `curl -fsSL -o server/carbon/plugins/<Name>.cs https://umod.org/plugins/<Name>.cs`. The `Default` profile in
   `data/MonumentAddons/Default.json`, which Monument Addons enables on first load, places one `recycler_static` at
-  each monument type that has a map name and no vanilla recycler: 13 keyed by prefab short name (`fishing_village_a`,
-  `oilrig_1`, and so on), plus the Underwater Lab room `module_1200x1200_3way_ladder`, because lab interiors are
-  assembled from modules and an offset from the lab root misses on other layouts. Positions are local to
-  `MonumentInfo.transform` (the module's transform for the lab room) and come from a survey of this map that
-  spawned a recycler at each spot and checked overlap and ground contact. They apply to every future map, but a
-  monument type this map lacks gets none until someone places one in game. 21 monument types ship a recycler
+  each monument type that has a map name and no vanilla recycler: 14 keyed by prefab short name (`fishing_village_a`,
+  `oilrig_1`, `swamp_c`, and so on), plus two Underwater Lab rooms, `moonpool_1200x1500_3way` and
+  `module_1200x1200_3way_ladder`, because lab interiors are assembled from modules and an offset from the lab root
+  misses on other layouts. A lab gets one recycler per such room it holds. Positions are local to
+  `MonumentInfo.transform` (the module's transform for a lab room) and come from a survey of the Halcyon map (seed
+  1970515526) that spawned a recycler at each spot and checked overlap and ground contact. They apply to every
+  future map, but a monument type this map lacks gets none until someone places one in game or reruns the survey
+  in `docs/monument-survey.md`. The 23 other named monument types on this map ship a recycler
   already. Recyclers in a safe zone turn yellow, as vanilla ones do. Monument Addons respawns its entities from the
   profile on every load and keeps them out of the `.sav`. `data/MonumentAddons.json` holds the enabled profiles and
   each player's selected profile by SteamID, so it stays untracked. `c.grant group admin monumentaddons.admin`
