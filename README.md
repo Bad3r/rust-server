@@ -66,7 +66,7 @@ Press Ctrl+C to stop.
   It holds the world and player progress, which cannot be regenerated.
 - A Facepunch force-wipe update bumps the save protocol number, and the server then generates a fresh world.
   Blueprints, deaths, and identities use a separate version number and survive the wipe.
-- Before choosing a new seed, `uv run scripts/seed-scan.py --random 24 --jobs 4` generates random seeds on throwaway servers next to the live one and ranks them in `seedscan/<size>/index.html`, with every map rendered and labeled.
+- Before choosing a new seed, `uv run scripts/seed-scan.py --random 24 --jobs 4` generates random seeds on throwaway servers next to the live one and ranks them in `seedscan/<buildid>/<size>/index.html`, with every map rendered and labeled.
   [docs/map-seeds.md](docs/map-seeds.md) covers what the seed and the world size decide, and how to switch the world to a new seed.
 
 ## Repository layout

@@ -8,8 +8,8 @@ over 26 random seeds at worldsize 3500 and 24 at 4500.
 ## Previewing seeds
 
 `scripts/seed-scan.py` generates each seed on a throwaway vanilla server next to the live one, then writes
-`seedscan/<size>/index.html`: a table ranked by missing monuments and land share, and every map rendered by
-`world.rendermap` with monument labels, the in-game grid, and the above-ground railway drawn on top.
+`seedscan/<buildid>/<size>/index.html`: a table ranked by missing monuments and land share, and every map rendered
+by `world.rendermap` with monument labels, the in-game grid, and the above-ground railway drawn on top.
 
 ```bash
 uv run scripts/seed-scan.py --random 24 --jobs 4        # worldsize from start.sh
@@ -24,8 +24,9 @@ uv run scripts/seed-scan.py --report                    # rebuild index.html onl
   `server.autouploadmap 0` and `aimanager.nav_disable 1`. Runs lock their slots with `flock`, so two runs at once
   take different identities. The identities keep only `cfg/` and small databases between seeds; `rip
   server/server/seedscan*` once no scan runs.
-- Seeds already in `seedscan/<size>/` are skipped. `--stats FILE.map` prints the land, biome, and path figures of
-  any procedural `.map`, such as the live one in `server/server/pve/`.
+- Seeds already scanned on the installed build are skipped; after a Rust update, the same command generates them
+  afresh under the new buildid. `--stats FILE.map` prints the land, biome, and path figures of any procedural
+  `.map`, such as the live one in `server/server/pve/`.
 
 ## What the seed and the size decide
 
@@ -106,5 +107,6 @@ reaches its Missile Silo and Ranch only by trails over beach isthmuses. The old 
 `server/server/pve/` and in `backups/pve-20260925T182415/`.
 
 The Monument Addons recyclers in `data/MonumentAddons/Default.json` are keyed by monument prefab, so they reappear
-on the new map. Monument types the old map lacked, such as `airfield_1` and `trainyard_1` on 1970515526, have no
-entry; re-run the survey in [monument-survey.md](monument-survey.md) after a wipe.
+on a new map, but a monument type the surveyed map lacked gets none. The survey in
+[monument-survey.md](monument-survey.md) was re-run on 1970515526 the same day (commit 2266533); it added `swamp_c`
+(Abandoned Cabins) and a second lab room. Redo it after each wipe.

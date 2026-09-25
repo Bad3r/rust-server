@@ -7,22 +7,21 @@
 For each seed this boots server/RustDedicated without Carbon under its own identity (seedscan<N>) and ports, with
 server.autouploadmap 0 and aimanager.nav_disable 1 so it neither uploads the map to Facepunch nor builds a navmesh.
 Each worker flocks its slot, so concurrent runs take distinct identities and ports. Once the log shows "Server
-startup complete" it saves under seedscan/<size>/<seed>/:
+startup complete" it saves under seedscan/<buildid>/<size>/<seed>/, buildid being the installed server build:
 
   monuments.json  every row of world.monuments: type, display name, prefab, and world position
   map.png         world.rendermap at --scale (north up, with world.rendermap's fixed 500 px ocean margin)
   stats.json      land share, dominant-biome shares of the land, and path counts, read from the generated .map
   server.log      the throwaway server's log; stdout.log holds its native Steam output
 
-It then kills the server, deletes that seed's world files from the identity, and rebuilds
-seedscan/<size>/index.html: a sortable summary and every map annotated with monument labels, the in-game grid, and
-the above-ground railway. Seeds already scanned are skipped, so an interrupted run resumes. It runs next to the
-live server and never touches server/server/pve. Generation follows the installed build, so a Rust update that
-changes procgen can change what a seed produces.
+It then kills the server, deletes that seed's world files from the identity, and rebuilds index.html in the same
+directory: a sortable summary and every map annotated with monument labels, the in-game grid, and the above-ground
+railway. Seeds already scanned on this build are skipped, so an interrupted run resumes, and after a Rust update
+the same seeds generate afresh. It runs next to the live server and never touches server/server/pve.
 
 Usage:
   uv run scripts/seed-scan.py [--size N] [--jobs N] [--random N] [SEED ...]
-  uv run scripts/seed-scan.py --report [--size N]    rebuild index.html from seedscan/<size>/
+  uv run scripts/seed-scan.py --report [--size N]    rebuild index.html for the installed build
   uv run scripts/seed-scan.py --stats FILE.map       print stats.json for any procedural .map file
 
 --size defaults to +server.worldsize in start.sh. Each server holds about 3.5 GB of RAM at worldsize 3500, and a
@@ -73,6 +72,15 @@ def default_size() -> int:
     if not m:
         sys.exit("error: start.sh has no +server.worldsize; pass --size")
     return int(m[1])
+
+
+def results_dir(size: int) -> Path:
+    # Keyed by build: an update that changes procgen must not reuse, or mix with, older results.
+    manifest = (SERVER / "steamapps/appmanifest_258550.acf").read_text()
+    m = re.search(r'"buildid"\s+"(\d+)"', manifest)
+    if not m:
+        sys.exit("error: no buildid in server/steamapps/appmanifest_258550.acf")
+    return OUT / m[1] / str(size)
 
 
 # --- .map files (WorldSerialization): uint32 version 10, int64 timestamp, then an lz4net LZ4Stream of the
@@ -225,10 +233,7 @@ async def stop(proc: asyncio.subprocess.Process) -> None:
 
 
 async def scan(slot: int, seed: int, size: int, scale: float, timeout: float, keep_map: bool) -> None:
-    out = OUT / str(size) / str(seed)
-    if (out / "monuments.json").exists():
-        print(f"{seed}: already scanned", flush=True)
-        return
+    out = results_dir(size) / str(seed)
     out.mkdir(parents=True, exist_ok=True)
     identity = f"seedscan{slot}"
     identity_dir = SERVER / "server" / identity
@@ -320,7 +325,10 @@ def claim_slot() -> int:
 async def scan_all(seeds: list[int], size: int, jobs: int, scale: float, timeout: float, keep_map: bool) -> int:
     queue: asyncio.Queue[int] = asyncio.Queue()
     for seed in seeds:
-        queue.put_nowait(seed)
+        if (results_dir(size) / str(seed) / "monuments.json").exists():
+            print(f"{seed}: already scanned", flush=True)
+        else:
+            queue.put_nowait(seed)
     failed = []
 
     async def worker(slot: int) -> None:
@@ -332,7 +340,7 @@ async def scan_all(seeds: list[int], size: int, jobs: int, scale: float, timeout
                 print(f"{seed}: FAILED: {e!r}", file=sys.stderr, flush=True)
                 failed.append(seed)
 
-    await asyncio.gather(*(worker(claim_slot()) for _ in range(jobs)))
+    await asyncio.gather(*(worker(claim_slot()) for _ in range(min(jobs, queue.qsize()))))
     if failed:
         print(f"failed seeds: {' '.join(map(str, failed))}", file=sys.stderr)
     return len(failed)
@@ -389,7 +397,7 @@ def label_map(out: Path, size: int, monuments: list[dict], rails: list) -> None:
 
 
 def report(size: int) -> Path:
-    base = OUT / str(size)
+    base = results_dir(size)
     script_mtime = Path(__file__).stat().st_mtime
     seeds = []
     large: set[str] = set()
@@ -468,7 +476,7 @@ def report(size: int) -> Path:
 <style>body{{font:14px sans-serif;margin:1em}}table{{border-collapse:collapse}}td,th{{border:1px solid #ccc;
 padding:2px 6px;vertical-align:top}}th{{cursor:pointer;background:#eee}}td:nth-last-child(-n+2){{max-width:28em}}
 img{{width:100%;max-width:1400px}}</style>
-<h1>Procedural map seeds, worldsize {size}</h1>
+<h1>Procedural map seeds, worldsize {size}, buildid {base.parent.name}</h1>
 <p>{len(seeds)} seeds, fewest missing monuments first, then most land. Land: share of the {size} m square that is
 not ocean. Biomes: dominant biome per pixel, as a share of the land. Rails: above-ground railway paths, which need
 worldsize 4250 or more. Types and monuments count named monuments other than {", ".join(MINOR).lower()}. Missing:

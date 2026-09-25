@@ -54,8 +54,8 @@ on in-game edits, so `git diff` shows what changed.
   `docs/game-modes.md` summarizes that output and the code that applies a mode.
 - `uv run scripts/seed-scan.py --random 24 --jobs 4`: generate random seeds (or the ones given) at the worldsize
   in `start.sh` or `--size`, each on a throwaway vanilla server next to the live one, and rank them in
-  `seedscan/<size>/index.html` by missing monuments and land share, with every map rendered and labeled. Output
-  stays untracked in `seedscan/`. `docs/map-seeds.md` covers the script, what the seed and the size decide, the
+  `seedscan/<buildid>/<size>/index.html` by missing monuments and land share, with every map rendered and labeled.
+  Output stays untracked in `seedscan/`. `docs/map-seeds.md` covers the script, what the seed and the size decide, the
   `world.configstring` generation settings, and switching the pve world to a new seed.
 
 Send an RCON command and print its reply. WebRCON listens on `127.0.0.1:28016`. Filter on the request
