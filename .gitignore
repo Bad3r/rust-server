@@ -41,6 +41,7 @@
 !/server/carbon/plugins/ImageLibrary.cs
 !/server/carbon/plugins/MonumentAddons.cs
 !/server/carbon/plugins/MonumentFinder.cs
+!/server/carbon/plugins/RemoverTool.cs
 !/server/carbon/plugins/Skins.cs
 !/server/carbon/plugins/SkinsCatalog.cs
 !/server/carbon/plugins/SmeltSpeed.cs
@@ -52,6 +53,7 @@
 !/server/carbon/configs/MonumentAddons.json
 !/server/carbon/configs/MonumentFinder.json
 !/server/carbon/configs/NTeleportation.json
+!/server/carbon/configs/RemoverTool.json
 !/server/carbon/configs/Skins.json
 !/server/carbon/configs/SmeltSpeed.json
 !/server/carbon/configs/TimeOfDay.json

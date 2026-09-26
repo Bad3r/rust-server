@@ -253,6 +253,13 @@ version, channel, and Rust protocol.
   `/deepsea`, and `/town` once an admin has run `/town set` where it should lead. The `default` group holds
   `nteleportation.home`, `.tpb`, `.tptown`, `.tpoutpost`, `.tpbandit`, `.tpisland`, and `.tpdeepsea`; a warp
   checks `nteleportation.tp<key>` of its `Dynamic Commands` entry.
+- Remover: `RemoverTool.cs` is uMod's Remover Tool 4.3.48 by Arainrr, now maintained by Tryhard (MIT), updated with
+  the same `curl` pattern. `/remove` arms a remove mode for 60 s (up to 300) in which the primary attack removes an
+  entity the player owns (`Use Entity Owners`). `configs/RemoverTool.json` sets `Price Enabled` false and every
+  building grade's `Refund` to 100, a number the plugin reads as a percentage of that grade's `CostToBuild()`
+  instead of an item table, so a block returns its current grade's full cost; a deployable returns itself. The
+  defaults charged 60% of that cost and refunded 40%. The `default` group holds `removertool.normal`; admins skip
+  its 60 s cooldown and 50-object limit.
 - Monument recyclers: `MonumentAddons.cs` is uMod's Monument Addons 0.21.4 and `MonumentFinder.cs` its required
   Monument Finder 3.1.5, both by WhiteThunder under MIT. Update each with
   `curl -fsSL -o server/carbon/plugins/<Name>.cs https://umod.org/plugins/<Name>.cs`. The `Default` profile in
