@@ -140,6 +140,19 @@ players online over `server.maxplayers`, so the vanilla 0.5 minimums gave one pl
 `server.corpsedespawn 1800` keeps a player corpse 30 minutes instead of 5. None of these is saved to
 `serverauto.cfg`, so the file must keep them.
 
+The events block sets the `chinook`, `cargo`, and `patrol_heli` delay ranges to 21 to 41 in-game hours with
+`events.set_event_min_delay` and `set_event_max_delay`: about 1 to 2 hours of play on Time Of Day's 70-minute
+cycle, against vanilla 27-54, 45-78, and 36-54. Airdrops keep their vanilla 9-18, about every 26 to 53 minutes.
+The help text calls the unit seconds, but `ConVar.Events` stores hours. The commands only record pending values,
+which `EventSchedule.Awake` applies as the world loads; a change made on a running server keeps each countdown
+already started until that event fires. `events.print_server_events` lists all seven events (`airdrop`, `chinook`,
+`cargo`, `f15`, `patrol_heli`, `bradley_road`, `travelling_vendor`) with their ranges.
+
+The Deep Sea is on by default and stays open `deepsea.wipeduration` (10800 s) at a time. `server.cfg` sets
+`deepsea.openonserverwipe true` and both `deepsea.wipecooldownmin` and `max` to 1800, so it opens right after a
+wipe and reopens 30 minutes after closing instead of 90. `deepsea.status` prints its state and timers, and
+`deepsea.open` opens it by hand.
+
 The world runs vanilla survival rules: `server.cfg` sets no `server.gamemode`. It ran Facepunch's `primitive` mode
 for part of 2026-09-24. The revert removed that line while the server was stopped and set the nine saved convars the
 mode had written to `serverauto.cfg` back to their earlier values, after which both files matched

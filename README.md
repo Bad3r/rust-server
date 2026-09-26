@@ -53,6 +53,8 @@ Press Ctrl+C to stop.
   Emptied ore and fuel wagons still despawn 10 minutes after unloading, so full ones keep respawning.
 - Playing alone costs nothing: [server.cfg](server/server/pve/cfg/server.cfg) keeps ore, barrels, and pickups at the density and respawn rate of a full server instead of 62.5% with one player of four.
   Buildings never decay, locked crates open in 5 minutes instead of 15, and a corpse stays 30 minutes instead of 5.
+- The cargo ship, Chinook crate drops, and the patrol helicopter each come about every 1 to 2 hours of play, and airdrops about every 26 to 53 minutes.
+  The Deep Sea opens right after a wipe and reopens 30 minutes after it closes instead of 90.
 - Rust+ is off: [server.cfg](server/server/pve/cfg/server.cfg) sets `app.port -1`, which disables the companion server.
 - EAC is off for the Proton client: the launch passes `-insecure` and `server.encryption 0`.
 - Carbon's admin panel opens in chat with `/cp`.
