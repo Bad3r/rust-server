@@ -71,11 +71,11 @@ export LD_LIBRARY_PATH="$server/RustDedicated_Data/Plugins:$server/RustDedicated
 # app.port -1 lives in server/pve/cfg/server.cfg because launch arguments cannot carry negative values.
 setsid env HOME="$root/home" steam-run "${launch[@]}" -batchmode -insecure \
   +server.identity pve \
-  +server.hostname "Local PvE: Halcyon" \
+  +server.hostname "Local PvE: Pandora" \
   +server.port 28015 \
   +server.level "Procedural Map" \
-  +server.seed 1970515526 \
-  +server.worldsize 3500 \
+  +server.seed 1739235182 \
+  +server.worldsize 4500 \
   +server.maxplayers 4 \
   +server.encryption 0 \
   +server.saveinterval 300 \

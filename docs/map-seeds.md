@@ -31,9 +31,10 @@ uv run scripts/seed-scan.py --report                    # rebuild index.html onl
 ## What the seed and the size decide
 
 `WorldSetup.InitCoroutine` runs every `ProceduralComponent` of the scene in order, each seeded with
-`server.seed + index`, so seed, size, and build fix the map. For seeds 783331605 and 1970515526, the land, biome,
-and path figures of the scanned map matched those of the live world's `.map` exactly. A Rust update that changes
-procgen code or the scene data can change what a seed produces, so recheck a chosen seed after the monthly update.
+`server.seed + index`, so seed, size, and build fix the map. For seeds 783331605, 1970515526, and 1739235182, the
+land, biome, and path figures of the scanned map matched those of the live world's `.map` exactly. A Rust update
+that changes procgen code or the scene data can change what a seed produces, so recheck a chosen seed after the
+monthly update.
 
 Components with a `MinWorldSize` place nothing below it:
 
@@ -101,10 +102,20 @@ seed's files stay: `World.CleanupOldFiles` deletes only `.map` and `.dat` files 
 the old seed back returns to the old world. Blueprints (`player.blueprints.17.db`) carry over; bases, items, and
 sleepers stay in the old `.sav`.
 
+A full wipe also moves everything else in the identity out with `rip`, except `cfg/server.cfg`, which git tracks,
+and `cfg/users.cfg`, which holds the owner entry. The next boot recreates the databases without blueprints, plus
+`bans.cfg`, `relay_cfg.json`, and a `serverauto.cfg` that matched the old one except for a new `server.server_id`.
+Carbon's permissions and plugin data live in the shared `server/carbon/data/` and stay.
+
 On 2026-09-25 the pve world moved from seed 783331605 to 1970515526 at worldsize 3500 (hostname
 `Local PvE: Halcyon`). It is one of two scanned seeds at that size with every monument; the other, 1232849729,
-reaches its Missile Silo and Ranch only by trails over beach isthmuses. The old world is still in
-`server/server/pve/` and in `backups/pve-20260925T182415/`.
+reaches its Missile Silo and Ranch only by trails over beach isthmuses. The 783331605 world is in
+`backups/pve-20260925T182415/`.
+
+On 2026-09-26 a full wipe moved the pve world to seed 1739235182 at worldsize 4500 (hostname `Local PvE: Pandora`):
+60% land, 4 rivers, the railway, and no monument missing in the scan. Halcyon was not copied to `backups/`. The
+live map's land, biome, and path figures matched the scan, and all 135 monuments sat within 0.5 m of their scanned
+positions.
 
 The Monument Addons recyclers in `data/MonumentAddons/Default.json` are keyed by monument prefab, so they reappear
 on a new map, but a monument type the surveyed map lacked gets none. The survey in
