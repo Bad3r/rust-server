@@ -44,6 +44,7 @@
 !/server/carbon/plugins/Skins.cs
 !/server/carbon/plugins/SkinsCatalog.cs
 !/server/carbon/plugins/SmeltSpeed.cs
+!/server/carbon/plugins/TimeOfDay.cs
 !/server/carbon/configs/
 /server/carbon/configs/*
 !/server/carbon/configs/AutoDoors.json
@@ -52,6 +53,7 @@
 !/server/carbon/configs/MonumentFinder.json
 !/server/carbon/configs/Skins.json
 !/server/carbon/configs/SmeltSpeed.json
+!/server/carbon/configs/TimeOfDay.json
 !/server/carbon/data/
 /server/carbon/data/*
 !/server/carbon/data/MonumentAddons/

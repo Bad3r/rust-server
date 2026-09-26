@@ -221,6 +221,12 @@ version, channel, and Rust protocol.
   smelted item costs half the wood and yields half the charcoal. uMod's QuickSmelt 5.1.5 (2022) fails to compile
   here (`ItemModCookable` has no `CanBeCookedByAtTemperature`), and Furnace Splitter cannot speed anything up
   because `BaseOven.IncreaseCookTime` divides cook time across all cooking stacks.
+- Day and night: `TimeOfDay.cs` is uMod's Time Of Day 2.3.4 by FuJiCuRa, now maintained by misticos (MIT), updated
+  with the same `curl` pattern. `configs/TimeOfDay.json` sets `dayLength` 60 and `nightLength` 10 real minutes: the
+  plugin sets TOD's `DayLengthInMinutes` to `dayLength * 24 / (SunsetTime - SunriseTime)` in daylight and to the
+  night equivalent after sunset, so 24 in-game hours take 70 minutes: daylight measured 0.21 in-game hours per real
+  minute (vanilla 0.41) and night 1.15. It needs no permission. The `events.*` delays in `server.cfg`
+  count these in-game hours, so changing either length changes how often events come.
 - Monument recyclers: `MonumentAddons.cs` is uMod's Monument Addons 0.21.4 and `MonumentFinder.cs` its required
   Monument Finder 3.1.5, both by WhiteThunder under MIT. Update each with
   `curl -fsSL -o server/carbon/plugins/<Name>.cs https://umod.org/plugins/<Name>.cs`. The `Default` profile in
