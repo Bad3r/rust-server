@@ -101,20 +101,28 @@ PrefabName}]}}}`. Position and rotation are local to the monument's own transfor
   module prefab is shared by lab variants a to d. On another map the room may be missing from a lab or appear
   twice, giving that lab no recycler or two, so re-check the module counts with `survey.labdump` after a wipe.
 - `make-profile.sh` only handles entries `survey.solve` produces for ordinary `MonumentInfo` monuments; it does
-  not handle the cargo ship, train tunnels, or lab modules (see its header comment).
+  not handle the cargo ship, the underground train tunnel cells, or lab modules (see its header comment). The
+  surface Train Tunnel Links (`train_tunnel_double_entrance`, `train_tunnel_double_entrance_b_72m`), where the
+  above-ground railway enters the tunnels, are ordinary monuments.
 
 ## Map-specific provenance
 
-The current `Default.json` comes from a re-survey on seed 1970515526 (worldsize 3500, buildid 25454815) on
-2026-09-25, after the switch from seed 783331605, whose survey produced the profile of commit `cbfef8e`. Both raw
-outputs are kept untracked under `research/monument-addons/survey-<seed>/` on the host that ran them, so a fresh
-clone lacks them. Treat them as worked examples of the JSON shapes above.
+The current `Default.json` comes from a re-survey on seed 1739235182 (worldsize 4500, buildid 25454815) on
+2026-09-26. The earlier surveys ran at worldsize 3500 on seed 783331605 (commit `cbfef8e`) and on 1970515526
+(commit `2266533`). The raw outputs are kept untracked under `research/monument-addons/survey-<seed>/` on the host
+that ran them, so a fresh clone lacks them. Treat them as worked examples of the JSON shapes above.
 
-The re-survey ran `survey.solve` with the profile disabled (`maprofile disable Default` works over RCON, as the
-server console holds every permission), so every placement was verified on the new terrain instead of carried
-over: 9 of the 13 earlier spots moved to a different verified candidate, and `swamp_c` (Abandoned Cabins) got
-its first entry. That map's lab has no `module_1200x1200_3way_ladder` room, so the profile also keys
+Each re-survey runs `survey.solve` with the profile disabled (`maprofile disable Default` works over RCON, as the
+server console holds every permission), so every placement is verified on the new terrain instead of carried
+over. On 1970515526, 9 of the 13 earlier spots moved to a different verified candidate, and `swamp_c` (Abandoned
+Cabins) got its first entry. That map's lab has no `module_1200x1200_3way_ladder` room, so the profile also keys
 `moonpool_1200x1500_3way`, the room submarines dock in, from `survey.labsolve`; a lab that holds both rooms gets
-two recyclers, and one with neither gets none. After the next map wipe or force-wipe update, repeat that: disable
-the profile, `survey.solve`, `survey.labdump` for the room counts, and `survey.labsolve` for a room the new lab
-holds once.
+two recyclers, and one with neither gets none.
+
+On 1739235182, of the 13 earlier entries whose monument that map has, 10 moved, 2 only turned, and 1 stayed.
+`desert_military_base_c` got an entry next to the `_d` variant, and each Train Tunnel Link got one on the terrain
+over its tunnel portal, 12.7 m above the rails. That map's lab holds `module_1200x1200_3way_ladder` once and no
+`moonpool_1200x1500_3way`, so it gets one recycler; `survey.labsolve` found a single clear spot in that room, in
+another corner than before. With the profile enabled, `survey.dump` counted 53 recyclers, 36 vanilla and 17 from
+the profile. After the next map wipe or force-wipe update, repeat that: disable the profile, `survey.solve`,
+`survey.labdump` for the room counts, and `survey.labsolve` for a room the new lab holds once.

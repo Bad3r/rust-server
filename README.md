@@ -35,7 +35,7 @@ Press Ctrl+C to stop.
 - Player-placed doors close 5 seconds after opening, via uMod's Auto Doors ([AutoDoors.cs](server/carbon/plugins/AutoDoors.cs)).
   Chat command `/ad` toggles it per player, and `/ad <5-10>` changes the delay.
 - Every monument with a map name has a recycler: uMod's Monument Addons ([MonumentAddons.cs](server/carbon/plugins/MonumentAddons.cs)) and Monument Finder ([MonumentFinder.cs](server/carbon/plugins/MonumentFinder.cs)) add one from the [Default profile](server/carbon/data/MonumentAddons/Default.json) wherever vanilla ships none.
-  That covers the fishing villages, Ranch, Large Barn, Apartment Complex, Abandoned Military Base, Missile Silo, the three quarries, both oil rigs, and an Underwater Lab room; recyclers in a safe zone are the yellow kind, as at Outpost.
+  That covers the fishing villages, Ranch, Large Barn, Apartment Complex, Abandoned Military Base, Abandoned Cabins, Missile Silo, the three quarries, both oil rigs, the Train Tunnel Links of the surface railway, and an Underwater Lab room; recyclers in a safe zone are the yellow kind, as at Outpost.
 - Every building skin works without owning it, via uMod's Building Skins ([BuildingSkins.cs](server/carbon/plugins/BuildingSkins.cs)) and its required Image Library ([ImageLibrary.cs](server/carbon/plugins/ImageLibrary.cs)).
   `/bskin` picks a skin per grade, and the next hammer hit or upgrade applies it; `/bskin build` and the tool cupboard's "Change building skin" button reskin a whole base.
   It needs `c.grant group admin buildingskins.use` over RCON once, plus `buildingskins.build`, `.all`, `.tc`, and `.admin` for the bulk and admin paths.

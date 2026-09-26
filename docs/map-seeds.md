@@ -119,5 +119,6 @@ positions.
 
 The Monument Addons recyclers in `data/MonumentAddons/Default.json` are keyed by monument prefab, so they reappear
 on a new map, but a monument type the surveyed map lacked gets none. The survey in
-[monument-survey.md](monument-survey.md) was re-run on 1970515526 the same day (commit 2266533); it added `swamp_c`
-(Abandoned Cabins) and a second lab room. Redo it after each wipe.
+[monument-survey.md](monument-survey.md) was re-run after each switch: on 1970515526 (commit 2266533) it added
+`swamp_c` (Abandoned Cabins) and a second lab room, and on 1739235182 it added `desert_military_base_c` and the two
+surface Train Tunnel Links. Redo it after each wipe.
