@@ -1,0 +1,448 @@
+{
+  "Settings": {
+    "Delay Saving Data On Server Save": 4.0,
+    "TPB": {
+      "Block TPB To Specific Monuments": [],
+      "VIP Countdowns": {
+        "nteleportation.vip": 0
+      },
+      "Countdown": 0,
+      "Available After X Seconds": 0
+    },
+    "Interrupt TP": {
+      "Interrupt Teleport At Specific Monuments": [],
+      "Above Water": false,
+      "Under Water": false,
+      "Balloon": false,
+      "Boats": false,
+      "Cargo Ship": false,
+      "Cold": false,
+      "Excavator": false,
+      "Hot": false,
+      "Hostile": false,
+      "Hostile Includes Towns": false,
+      "Hurt": false,
+      "Junkpiles": false,
+      "Lift": false,
+      "Monument": false,
+      "Ignore Monument Marker Prefab": false,
+      "Mounted": false,
+      "Oil Rig": false,
+      "Safe Zone": false,
+      "Swimming": false,
+      "Fall": false
+    },
+    "Auto Wake Up After Teleport": false,
+    "Seconds Until Teleporting Home Offline Players Within SafeZones": 0.0,
+    "Seconds Until Teleporting Home Offline Players": 0.0,
+    "Respawn Players At Outpost": false,
+    "Block Teleport (NoEscape)": false,
+    "Block Teleport (RaidBlock)": false,
+    "Block Teleport (ZoneManager)": false,
+    "Block Map Marker Teleport (AbandonedBases)": false,
+    "Block Map Marker Teleport (RaidableBases)": false,
+    "Automatically Destroy Map Teleport Markers": false,
+    "Chat Name": "<color=red>Teleportation</color> \n\n",
+    "Chat Steam64ID": 76561199056025689,
+    "Check Boundaries On Teleport X Y Z": true,
+    "Check Boundaries Min Height": -100.0,
+    "Check Boundaries Max Height": 2000.0,
+    "Check If Inside Rock": true,
+    "Height To Prevent Teleporting To/From (0 = disabled)": 0.0,
+    "Data File Directory (Blank = Default)": "",
+    "Draw Sphere On Set Home": true,
+    "Homes Enabled": true,
+    "TPR Enabled": true,
+    "Strict Foundation Check": false,
+    "Minimum Temp": 0.0,
+    "Maximum Temp": 40.0,
+    "Blocked Items": {},
+    "Blocked Town Prefabs": [],
+    "Bypass CMD": "pay",
+    "Use Economics": false,
+    "Use Server Rewards": false,
+    "Custom monument marker dimensions": {
+      "Data Center 1": {
+        "width": 0.0,
+        "height": 0.0,
+        "depth": 0.0,
+        "radius": 0.0,
+        "enabled": false
+      },
+      "Data Center 2": {
+        "width": 0.0,
+        "height": 0.0,
+        "depth": 0.0,
+        "radius": 0.0,
+        "enabled": false
+      },
+      "Data Center 3": {
+        "width": 0.0,
+        "height": 0.0,
+        "depth": 0.0,
+        "radius": 0.0,
+        "enabled": false
+      }
+    },
+    "Additional monuments to exclude (experimental)": [
+      "lake",
+      "canyon",
+      "oasis",
+      "jungle swamp",
+      "jungle ruin"
+    ],
+    "Wipe On Upgrade Or Change": true,
+    "Auto Generate DeepSea Location": true,
+    "Auto Generate Outpost Location": true,
+    "Outpost Map Prefab": [
+      "outpost",
+      "compound"
+    ],
+    "Auto Generate Bandit Location": true,
+    "Bandit Map Prefab": [
+      "bandit_town"
+    ],
+    "Show Time As Seconds Instead": false,
+    "Use Quick Teleport": true,
+    "Chat Command Color": "#FFFF00",
+    "Chat Command Argument Color": "#FFA500",
+    "Enable Popup Support": false,
+    "Send Messages To Player": true,
+    "Block All Teleporting From Inside Authorized Base": false,
+    "Global Teleport Cooldown": 0.0,
+    "Global VIP Teleport Cooldown": 0.0,
+    "Play Sounds Before Teleport": true,
+    "Sound Effects Before Teleport": [
+      "assets/prefabs/missions/portal/proceduraldungeon/effects/disappear.prefab"
+    ],
+    "Play Sounds After Teleport": true,
+    "Sound Effects After Teleport": [
+      "assets/prefabs/missions/portal/proceduraldungeon/effects/appear.prefab"
+    ]
+  },
+  "Admin": {
+    "Announce Teleport To Target": false,
+    "Usable By Admins": true,
+    "Usable By Moderators": true,
+    "Location Radius": 25,
+    "Teleport Near Default Distance": 30,
+    "Extra Distance To Block Monument Teleporting": 0
+  },
+  "Home": {
+    "Homes Limit": 5,
+    "VIP Homes Limits": {
+      "nteleportation.vip": 5
+    },
+    "Allow Sethome At Specific Monuments": [
+      "HQM Quarry",
+      "Stone Quarry",
+      "Sulfur Quarry",
+      "Ice Lake",
+      "Wild Swamp"
+    ],
+    "Allow Sethome At All Monuments": true,
+    "Allow Sethome On Tugboats": true,
+    "Allow Sethome On Player-made Boats": true,
+    "Allow TPB": true,
+    "Cooldown": 0,
+    "Countdown": 0,
+    "Daily Limit": 0,
+    "VIP Daily Limits": {
+      "nteleportation.vip": 5
+    },
+    "VIP Cooldowns": {
+      "nteleportation.vip": 5
+    },
+    "VIP Countdowns": {
+      "nteleportation.vip": 5
+    },
+    "Location Radius": 25,
+    "Force On Top Of Foundation": false,
+    "Check Foundation For Owner": true,
+    "Use Friends": true,
+    "Use Clans": true,
+    "Use Teams": true,
+    "Usable Out Of Building Blocked": false,
+    "Usable Into Building Blocked": false,
+    "Usable From Safe Zone Only": false,
+    "Bypass Cooldown From Within Safe Zone": false,
+    "Allow Cupboard Owner When Building Blocked": true,
+    "Allow Cupboard Ally When Building Blocked": false,
+    "Allow Cupboard Non-Ally When Building Blocked": false,
+    "Block For No Cupboard": false,
+    "Allow Iceberg": true,
+    "Allow Cave": true,
+    "Allow Crafting": true,
+    "Allow Above Foundation": true,
+    "Allow Deep Sea": true,
+    "Allow Apartment Complex": true,
+    "Check If Home Is Valid On Listhomes": false,
+    "Pay": 0,
+    "Bypass": 0,
+    "Hours Before Useable After Wipe": 0.0,
+    "Remove Hostility": false
+  },
+  "TPT": {
+    "Use Friends": false,
+    "Use Clans": false,
+    "Use Teams": false,
+    "Allow Cave": false,
+    "Enabled Color": "green",
+    "Disabled Color": "red"
+  },
+  "TPR": {
+    "Discord": {
+      "Webhook URL": "https://support.discordapp.com/hc/en-us/articles/228383668-Intro-to-Webhooks",
+      "Log When TPA To Non-Ally Players More Than X Times": 3
+    },
+    "Play Sounds To Request Target": false,
+    "Teleport Request Sound Effects": [
+      "assets/prefabs/missions/portal/proceduraldungeon/effects/disappear.prefab"
+    ],
+    "Play Sounds When Target Accepts": false,
+    "Teleport Accept Sound Effects": [
+      "assets/prefabs/missions/portal/proceduraldungeon/effects/appear.prefab"
+    ],
+    "Require Player To Be Friend, Clan Mate, Or Team Mate": false,
+    "Require nteleportation.tpa to accept TPR requests": false,
+    "Allow Cave": false,
+    "Allow TPB": true,
+    "Allow Deep Sea": true,
+    "Use Blocked Users": false,
+    "Cooldown": 600,
+    "Countdown": 15,
+    "Daily Limit": 5,
+    "VIP Daily Limits": {
+      "nteleportation.vip": 5
+    },
+    "VIP Cooldowns": {
+      "nteleportation.vip": 5
+    },
+    "VIP Countdowns": {
+      "nteleportation.vip": 5
+    },
+    "Enable Request UI": false,
+    "Request Duration": 30,
+    "Block TPA On Ceiling": true,
+    "Usable Out Of Building Blocked": false,
+    "Usable Into Building Blocked": false,
+    "Allow Cupboard Owner When Building Blocked": true,
+    "Allow Cupboard Ally When Building Blocked": false,
+    "Allow Cupboard Non-Ally When Building Blocked": false,
+    "Block For No Cupboard": false,
+    "Allow Crafting": false,
+    "Pay": 0,
+    "Bypass": 0,
+    "Hours Before Useable After Wipe": 0.0,
+    "Remove Hostility": false
+  },
+  "Dynamic Commands": {
+    "Town": {
+      "Command Enabled": true,
+      "Set Position From Monument Marker Name": "",
+      "Set Position From Monument Marker Name Offset": "0 0 0",
+      "Allow TPB": true,
+      "Allow Cave": false,
+      "Allow Deep Sea": true,
+      "Cooldown": 0,
+      "Countdown": 0,
+      "Daily Limit": 0,
+      "VIP Daily Limits": {
+        "nteleportation.vip": 5
+      },
+      "VIP Cooldowns": {
+        "nteleportation.vip": 5
+      },
+      "VIP Countdowns": {
+        "nteleportation.vip": 5
+      },
+      "Location": "0 0 0",
+      "Locations": [],
+      "Teleport To Random Location": false,
+      "Usable Out Of Building Blocked": false,
+      "Allow Crafting": false,
+      "Pay": 0,
+      "Bypass": 0,
+      "Hours Before Useable After Wipe": 0.0,
+      "Remove Hostility": false
+    },
+    "Island": {
+      "Command Enabled": true,
+      "Set Position From Monument Marker Name": "",
+      "Set Position From Monument Marker Name Offset": "0 0 0",
+      "Allow TPB": false,
+      "Allow Cave": false,
+      "Allow Deep Sea": true,
+      "Cooldown": 0,
+      "Countdown": 0,
+      "Daily Limit": 0,
+      "VIP Daily Limits": {
+        "nteleportation.vip": 5
+      },
+      "VIP Cooldowns": {
+        "nteleportation.vip": 5
+      },
+      "VIP Countdowns": {
+        "nteleportation.vip": 5
+      },
+      "Location": "0 0 0",
+      "Locations": [],
+      "Teleport To Random Location": true,
+      "Usable Out Of Building Blocked": false,
+      "Allow Crafting": false,
+      "Pay": 0,
+      "Bypass": 0,
+      "Hours Before Useable After Wipe": 0.0,
+      "Remove Hostility": false
+    },
+    "Outpost": {
+      "Command Enabled": true,
+      "Set Position From Monument Marker Name": "",
+      "Set Position From Monument Marker Name Offset": "0 0 0",
+      "Allow TPB": true,
+      "Allow Cave": false,
+      "Allow Deep Sea": true,
+      "Cooldown": 0,
+      "Countdown": 0,
+      "Daily Limit": 0,
+      "VIP Daily Limits": {
+        "nteleportation.vip": 5
+      },
+      "VIP Cooldowns": {
+        "nteleportation.vip": 5
+      },
+      "VIP Countdowns": {
+        "nteleportation.vip": 5
+      },
+      "Location": "-728.8492 14.05 1603.716",
+      "Locations": [
+        "-671.7731 15.54023 1641.013",
+        "-666.4717 15.54023 1636.78",
+        "-673.4001 13.13566 1620.655",
+        "-673.0219 13.13566 1618.471",
+        "-673.1663 13.13566 1619.72",
+        "-675.7389 13.13566 1617.593",
+        "-675.7892 13.13566 1618.786",
+        "-671.4216 14.855 1587.403",
+        "-681.4427 13.14002 1591.663",
+        "-683.1505 13.14002 1590.645",
+        "-684.9647 13.14002 1590.992",
+        "-685.1623 13.14002 1594.087",
+        "-686.3632 13.14002 1592.985",
+        "-683.3425 13.14002 1593.801",
+        "-702.1068 14.03944 1629.745",
+        "-710.7104 14.03944 1632.373",
+        "-669.5713 15.54023 1644.612",
+        "-728.8492 14.05 1603.716"
+      ],
+      "Teleport To Random Location": true,
+      "Usable Out Of Building Blocked": false,
+      "Allow Crafting": false,
+      "Pay": 0,
+      "Bypass": 0,
+      "Hours Before Useable After Wipe": 0.0,
+      "Remove Hostility": false
+    },
+    "Bandit": {
+      "Command Enabled": true,
+      "Set Position From Monument Marker Name": "",
+      "Set Position From Monument Marker Name Offset": "0 0 0",
+      "Allow TPB": true,
+      "Allow Cave": false,
+      "Allow Deep Sea": true,
+      "Cooldown": 0,
+      "Countdown": 0,
+      "Daily Limit": 0,
+      "VIP Daily Limits": {
+        "nteleportation.vip": 5
+      },
+      "VIP Cooldowns": {
+        "nteleportation.vip": 5
+      },
+      "VIP Countdowns": {
+        "nteleportation.vip": 5
+      },
+      "Location": "-196.8313 29.90476 -283.5297",
+      "Locations": [
+        "-284.6671 29.23165 -259.8022",
+        "-279.2756 29.63009 -333.0418",
+        "-202.8659 34.94609 -273.6253",
+        "-203.4274 34.00485 -281.7325",
+        "-207.4503 34.00485 -283.3663",
+        "-197.5016 28.94809 -284.2725",
+        "-197.1904 28.96039 -284.5616",
+        "-209.8446 34.95309 -270.1354",
+        "-196.901 28.94809 -284.9623",
+        "-196.8313 29.90476 -283.5297"
+      ],
+      "Teleport To Random Location": true,
+      "Usable Out Of Building Blocked": false,
+      "Allow Crafting": false,
+      "Pay": 0,
+      "Bypass": 0,
+      "Hours Before Useable After Wipe": 0.0,
+      "Remove Hostility": false
+    },
+    "DeepSea": {
+      "Command Enabled": true,
+      "Set Position From Monument Marker Name": "",
+      "Set Position From Monument Marker Name Offset": "0 0 0",
+      "Allow TPB": true,
+      "Allow Cave": false,
+      "Cooldown": 0,
+      "Countdown": 0,
+      "Daily Limit": 0,
+      "VIP Daily Limits": {
+        "nteleportation.vip": 5
+      },
+      "VIP Cooldowns": {
+        "nteleportation.vip": 5
+      },
+      "VIP Countdowns": {
+        "nteleportation.vip": 5
+      },
+      "Location": "-5612.408 3.108661 280.2463",
+      "Locations": [
+        "-5629.059 6.100135 199.466",
+        "-5605.985 3.108661 284.4952",
+        "-5659.738 6.979 276.8749",
+        "-5640.836 4.6325 220.6481",
+        "-5600.238 3.108659 243.4452",
+        "-5599.637 3.10866 244.3602",
+        "-5595.01 12.11872 278.9433",
+        "-5593.763 12.10735 268.6597",
+        "-5602.411 12.10257 273.9168",
+        "-5644.733 6.095876 258.9307",
+        "-5644.091 6.088 259.4469",
+        "-5666.91 3.28 229.8426",
+        "-5665.423 3.295 229.9883",
+        "-5598.559 6.083 216.5796",
+        "-5607.563 6.107 206.9675",
+        "-5643.762 14.716 234.5085",
+        "-5647.667 13.6149 231.4969",
+        "-5641.126 13.60007 231.99",
+        "-5640.424 13.60007 232.0313",
+        "-5642.726 13.60007 232.4841",
+        "-5628.051 6.100135 200.3016",
+        "-5616.516 3.133511 193.8922",
+        "-5625.954 4.061 202.276",
+        "-5622.638 12.2795 252.0769",
+        "-5619.228 15.077 249.993",
+        "-5599.696 10.109 283.41",
+        "-5646.59 4.063037 268.4329",
+        "-5622.172 1.3467 275.37",
+        "-5595.179 6.1 231.3871",
+        "-5592.631 12.101 268.5536",
+        "-5605.967 6.099703 242.175",
+        "-5612.408 3.108661 280.2463"
+      ],
+      "Teleport To Random Location": true,
+      "Usable Out Of Building Blocked": false,
+      "Allow Crafting": false,
+      "Pay": 0,
+      "Bypass": 0,
+      "Hours Before Useable After Wipe": 0.0,
+      "Remove Hostility": false
+    }
+  }
+}

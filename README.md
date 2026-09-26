@@ -33,6 +33,8 @@ Press Ctrl+C to stop.
 - Furnaces and refineries smelt 2x faster, via [SmeltSpeed.cs](server/carbon/plugins/SmeltSpeed.cs).
   Fuel and charcoal per smelted item both drop by half, since the multiplier scales cook progress only.
 - Days last 60 minutes and nights 10, via uMod's Time Of Day ([TimeOfDay.cs](server/carbon/plugins/TimeOfDay.cs)).
+- Teleports are instant, with no cooldown or daily limit, via uMod's NTeleportation (not vendored; see License): `/sethome <name>` saves up to 5 homes, `/home <name>` returns to one, and `/outpost`, `/bandit`, `/deepsea`, and `/tpb` (back) warp.
+  `/town` works once an admin runs `/town set` at its spot.
 - Player-placed doors close 5 seconds after opening, via uMod's Auto Doors ([AutoDoors.cs](server/carbon/plugins/AutoDoors.cs)).
   Chat command `/ad` toggles it per player, and `/ad <5-10>` changes the delay.
 - Every monument with a map name has a recycler: uMod's Monument Addons ([MonumentAddons.cs](server/carbon/plugins/MonumentAddons.cs)) and Monument Finder ([MonumentFinder.cs](server/carbon/plugins/MonumentFinder.cs)) add one from the [Default profile](server/carbon/data/MonumentAddons/Default.json) wherever vanilla ships none.
@@ -129,3 +131,4 @@ The vendored [MonumentAddons.cs](server/carbon/plugins/MonumentAddons.cs) and [M
 The vendored [BuildingSkins.cs](server/carbon/plugins/BuildingSkins.cs) and [ImageLibrary.cs](server/carbon/plugins/ImageLibrary.cs) are uMod's [Building Skins](https://umod.org/plugins/building-skins) by Marat and [Image Library](https://umod.org/plugins/image-library) by Absolut and K1lly0u, both under the MIT license; BuildingSkins.cs carries one local fix, described in CLAUDE.md.
 The vendored [Skins.cs](server/carbon/plugins/Skins.cs) is uMod's [Skins](https://umod.org/plugins/skins) plugin by misticos under the MIT license.
 The vendored [TimeOfDay.cs](server/carbon/plugins/TimeOfDay.cs) is uMod's [Time Of Day](https://umod.org/plugins/time-of-day) by FuJiCuRa, maintained by misticos, under the MIT license.
+uMod's [NTeleportation](https://umod.org/plugins/nteleportation) by nivex is not vendored: uMod lists it as unlicensed, with all rights reserved by its original author, so only its config is tracked, and a fresh clone downloads the plugin with the `curl` command in CLAUDE.md.

@@ -51,6 +51,7 @@
 !/server/carbon/configs/BuildingSkins.json
 !/server/carbon/configs/MonumentAddons.json
 !/server/carbon/configs/MonumentFinder.json
+!/server/carbon/configs/NTeleportation.json
 !/server/carbon/configs/Skins.json
 !/server/carbon/configs/SmeltSpeed.json
 !/server/carbon/configs/TimeOfDay.json

@@ -13,8 +13,9 @@ mod build in `start.sh`, Carbon, uMod downloads, Nix (`flake.lock`), or the serv
 
 The git repo (branch `main`) pushes to the private GitHub repo https://github.com/Bad3r/rust-server (`origin`). It
 tracks those files, `CLAUDE.md`, `LICENSE` (AGPL-3.0-or-later), `flake.lock`, and Carbon's `server/carbon/config.json`,
-`config.profiler.json`, `modules/*/config.json`, each installed plugin's `plugins/<Name>.cs` and
-`configs/<Name>.json`, and the Monument Addons profile `data/MonumentAddons/Default.json`. `.gitignore` is a
+`config.profiler.json`, `modules/*/config.json`, each installed plugin's `plugins/<Name>.cs` (except the
+unlicensed `NTeleportation.cs`) and `configs/<Name>.json`, and the Monument Addons profile
+`data/MonumentAddons/Default.json`. `.gitignore` is a
 whitelist: a new file needs its own `!` entry, plus one for each ignored parent directory. Everything tracked is
 pushed, so never whitelist the secrets `.rcon-password`, `config.webpanel.json`, and `relay_cfg.json`, or
 `configs/ImageLibrary.json`, whose empty `Steam API key` setting would carry a key. Carbon rewrites its tracked
@@ -240,6 +241,18 @@ version, channel, and Rust protocol.
   night equivalent after sunset, so 24 in-game hours take 70 minutes: daylight measured 0.21 in-game hours per real
   minute (vanilla 0.41) and night 1.15. It needs no permission. The `events.*` delays in `server.cfg`
   count these in-game hours, so changing either length changes how often events come.
+- Teleports: `NTeleportation.cs` is uMod's NTeleportation 1.9.6 by nivex. uMod lists it as unlicensed, with all
+  rights reserved by its original author, so the file stays untracked (and outside the `Mods` CI check): a fresh
+  clone fetches it with `curl -fsSL -o server/carbon/plugins/NTeleportation.cs
+  https://umod.org/plugins/NTeleportation.cs`, and only `configs/NTeleportation.json` is tracked. That config allows
+  5 homes and sets the cooldown, countdown, and daily limit of homes and of the Town, Outpost, Bandit, Island, and
+  DeepSea warps to 0, which the plugin treats as none (each check is `> 0`). Homes need no foundation and may sit at
+  any monument, in caves, or on icebergs, and every `Interrupt TP` flag is off, since those flags also refuse a
+  teleport at its start; the teleport dismounts the player first. Commands: `/sethome <name>`, `/home <name>`,
+  `/removehome <name>`, `/listhomes`, `/tpb` (back to the previous spot), `/outpost`, `/bandit`, `/island`,
+  `/deepsea`, and `/town` once an admin has run `/town set` where it should lead. The `default` group holds
+  `nteleportation.home`, `.tpb`, `.tptown`, `.tpoutpost`, `.tpbandit`, `.tpisland`, and `.tpdeepsea`; a warp
+  checks `nteleportation.tp<key>` of its `Dynamic Commands` entry.
 - Monument recyclers: `MonumentAddons.cs` is uMod's Monument Addons 0.21.4 and `MonumentFinder.cs` its required
   Monument Finder 3.1.5, both by WhiteThunder under MIT. Update each with
   `curl -fsSL -o server/carbon/plugins/<Name>.cs https://umod.org/plugins/<Name>.cs`. The `Default` profile in
