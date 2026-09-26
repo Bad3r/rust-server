@@ -37,7 +37,11 @@ on in-game edits, so `git diff` shows what changed.
   `csc` the way Carbon does: `-langversion:preview`, `-unsafe+`, the define symbols from `server/carbon/config.json`
   plus Carbon's always-on `UNIX`, and the assemblies it lists under `Publicizer` made public with Carbon's bundled
   AsmResolver, which also gains the `BasePlayer.IPlayer` field Carbon injects into `Assembly-CSharp.dll` at boot
-  (`Carbon.Publicizer.AssemblyCSharp.InjectIPlayer` in Carbon.Startup.dll). The script takes `csc` from
+  (`Carbon.Publicizer.AssemblyCSharp.InjectIPlayer` in Carbon.Startup.dll). It references only what Carbon's
+  compiler does: 0Harmony, the modules, and the `RefWhitelist` and `RefProxy` names read from `Carbon.Bootstrap.dll`,
+  each taken from the last of Carbon's library directories that has it, so the game's `System.Memory` facade beats
+  Carbon's. Referencing every DLL let `Carbon.Bootstrap`'s top-level `Utility` namespace hide Oxide's `Utility`
+  class and fail NTeleportation and Remover Tool. The script takes `csc` from
   `nixpkgs#roslyn`, listed before `nixpkgs#mono` since both provide one, and exits if it ever resolves below
   Roslyn 4. It downloads `RustDedicated_Data/Managed` of the public build (Linux depot 258552, about 25 MB) and the
   Carbon edge archive into a temp directory on every run.

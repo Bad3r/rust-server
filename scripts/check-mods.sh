@@ -173,29 +173,113 @@ done
 MONO_PATH="$carbon_lib" mono "$work_dir/publicizer.exe" "$work_dir/publicized" "$work_dir/ignores.txt" \
   "$carbon_dir/Carbon.Common.dll" "${publicize_inputs[@]}"
 
-# Carbon's own copies of shared dependencies (0Harmony.dll, System.* polyfills) win over the game's, as in its
-# compiler, and the publicized copies replace the game's originals.
-declare -A seen=() is_publicized=()
+# Only what Carbon's compiler references (ScriptCompilationThread._addReferences in Carbon.dll): 0Harmony, the
+# RefWhitelist and, with Compiler.EnableProxy, RefProxy names of Components.AssemblyManager, then modules and
+# extensions. Referencing every DLL let Carbon.Bootstrap's top-level Utility namespace hide Oxide's Utility class.
+# LibraryLoader.ResolveAssembly never breaks out of its directory loop, so the LAST of these directories with the
+# file wins (the game's System.Memory facade beats Carbon's own); publicized copies win over all of them. The lists
+# are read from Carbon.Bootstrap.dll because CI checks each new edge build; monodis needs 0Harmony on MONO_PATH.
+search_dirs=("$carbon_lib" "$carbon_dir" "$managed_dir" "$carbon_dir/modules" "$(dirname "$carbon_dir")/extensions")
+bootstrap_il="$work_dir/Carbon.Bootstrap.il"
+MONO_PATH="$carbon_lib:$carbon_dir:$managed_dir" monodis "$carbon_dir/Carbon.Bootstrap.dll" >"$bootstrap_il"
+
+# Each field's initializer is ldstr instructions immediately followed by the stsfld that stores them, so collecting
+# ldstr values since the previous stsfld attributes them to the right field regardless of field order.
+cctor_strings() {
+  awk -v field="$1" '
+    /ldstr "/ {
+      line = $0
+      sub(/^.*ldstr "/, "", line)
+      sub(/"[ \t]*$/, "", line)
+      pending[++n] = line
+      next
+    }
+    /stsfld/ {
+      if (index($0, field) > 0) {
+        for (i = 1; i <= n; i++) print pending[i]
+      }
+      n = 0
+    }
+  ' "$bootstrap_il"
+}
+mapfile -t whitelist_names < <(cctor_strings "_whitelistLibs")
+if ((${#whitelist_names[@]} < 30)); then
+  echo "parsed ${#whitelist_names[@]} names for RefWhitelist from $carbon_dir/Carbon.Bootstrap.dll, expected \
+around 88; Components.AssemblyManager's layout or monodis's IL dump format may have changed" >&2
+  exit 1
+fi
+proxy_names=()
+if [[ "$(jq -r '.Compiler.EnableProxy' "$config")" == "true" ]]; then
+  mapfile -t proxy_names < <(cctor_strings "_proxyLibs")
+fi
+
+declare -A is_publicized=()
 for name in "${publicized[@]}"; do
   is_publicized["$name"]=1
 done
+
+# name.dll wins in the LAST directory of search_dirs that has it (mode last), except "0Harmony" wins in the FIRST
+# (mode first, matching the direct-mode injection), and a publicized name always uses the publicized copy.
+resolve_ref() {
+  local name="$1" mode="$2" dir file found=""
+  if [[ -n "${is_publicized["$name.dll"]:-}" ]]; then
+    printf '%s' "$work_dir/publicized/$name.dll"
+    return
+  fi
+  for dir in "${search_dirs[@]}"; do
+    file="$dir/$name.dll"
+    if [[ -f "$file" ]]; then
+      found="$file"
+      [[ "$mode" == first ]] && break
+    fi
+  done
+  printf '%s' "$found"
+}
+
 refs=()
-while IFS= read -r f; do
-  seen["$(basename "$f")"]=1
-  refs+=("$f")
-done < <(find "$carbon_dir" -name '*.dll' -not -path '*/lib/x64/*' -not -path '*/lib/x86/*' | sort)
-while IFS= read -r f; do
-  name="$(basename "$f")"
-  if [[ -n "${seen[$name]:-}" ]]; then
-    continue
+declare -A ref_seen=()
+add_ref() {
+  local path="$1"
+  if [[ -z "$path" || -n "${ref_seen[$path]:-}" ]]; then
+    return
   fi
-  seen["$name"]=1
-  if [[ -n "${is_publicized[$name]:-}" ]]; then
-    refs+=("$work_dir/publicized/$name")
+  ref_seen["$path"]=1
+  refs+=("$path")
+}
+
+harmony_ref="$(resolve_ref 0Harmony first)"
+if [[ -z "$harmony_ref" ]]; then
+  echo "0Harmony.dll not found under any of: ${search_dirs[*]}" >&2
+  exit 1
+fi
+add_ref "$harmony_ref"
+
+missing_names=()
+for name in "${whitelist_names[@]}" "${proxy_names[@]}"; do
+  resolved="$(resolve_ref "$name" last)"
+  if [[ -n "$resolved" ]]; then
+    add_ref "$resolved"
   else
-    refs+=("$f")
+    missing_names+=("$name")
   fi
-done < <(find "$managed_dir" -maxdepth 1 -name '*.dll' | sort)
+done
+if ((${#missing_names[@]} > 0)); then
+  echo "no dll for RefWhitelist/RefProxy names ${missing_names[*]}; Carbon's LibraryLoader skips them too" >&2
+fi
+
+# Carbon adds every loaded module and extension assembly straight from memory, not through Read, so these are not
+# name-resolved: whatever ships in the modules and extensions folders is what a plugin can reference.
+while IFS= read -r f; do
+  add_ref "$f"
+done < <(find "$carbon_dir/modules" -maxdepth 1 -name '*.dll' 2>/dev/null | sort)
+extensions_dir="$(dirname "$carbon_dir")/extensions"
+if [[ -d "$extensions_dir" ]]; then
+  while IFS= read -r f; do
+    add_ref "$f"
+  done < <(find "$extensions_dir" -maxdepth 1 -name '*.dll' 2>/dev/null | sort)
+fi
+
+echo "Carbon references: ${#refs[@]} assemblies (RefWhitelist ${#whitelist_names[@]}, RefProxy ${#proxy_names[@]})"
 refs_joined="$(IFS=, && echo "${refs[*]}")"
 
 for src in "${plugin_sources[@]}"; do
