@@ -344,6 +344,11 @@ namespace Oxide.Plugins
             return Physics.Raycast(origin, Vector3.down, out hit, 2000f, _groundMask, QueryTriggerInteraction.Ignore);
         }
 
+        // WaterLevel.Test calls a point more than 1 m below TerrainMeta.HeightMap dry, and off the terrain square the
+        // height map clamps to its edge, so the seabed under an oil rig placed there would pass as ground.
+        private static bool IsUnderwater(Vector3 point) =>
+            WaterLevel.Test(point, true, true) || (TerrainMeta.OutOfBounds(point) && point.y < WaterSystem.OceanLevel);
+
         private bool IsClear(Vector3 center, Vector3 halfExtents, Quaternion rot, HashSet<Collider> ignore, out string blockers)
         {
             Collider[] hits = Physics.OverlapBox(center, halfExtents, rot, _clearanceMask, QueryTriggerInteraction.Ignore);
@@ -427,7 +432,7 @@ namespace Oxide.Plugins
                     continue;
                 if (!mon.IsInBounds(ent.transform.position))
                     continue;
-                if (WaterLevel.Test(ent.transform.position, true, true))
+                if (IsUnderwater(ent.transform.position))
                     continue;
                 anchors.Add(ent.transform.position);
                 if (anchors.Count >= 160)
@@ -456,7 +461,7 @@ namespace Oxide.Plugins
                         continue;
                     if (hit.normal.y < 0.97f)
                         continue;
-                    if (WaterLevel.Test(hit.point, true, true))
+                    if (IsUnderwater(hit.point))
                         continue;
                     Vector3 localHit = mon.transform.InverseTransformPoint(hit.point);
                     found.Add(new HitPoint { Offset = new Vector2(localHit.x, localHit.z), Hit = hit, IsIndoorAnchor = true });
@@ -495,7 +500,7 @@ namespace Oxide.Plugins
                     continue;
                 if (hit.normal.y < 0.97f)
                     continue;
-                if (WaterLevel.Test(hit.point, true, true))
+                if (IsUnderwater(hit.point))
                     continue;
                 hitPoints.Add(new HitPoint { Offset = off, Hit = hit });
             }
@@ -556,7 +561,7 @@ namespace Oxide.Plugins
             Vector3 forward = worldRot * Vector3.forward;
             Vector3 frontXZ = hit.point + forward * 1.5f;
             RaycastHit frontHit;
-            bool frontOk = RaycastGround(frontXZ, out frontHit) && frontHit.normal.y >= 0.9f && !WaterLevel.Test(frontHit.point, true, true);
+            bool frontOk = RaycastGround(frontXZ, out frontHit) && frontHit.normal.y >= 0.9f && !IsUnderwater(frontHit.point);
             if (frontOk)
             {
                 string frontBlockers;
@@ -831,7 +836,7 @@ namespace Oxide.Plugins
             Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
             foreach (var h in hits)
             {
-                if (h.normal.y >= minNormalY && !WaterLevel.Test(h.point, true, true))
+                if (h.normal.y >= minNormalY && !IsUnderwater(h.point))
                 {
                     hit = h;
                     return true;
@@ -1164,7 +1169,7 @@ namespace Oxide.Plugins
                 string dryHit = "dry NONE";
                 foreach (var h in hits)
                 {
-                    if (h.normal.y >= 0.9f && !WaterLevel.Test(h.point, true, true))
+                    if (h.normal.y >= 0.9f && !IsUnderwater(h.point))
                     {
                         dryHit = $"dry y={h.point.y:F2}(d={h.point.y - frame.position.y:F2}) n.y={h.normal.y:F2} obj={h.collider.name}";
                         break;

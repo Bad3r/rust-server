@@ -41,7 +41,7 @@ All write to `server/carbon/data/MonumentSurvey/`, creating the directory if nee
 | `survey.labsolve <name>` | `labsolve.json`   | full spawn-verified placement search for one lab module                          |
 | `survey.labprobe <name>` | `labprobe.json`   | raw `RaycastAll` dump through one module, for calibrating probe ranges           |
 
-## Two physics bugs it hit
+## Three physics bugs it hit
 
 1. **Underwater Lab rooms are roofed.** A sky-down raycast (the normal outdoor search) always stops on the lab's
    hull and never reaches an interior floor. `FindIndoorAnchorHits` works around this by probing a short ray
@@ -51,6 +51,13 @@ All write to `server/carbon/data/MonumentSurvey/`, creating the directory if nee
    collider hit, which in a moonpool room is the wet pool/deck mesh a couple of metres above the actual dry
    floor. `ProbeModuleFloor` uses `Physics.RaycastAll` and walks past every wet or non-flat hit (confirmed with
    `survey.labprobe`: the dry floor collider, "PrimitiveColliders", sits right behind the first wet hit).
+3. **Water tests end at the terrain square.** `WaterLevel.GetWaterInfo` calls a point more than 1 m below
+   `TerrainMeta.HeightMap.GetHeight` dry, and off the square `HeightMapData.GetHeight01` clamps to the edge. Seed
+   1739235182 at worldsize 4500 put the small oil rig at x 2599, 349 m past the edge, over a sea floor collider at
+   -50 m, while the clamped edge height there is -34.8 m. Those sea floor hits passed as dry ground, outnumbered the
+   deck hits, and `survey.solve` put the recycler on the sea floor. `IsUnderwater` also counts a point off the
+   square below `WaterSystem.OceanLevel` as underwater, and every water check goes through it. The large rig's edge
+   height is -50 m, so its search was unaffected.
 
 ## Placement search heuristic
 
