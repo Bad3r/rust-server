@@ -260,6 +260,13 @@ version, channel, and Rust protocol.
   instead of an item table, so a block returns its current grade's full cost; a deployable returns itself. The
   defaults charged 60% of that cost and refunded 40%. The `default` group holds `removertool.normal`; admins skip
   its 60 s cooldown and 50-object limit.
+- Night lights: `NightLantern.cs` is uMod's Night Lantern 2.1.3 by k1lly0u (MIT), updated with the same `curl`
+  pattern. At 18:30 in-game it lights every lantern, jack-o'-lantern, Chinese lantern, tuna light, searchlight,
+  campfire, firepit, and fireplace, and at 07:30 it puts them out; they burn fuel as usual.
+  `configs/NightLantern.json` turns off its BBQ, Furnace, LargeFurnace, Refinery, and CursedCauldren types, which it
+  would otherwise light and fuel all night without cooking anything. The automatic switch needs no permission;
+  `/lantern`, which toggles one's own lights by type, needs `nightlantern.<type>`, and `/lantern global` needs
+  `nightlantern.global`.
 - Monument recyclers: `MonumentAddons.cs` is uMod's Monument Addons 0.21.4 and `MonumentFinder.cs` its required
   Monument Finder 3.1.5, both by WhiteThunder under MIT. Update each with
   `curl -fsSL -o server/carbon/plugins/<Name>.cs https://umod.org/plugins/<Name>.cs`. The `Default` profile in
