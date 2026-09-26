@@ -131,6 +131,15 @@ despawn, or they fill `traincar.population` and full wagons stop respawning. Non
 `serverauto.cfg`. `docs/vehicle-decay-convars.md` lists each convar's backing field and vanilla default, the
 `BaseBoat.WaterVehicleDecay` formula, and which vehicle classes reuse another class's fields.
 
+The solo block of `server.cfg` sets `spawn.min_density` and `spawn.min_rate` to 1. A population flagged
+`ScaleWithServerPopulation` spawns `TargetDensity * PlayerLerp(min_density, max_density)`
+(`DensitySpawnPopulation.GetCurrentSpawnDensity`) and refills at `PlayerLerp(min_rate, max_rate)`, lerping by
+players online over `server.maxplayers`, so the vanilla 0.5 minimums gave one player of four 62.5% of a full server.
+`decay.scale 0` zeroes every `DecayEntity` tick, so buildings never decay, with or without upkeep.
+`hackablelockedcrate.requiredhackseconds 300` opens locked crates in 5 minutes instead of 15, and
+`server.corpsedespawn 1800` keeps a player corpse 30 minutes instead of 5. None of these is saved to
+`serverauto.cfg`, so the file must keep them.
+
 The world runs vanilla survival rules: `server.cfg` sets no `server.gamemode`. It ran Facepunch's `primitive` mode
 for part of 2026-09-24. The revert removed that line while the server was stopped and set the nine saved convars the
 mode had written to `serverauto.cfg` back to their earlier values, after which both files matched

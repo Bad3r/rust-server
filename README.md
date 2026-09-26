@@ -50,6 +50,8 @@ Press Ctrl+C to stop.
   [docs/developer-and-admin-switches.md](docs/developer-and-admin-switches.md) covers the client command, what else developer mode changes, other hidden client switches such as god mode and infinite ammo, and the built-in creative mode.
 - Vehicles do not decay: [server.cfg](server/server/pve/cfg/server.cfg) sets every vehicle decay convar and the idle workcart despawn timer to 1e9 minutes, about 1900 years of uptime.
   Emptied ore and fuel wagons still despawn 10 minutes after unloading, so full ones keep respawning.
+- Playing alone costs nothing: [server.cfg](server/server/pve/cfg/server.cfg) keeps ore, barrels, and pickups at the density and respawn rate of a full server instead of 62.5% with one player of four.
+  Buildings never decay, locked crates open in 5 minutes instead of 15, and a corpse stays 30 minutes instead of 5.
 - Rust+ is off: [server.cfg](server/server/pve/cfg/server.cfg) sets `app.port -1`, which disables the companion server.
 - EAC is off for the Proton client: the launch passes `-insecure` and `server.encryption 0`.
 - Carbon's admin panel opens in chat with `/cp`.
