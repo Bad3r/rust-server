@@ -50,8 +50,10 @@ on in-game edits, so `git diff` shows what changed.
   `server/carbon/plugins`, such as `scripts/monument-addons` for the survey tool that must not sit there.
 - `scripts/check-convars.sh`: resolve every convar in `server.cfg` through a fresh `ilspycmd` decompile of
   `ConsoleGen.cs` to the `[ServerVar]` field or property it sets, exiting 1 on a name a Rust update renamed or
-  removed (the server only logs `Command '<name>' not found` for those). It reads the local install unless
-  `MANAGED_DIR` points elsewhere, and checks names, not what a convar now does.
+  removed (the server only logs `Command '<name>' not found` for those). A command line such as
+  `events.set_event_min_delay` only has to name a registered command (`Variable = false`), whose arguments it does
+  not check. It reads the local install unless `MANAGED_DIR` points elsewhere, and checks names, not what a convar
+  now does.
 - `uv run --with UnityPy python3 scripts/game-modes.py`: print each game mode in `GameModeManifest` (the values
   `server.gamemode` takes) with its shortname, convar overrides, feature list, and settings that differ from
   `vanilla`, then the map generation overrides in `RustDedicated_Data/resources.assets`, in about 20 s.

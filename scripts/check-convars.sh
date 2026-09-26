@@ -2,7 +2,8 @@
 # Resolves every convar in server.cfg to its ConsoleGen.cs registration, then confirms the field its SetOveride
 # assigns is actually declared where ConsoleGen.cs says it is. A convar Facepunch renamed or removed still parses
 # as an ordinary key=value line in server.cfg and does nothing at runtime; this catches that before a restart
-# wastes one. MANAGED_DIR (a RustDedicated_Data/Managed dir) points at an install other than this repo's server/.
+# wastes one. A command line only has to name a registered command. MANAGED_DIR (a RustDedicated_Data/Managed
+# dir) points at an install other than this repo's server/.
 set -uo pipefail
 
 if [[ -z "${CHECK_CONVARS_SHELL:-}" ]]; then
@@ -92,6 +93,18 @@ while read -r name value; do
   line="$(printf '%s\n' "$matches" | head -1 | cut -d: -f1)"
   block="$(sed -n "${line},$((line + 14))p" "$consolegen")"
 
+  # A command (events.set_event_min_delay) has no backing field: its Call lambda takes the rest of the line.
+  if grep -q 'Variable = false,' <<<"$block"; then
+    callee="$(grep -m1 -oE '[A-Za-z_][A-Za-z0-9_.]*\(arg\);' <<<"$block")"
+    if [[ -z "$callee" ]]; then
+      echo "FAIL  $name -> command without a Call near ConsoleGen.cs:$line"
+      fail=1
+      continue
+    fi
+    echo "OK    $name $value -> command ${callee%(arg);} (ConsoleGen.cs:$line)"
+    continue
+  fi
+
   # String convars assign the raw argument ("ConVar.Server.gamemode = str;"); the rest convert it first.
   setline="$(printf '%s\n' "$block" |
     grep -m1 -E '^\s*[A-Za-z_][A-Za-z0-9_.]*\s*=\s*str(\.To[A-Za-z]+\(\))?\s*;')"
@@ -126,8 +139,8 @@ while read -r name value; do
     sv=yes
   fi
   echo "OK    $name = $value -> $backing [$vartype] ($resolved_class:$resolved_declline, ServerVar=$sv)"
-done < <(awk '!/^[[:space:]]*#/ && NF>=2 {print $1, $2}' "$cfg")
+done < <(awk '!/^[[:space:]]*#/ && NF>=2 {$1 = $1; print}' "$cfg")
 
 echo
-echo "checked $count convars, fail=$fail"
+echo "checked $count convars and commands, fail=$fail"
 exit "$fail"
