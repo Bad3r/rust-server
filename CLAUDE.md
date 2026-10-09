@@ -267,7 +267,7 @@ version, channel, and Rust protocol.
   would otherwise light and fuel all night without cooking anything. The automatic switch needs no permission;
   `/lantern`, which toggles one's own lights by type, needs `nightlantern.<type>`, and `/lantern global` needs
   `nightlantern.global`.
-- Monument recyclers: `MonumentAddons.cs` is uMod's Monument Addons 0.21.4 and `MonumentFinder.cs` its required
+- Monument recyclers: `MonumentAddons.cs` is uMod's Monument Addons 0.21.5 and `MonumentFinder.cs` its required
   Monument Finder 3.1.5, both by WhiteThunder under MIT. Update each with
   `curl -fsSL -o server/carbon/plugins/<Name>.cs https://umod.org/plugins/<Name>.cs`. The `Default` profile in
   `data/MonumentAddons/Default.json`, which Monument Addons enables on first load, places one `recycler_static` at
