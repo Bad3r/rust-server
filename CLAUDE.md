@@ -380,6 +380,9 @@ whole directory, only while the server is stopped, before anything risky; earlie
   world under a new file name, and the old files stay (see `docs/map-seeds.md`).
 - `proceduralmap.<worldsize>.<seed>.<save protocol>.map` caches the generated map, and `Loading World` reads it in
   under a second. `Generating procedural map of size ...` still appears on every boot.
+- `proceduralmap.<worldsize>.<seed>.<save protocol>.navmesh` (190 MB on Pandora) holds the navmesh that livestock
+  and the other Gen2 animals walk on, carved by fences and buildings. `SaveRestore` rewrites it on every save, with
+  no `.1` or `.2` copies, and loads it right after the `.sav`'s entities.
 - `*.db` files are SQLite in WAL mode, and most data currently sits in the `*.db-wal` files (for example,
   `player.states.289.db` is 4 KB with a 20 KB WAL). Never delete a `-wal` file or copy a `.db` without it.
 - `289` is the save protocol (`Protocol: 2634.289.1` in the log is network.save.report). A Facepunch force-wipe
