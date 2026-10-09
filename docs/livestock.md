@@ -228,7 +228,9 @@ unless set in `server.cfg`.
 
 ## Test farm
 
-From F1 as an admin. Give the supplies (repeat the fence line for more; amounts stay within one stack):
+[livestock-farm.md](livestock-farm.md) describes the farm `LivestockFarm.cs` builds and runs without upkeep. For a
+small farm by hand, from F1 as an admin. Give the supplies (repeat the fence line for more; amounts stay within one
+stack):
 
 ```text
 inventory.give cupboard.tool 1

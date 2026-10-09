@@ -8,8 +8,9 @@ A local Rust (the Facepunch game) dedicated server, Steam app 258550, on NixOS. 
 Rust client running under Proton as `RustClient.exe` with EAC off, modded with Carbon (edge channel). There is no
 test suite; the checks are the hooks and workflows in Development and CI below. The hand-maintained files are
 `start.sh`, `harmony/Ipv4Only.cs`, `server/server/pve/cfg/server.cfg`, `server/carbon/plugins/SmeltSpeed.cs`,
-`SkinsCatalog.cs`, `DeveloperFlag.cs`, `scripts/`, `docs/`, `flake.nix`, `.github/`, and `README.md`; steamcmd, the
-mod build in `start.sh`, Carbon, uMod downloads, Nix (`flake.lock`), or the server writes everything else.
+`SkinsCatalog.cs`, `DeveloperFlag.cs`, `LivestockFarm.cs`, `scripts/`, `docs/`, `flake.nix`, `.github/`, and
+`README.md`; steamcmd, the mod build in `start.sh`, Carbon, uMod downloads, Nix (`flake.lock`), or the server writes
+everything else.
 
 The git repo (branch `main`) pushes to the private GitHub repo https://github.com/Bad3r/rust-server (`origin`). It
 tracks those files, `CLAUDE.md`, `LICENSE` (AGPL-3.0-or-later), `flake.lock`, and Carbon's `server/carbon/config.json`,
@@ -357,6 +358,17 @@ version, channel, and Rust protocol.
   yourself". Facepunch's developers also get auth level 3; admin rights here still come from `users.cfg`.
   `docs/developer-and-admin-switches.md` starts with the client command and lists everything else the flag changes,
   the other client settings the server trusts (`global.god`, `player.infiniteammo`, and more), and creative mode.
+- Livestock farm: `LivestockFarm.cs` is local. `farm.build` over RCON places one farm per identity, by default on
+  Pandora's E6 river meadow: a 63-fence pen with a gate, two Hitch & Troughs, and the herd's cupboard on a
+  foundation; two coops, seven boxes, a composter, and a fridge on its own foundation with a solar panel and battery;
+  and four planters watered by a solar river pump. Every 30 s it bonds, houses, feeds, waters, milks, and shears the
+  cattle and sheep, tends the coops, harvests, clones, and replants the crops, composts the dung, breeds as a
+  fallback, culls above 6 cattle and 8 sheep, returns strays, and re-places missing structures. It creates wheat or
+  water only below a stock's minimum and logs each top-up. Damage to the farm from anything but a real player is
+  cancelled. Its record, `data/LivestockFarm/<identity>.json` (untracked), is written only on world saves and
+  unload and is tied to the save's creation time, so after every wipe `farm.build` has to run again. `farm.status`,
+  `farm.tick`, `farm.relink`, `farm.repair`, and `farm.remove confirm` need RCON, the server console, or auth level
+  2. `docs/livestock-farm.md` covers the layout, the loop, the config, and recovery.
 - Mono profiler: `config.profiler.json` enables it and tracks `Assembly-CSharp`, `Assembly-CSharp-firstpass`, and
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
   need a restart. `c.profile <seconds> -c` records calls, `c.profiler.print -t` exports a table to

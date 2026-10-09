@@ -39,6 +39,7 @@
 !/server/carbon/plugins/BuildingSkins.cs
 !/server/carbon/plugins/DeveloperFlag.cs
 !/server/carbon/plugins/ImageLibrary.cs
+!/server/carbon/plugins/LivestockFarm.cs
 !/server/carbon/plugins/MonumentAddons.cs
 !/server/carbon/plugins/MonumentFinder.cs
 !/server/carbon/plugins/NightLantern.cs
@@ -51,6 +52,7 @@
 /server/carbon/configs/*
 !/server/carbon/configs/AutoDoors.json
 !/server/carbon/configs/BuildingSkins.json
+!/server/carbon/configs/LivestockFarm.json
 !/server/carbon/configs/MonumentAddons.json
 !/server/carbon/configs/MonumentFinder.json
 !/server/carbon/configs/NightLantern.json

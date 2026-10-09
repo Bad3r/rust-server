@@ -1,0 +1,956 @@
+{
+  "Owner SteamID (0 = first owner in cfg/users.cfg)": 0,
+  "Upkeep interval (seconds)": 30.0,
+  "Farm radius around the layout centre for sweeping and relinking (m)": 50.0,
+  "Swept dropped items (shortname to box role)": {
+    "horsedung": "box_dung",
+    "egg": "box_eggs"
+  },
+  "Fridge items (shortnames kept in a fridge before their box)": [
+    "milk",
+    "egg",
+    "beefmeat",
+    "muttonmeat"
+  ],
+  "Herd spawn point (farm-local metres)": {
+    "x": 0.0,
+    "z": 11.0
+  },
+  "Herd spawn spread (m)": 4.0,
+  "Herd spawn delay after build (seconds)": 15.0,
+  "Starter herd": [
+    {
+      "Species": "cattle",
+      "Prefab": "assets/rust.ai/agents/cow/cow.prefab",
+      "Male": false,
+      "Count": 2
+    },
+    {
+      "Species": "cattle",
+      "Prefab": "assets/rust.ai/agents/bull/bull.prefab",
+      "Male": true,
+      "Count": 1
+    },
+    {
+      "Species": "cattle",
+      "Prefab": "assets/rust.ai/agents/calf/calf.prefab",
+      "Male": false,
+      "Count": 1
+    },
+    {
+      "Species": "sheep",
+      "Prefab": "assets/rust.ai/agents/sheep/sheep.prefab",
+      "Male": false,
+      "Count": 3
+    },
+    {
+      "Species": "sheep",
+      "Prefab": "assets/rust.ai/agents/sheep/sheep.prefab",
+      "Male": true,
+      "Count": 1
+    },
+    {
+      "Species": "sheep",
+      "Prefab": "assets/rust.ai/agents/sheep/lamb.prefab",
+      "Male": true,
+      "Count": 1
+    }
+  ],
+  "Cattle cap (adults and juveniles)": 6,
+  "Sheep cap (adults and juveniles)": 8,
+  "Breeding fallback after minutes without a new pregnancy": 60.0,
+  "Breeding fallback retry minutes": 10.0,
+  "Need threshold (0-1)": 0.5,
+  "Need restore value (0-1)": 0.8,
+  "Fallback feed shortname": "wheat",
+  "Trough feed target (items)": 120,
+  "Trough feed minimum before creating feed (items)": 20,
+  "Trough water target (ml)": 5000,
+  "Trough water minimum before creating water (ml)": 1000,
+  "Coop feed target (items)": 40,
+  "Coop feed minimum before creating feed (items)": 5,
+  "Coop water target (ml)": 1000,
+  "Coop water minimum before creating water (ml)": 200,
+  "Water source roles": [
+    "catcher_small",
+    "catcher_large",
+    "barrel",
+    "pump"
+  ],
+  "Planter slot plan (layout id to clone shortname per slot)": {
+    "planter-01": [
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato"
+    ],
+    "planter-02": [
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato",
+      "clone.potato"
+    ],
+    "planter-03": [
+      "clone.corn",
+      "clone.pumpkin",
+      "clone.corn",
+      "clone.pumpkin",
+      "clone.corn",
+      "clone.pumpkin",
+      "clone.corn",
+      "clone.pumpkin",
+      "clone.corn"
+    ],
+    "planter-04": [
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat"
+    ]
+  },
+  "Clone genes": "GGYYYY",
+  "Recreate clones after a slot sat empty with none in stock (minutes)": 10.0,
+  "Planter dry threshold (fraction of soil capacity)": 0.25,
+  "Planter dry rescue after (minutes)": 10.0,
+  "Composter horsedung stock": 10,
+  "Ground check roles": [
+    "coop",
+    "trough"
+  ],
+  "Ground check tolerance (m)": 0.15,
+  "Gate close distance (m)": 10.0,
+  "Auto repair missing structures": true,
+  "Cull corpse timeout (seconds)": 60.0,
+  "Repeat an identical failure log after minutes": 10.0,
+  "Repeat a full container log after minutes": 60.0,
+  "Status events kept per kind": 8,
+  "Layout": {
+    "Centre": {
+      "x": -1542.9,
+      "z": 1227.3
+    },
+    "Yaw": 0.0,
+    "Entries": [
+      {
+        "Id": "fence-01",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -24.65,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-02",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -21.75,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-03",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -18.85,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-04",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -15.95,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-05",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -13.05,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-06",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -10.15,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-07",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -7.25,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-08",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -4.35,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-09",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -1.45,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-10",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 1.45,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-11",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 4.35,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-12",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 7.25,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-13",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 10.15,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-14",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 13.05,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-15",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 15.95,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-16",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 18.85,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-17",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 21.75,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-18",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 24.65,
+        "Z": -20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-19",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": -18.85,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-20",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": -15.95,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-21",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": -13.05,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-22",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": -10.15,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-23",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": -7.25,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-24",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": -4.35,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-25",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": -1.45,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-26",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": 1.45,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-27",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": 4.35,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "gate-01",
+        "Role": "gate",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfencegate.deployed.prefab",
+        "X": 26.1,
+        "Z": 7.2,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-28",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": 10.15,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-29",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": 13.05,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-30",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": 15.95,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-31",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": 18.85,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-32",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 24.65,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-33",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 21.75,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-34",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 18.85,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-35",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 15.95,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-36",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 13.05,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-37",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 10.15,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-38",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 7.25,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-39",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 4.35,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-40",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 1.45,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-41",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -1.45,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-42",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -4.35,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-43",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -7.25,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-44",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -10.15,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-45",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -13.05,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-46",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -15.95,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-47",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -18.85,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-48",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -21.75,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-49",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -24.65,
+        "Z": 20.3,
+        "Yaw": 90.0
+      },
+      {
+        "Id": "fence-50",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": 18.85,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-51",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": 15.95,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-52",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": 13.05,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-53",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": 10.15,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-54",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": 7.25,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-55",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": 4.35,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-56",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": 1.45,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-57",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": -1.45,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-58",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": -4.35,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-59",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": -7.25,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-60",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": -10.15,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-61",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": -13.05,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-62",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": -15.95,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "fence-63",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": -18.85,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "foundation-01",
+        "Role": "foundation",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 0.0,
+        "Z": 0.0,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "cupboard-01",
+        "Role": "cupboard",
+        "Prefab": "assets/prefabs/deployable/tool cupboard/cupboard.tool.deployed.prefab",
+        "X": 0.0,
+        "Z": 0.0,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "trough-01",
+        "Role": "trough",
+        "Prefab": "assets/prefabs/deployable/hitch & trough/hitchtrough.deployed.prefab",
+        "X": -13.05,
+        "Z": 0.0,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "trough-02",
+        "Role": "trough",
+        "Prefab": "assets/prefabs/deployable/hitch & trough/hitchtrough.deployed.prefab",
+        "X": 13.05,
+        "Z": 0.0,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "catcher-01",
+        "Role": "catcher_small",
+        "Prefab": "assets/prefabs/deployable/water catcher/water_catcher_small.prefab",
+        "X": -15.7,
+        "Z": 1.3,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "catcher-02",
+        "Role": "catcher_small",
+        "Prefab": "assets/prefabs/deployable/water catcher/water_catcher_small.prefab",
+        "X": 10.65,
+        "Z": 0.0,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "box-milk",
+        "Role": "box_milk",
+        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
+        "X": 28.9,
+        "Z": 13.3,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "box-wool",
+        "Role": "box_wool",
+        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
+        "X": 31.0,
+        "Z": 13.3,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "box-eggs",
+        "Role": "box_eggs",
+        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
+        "X": 33.1,
+        "Z": 13.3,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "box-dung",
+        "Role": "box_dung",
+        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
+        "X": 35.2,
+        "Z": 13.3,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "box-meat",
+        "Role": "box_meat",
+        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
+        "X": 37.3,
+        "Z": 13.3,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "box-feed",
+        "Role": "box_feed",
+        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
+        "X": 39.4,
+        "Z": 13.3,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "box-clones",
+        "Role": "box_clones",
+        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
+        "X": 41.5,
+        "Z": 13.3,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "composter-01",
+        "Role": "composter",
+        "Prefab": "assets/prefabs/deployable/composter/composter.prefab",
+        "X": 30.0,
+        "Z": 10.0,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "platform-01",
+        "Role": "platform",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 33.15,
+        "Z": 10.25,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "fridge-01",
+        "Role": "fridge",
+        "Prefab": "assets/prefabs/deployable/fridge/fridge.deployed.prefab",
+        "X": 32.6,
+        "Z": 10.0,
+        "Yaw": 0.0,
+        "On": "platform-01"
+      },
+      {
+        "Id": "battery-01",
+        "Role": "battery",
+        "Prefab": "assets/prefabs/deployable/playerioents/batteries/smallrechargablebattery.deployed.prefab",
+        "X": 33.8,
+        "Z": 10.0,
+        "Yaw": 0.0,
+        "On": "platform-01"
+      },
+      {
+        "Id": "solar-02",
+        "Role": "solar",
+        "Prefab": "assets/prefabs/deployable/playerioents/generators/solar_panels_roof/solarpanel.large.deployed.prefab",
+        "X": 36.3,
+        "Z": 10.0,
+        "Yaw": 350.0
+      },
+      {
+        "Id": "coop-01",
+        "Role": "coop",
+        "Prefab": "assets/prefabs/deployable/chickencoop/chickencoop.deployed.prefab",
+        "X": 42.1,
+        "Z": 6.8,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "coop-02",
+        "Role": "coop",
+        "Prefab": "assets/prefabs/deployable/chickencoop/chickencoop.deployed.prefab",
+        "X": 46.1,
+        "Z": 6.8,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "planter-01",
+        "Role": "planter",
+        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
+        "X": 29.5,
+        "Z": 19.1,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "sprinkler-01",
+        "Role": "sprinkler",
+        "Prefab": "assets/prefabs/deployable/playerioents/sprinkler/electric.sprinkler.deployed.prefab",
+        "X": 29.5,
+        "Z": 21.3,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "planter-02",
+        "Role": "planter",
+        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
+        "X": 32.9,
+        "Z": 19.1,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "sprinkler-02",
+        "Role": "sprinkler",
+        "Prefab": "assets/prefabs/deployable/playerioents/sprinkler/electric.sprinkler.deployed.prefab",
+        "X": 32.9,
+        "Z": 21.3,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "planter-03",
+        "Role": "planter",
+        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
+        "X": 36.3,
+        "Z": 19.1,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "sprinkler-03",
+        "Role": "sprinkler",
+        "Prefab": "assets/prefabs/deployable/playerioents/sprinkler/electric.sprinkler.deployed.prefab",
+        "X": 36.3,
+        "Z": 21.3,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "planter-04",
+        "Role": "planter",
+        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
+        "X": 39.7,
+        "Z": 19.1,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "sprinkler-04",
+        "Role": "sprinkler",
+        "Prefab": "assets/prefabs/deployable/playerioents/sprinkler/electric.sprinkler.deployed.prefab",
+        "X": 39.7,
+        "Z": 21.3,
+        "Yaw": 180.0
+      },
+      {
+        "Id": "pump-01",
+        "Role": "pump",
+        "Prefab": "assets/prefabs/deployable/playerioents/waterpump/water.pump.deployed.prefab",
+        "X": 29.5,
+        "Z": 29.3,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "solar-01",
+        "Role": "solar",
+        "Prefab": "assets/prefabs/deployable/playerioents/generators/solar_panels_roof/solarpanel.large.deployed.prefab",
+        "X": 32.2,
+        "Z": 24.0,
+        "Yaw": 330.0
+      }
+    ],
+    "Connections": [
+      {
+        "From": "solar-01",
+        "FromSlot": 0,
+        "To": "pump-01",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "pump-01",
+        "FromSlot": 0,
+        "To": "sprinkler-01",
+        "ToSlot": 0,
+        "Kind": "water"
+      },
+      {
+        "From": "sprinkler-01",
+        "FromSlot": 0,
+        "To": "sprinkler-02",
+        "ToSlot": 0,
+        "Kind": "water"
+      },
+      {
+        "From": "sprinkler-02",
+        "FromSlot": 0,
+        "To": "sprinkler-03",
+        "ToSlot": 0,
+        "Kind": "water"
+      },
+      {
+        "From": "sprinkler-03",
+        "FromSlot": 0,
+        "To": "sprinkler-04",
+        "ToSlot": 0,
+        "Kind": "water"
+      },
+      {
+        "From": "solar-02",
+        "FromSlot": 0,
+        "To": "battery-01",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "battery-01",
+        "FromSlot": 0,
+        "To": "fridge-01",
+        "ToSlot": 0,
+        "Kind": "power"
+      }
+    ]
+  }
+}
