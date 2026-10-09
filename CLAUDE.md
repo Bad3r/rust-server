@@ -111,6 +111,14 @@ never print it. Rust masks it as `******` in the logged command line.
 `stop()` and the exit summary parse those two exact log strings. If a Rust update changes them, Ctrl+C degrades
 to an unsaved kill.
 
+Carbon's `Startup.Entrypoint` deletes `Microsoft.CodeAnalysis.dll`, `Microsoft.CodeAnalysis.CSharp.dll`,
+`System.Collections.Immutable.dll`, the `x64` and `x86` folders, and any Oxide DLLs from `RustDedicated_Data/Managed`
+on every boot. A Rust update whose delta reuses chunks of those files then fails in step 1 with `Error! App '258550'
+state is 0x426 after update job` (`home/Steam/logs/content_log.txt`: `Failed updating depot 258552 ... (Missing game
+files)`), and `start.sh` exits. With the server stopped, running steamcmd once as step 1 does but with
+`+app_update 258550 validate` restores the files and applies the update, as it did for buildid 25823813 on
+2026-10-09.
+
 `-insecure` and `+server.encryption 0` turn EAC off for the Proton client.
 
 Startup applies the `+` arguments, runs `server.readcfg` (logged as `Server Config Loaded`; it reads
