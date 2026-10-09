@@ -218,12 +218,14 @@ version, channel, and Rust protocol.
   size and `GlobalItemsMultiplier 2.0` scales that list; `GlobalMultiplier` scales every other item and must stay
   1.0. A stack merge deletes the absorbed item with its contents, so stack-1 items (backpacks, guns with
   attachments) must stay unstackable. `data.json` records each item's vanilla size once, so Facepunch stack
-  changes do not reach it, and items a Rust update adds stay vanilla until merged into `Items` while stopped:
+  changes do not reach it, and items a Rust update adds stay vanilla until merged into `Items` while stopped, or
+  followed by `c.loadmodule StackManager` on a running server. The merge keeps `Items` sorted by key, as Carbon
+  writes it:
 
   ```bash
   cd server/carbon/modules/StackManager && jq --slurpfile d data.json '.Config.Blacklist as $b |
-    .Config.Items = (($d[0].Items | with_entries(select(.value > 1 and (.key | IN($b[]) | not)))) + .Config.Items)' \
-    config.json >config.json.new && mv config.json.new config.json
+    .Config.Items = (($d[0].Items | with_entries(select(.value > 1 and (.key | IN($b[]) | not)))) + .Config.Items
+      | to_entries | sort_by(.key) | from_entries)' config.json >config.json.new && mv config.json.new config.json
   ```
 - Plugins (config in `configs/<Name>.json`, runtime data in `data/`): `AutoDoors.cs` is uMod's Auto Doors 3.3.12,
   MIT-licensed on uMod, which the README's License section records; a new third-party plugin needs the same entry.
