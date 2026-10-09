@@ -115,9 +115,10 @@ Contentment is the lowest of three needs, each 0 to 1:
   (`livestock.grazesuntilovergrazed`, `livestock.overgrazedareacooldownminutes`). Only when no grass is found does the
   animal eat from a Hitch & Trough within 25 m, taking chicken feed (`ItemModConsumable.chickenCoopFood`) worth 0.0021
   fullness per calorie up to a ceiling of 0.8: `bread.brioche.loaf` 190 calories, `bread.loaf` 150, `potato` 125,
-  `cakefiveyear` 100, `pumpkin` 80, `corn` 75, `wheat` 75, `granolabar` 60, `black.raspberries` 40, `blueberries` 30,
-  `apple` 30, berries and `honeycomb` 5, `grub` 3, `worm` 1. An animal living off a trough needs up to about 1700
-  calories (14 potatoes) per hour of standing daylight.
+  `pumpkin` 80, `corn` 75, `wheat` 75, `granolabar` 60, `black.raspberries` 40, `blueberries` 30, `apple` 30, berries
+  and `honeycomb` 5, `grub` 3, `worm` 1. The trough takes only Food-category items, so `cakefiveyear` (100 calories,
+  category Tool) feeds only chickens. An animal living off a trough needs up to about 1700 calories (14 potatoes) per
+  hour of standing daylight.
 - Hydration drains 0.00001 per second the same way, so one drink lasts about 5000 s of standing daylight. The animal
   drinks fresh water 0.05 to 0.5 m deep on a river or lake shore, or from any `LiquidContainer` holding fresh water
   within 25 m (water barrel, water catcher, the trough's water end), taking 200 ml times its missing hydration.
