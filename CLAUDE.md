@@ -510,6 +510,24 @@ To test server-side behavior without touching the `pve` world, launch `steam-run
 `./RustDedicated` for vanilla) from `server/` as `start.sh` does, but with a throwaway `+server.identity`,
 `+server.worldsize 1000`, and other ports. It can run next to the live server. Copy any needed `cfg/server.cfg`
 into the throwaway identity first, and `rip` its `server/server/<identity>/` afterwards. That run also uploads its
-map to Facepunch and writes into the shared `server/carbon/`. `steam-run` mounts a private tmpfs on `/tmp`, so a
+map to Facepunch unless given `+server.autouploadmap 0`. `steam-run` mounts a private tmpfs on `/tmp`, so a
 `-logfile` under `/tmp` is readable only through `/proc/<pid>/fd/`. A background `setsid` from a shell with job
 control forks, so `$!` is not the server PID; use `pgrep -f RustDedicated`.
+
+A Carbon run reads and writes the shared `server/carbon/` by default, and its fresh world fires `OnNewSave` in every
+plugin there. NTeleportation (`Wipe On Upgrade Or Change` true) then clears every home, its teleport usage
+counters, and every warp location such as `/town`, as it also does when a map has no player-owned building. Auto
+Doors drops each player's per-door settings, and Monument Addons resets its profile state. Give such a run its own
+Carbon root (verified on Carbon 2.1.1287, which then wrote nothing under `server/carbon/`):
+
+- `-carbon.rootdir <dir>` and `-carbon.carbonconfigdir <dir>`, the same directory: Bootstrap reads `config.json` from
+  `carbonconfigdir`, while Preloader, Startup, and Common read it from the root.
+- `-carbon.scriptdir`, `configdir`, `datadir`, `langdir`, `logdir`, `profiledir`, `extdir`, and `modifierdir`,
+  each a directory under that root.
+- Copies of `managed/` and `native/` in the root, and a `config.json` with `SelfUpdating.Enabled` and
+  `SelfUpdating.HookUpdates` false.
+- No `-carbon.moduledir`: Carbon also uses it in place of `managed/lib`, which breaks library loading and plugin
+  compilation. Modules land under the root anyway.
+
+Doorstop still loads `Carbon.Preloader.dll` and the assemblies it bootstraps from `server/carbon/managed/`, so keep
+the live server stopped while the throwaway runs: the self-update at a live Carbon boot replaces those files.
