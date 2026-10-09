@@ -115,13 +115,13 @@
         {
           "Id": "dc367e12-825d-4bff-ac1c-9479300aa13e",
           "Position": {
-            "x": -20.785,
-            "y": 46.315,
-            "z": -12.0
+            "x": 3.126,
+            "y": 46.355,
+            "z": 17.726
           },
           "RotationAngles": {
             "x": 0.0,
-            "y": 90.0,
+            "y": 180.0,
             "z": 0.0
           },
           "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
@@ -133,13 +133,13 @@
         {
           "Id": "84743495-f375-425a-a0f2-f7c438e7e29a",
           "Position": {
-            "x": -3.0,
-            "y": 3.062,
+            "x": 0.0,
+            "y": 3.013,
             "z": 0.0
           },
           "RotationAngles": {
             "x": 0.0,
-            "y": 90.0,
+            "y": 0.0,
             "z": 0.0
           },
           "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
@@ -151,13 +151,13 @@
         {
           "Id": "12b1d753-013e-4f48-b313-33cd35452c7f",
           "Position": {
-            "x": 2.121,
-            "y": 0.011,
-            "z": 2.121
+            "x": 0.0,
+            "y": -0.009,
+            "z": 0.0
           },
           "RotationAngles": {
             "x": 0.0,
-            "y": 270.0,
+            "y": 90.0,
             "z": 0.0
           },
           "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
@@ -169,8 +169,8 @@
         {
           "Id": "47af78ac-092c-4cf7-8cb0-aeca66beb114",
           "Position": {
-            "x": 6.364,
-            "y": 3.008,
+            "x": -6.364,
+            "y": 3.005,
             "z": -6.364
           },
           "RotationAngles": {
@@ -211,7 +211,7 @@
           },
           "RotationAngles": {
             "x": 0.0,
-            "y": 270.0,
+            "y": 0.0,
             "z": 0.0
           },
           "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"
@@ -224,7 +224,7 @@
           "Id": "74489509-6946-4258-87f8-2a6763681705",
           "Position": {
             "x": -29.344,
-            "y": 1.957,
+            "y": 1.983,
             "z": 6.237
           },
           "RotationAngles": {
@@ -278,7 +278,7 @@
           "Id": "f1d7f908-4b93-4682-bcf9-946f07f7df6e",
           "Position": {
             "x": 0.0,
-            "y": 12.651,
+            "y": 12.642,
             "z": 3.0
           },
           "RotationAngles": {
@@ -295,9 +295,9 @@
         {
           "Id": "11b32c2d-44b0-4fa6-9acb-e86e427a1766",
           "Position": {
-            "x": 0.0,
-            "y": 12.666,
-            "z": 3.0
+            "x": 2.121,
+            "y": 12.657,
+            "z": 2.121
           },
           "RotationAngles": {
             "x": 0.0,
@@ -326,18 +326,18 @@
         }
       ]
     },
-    "module_1200x1200_3way_ladder": {
+    "moonpool_1200x1500_1way": {
       "Entities": [
         {
-          "Id": "466b5364-a53f-4695-afff-ddd1ea3f523d",
+          "Id": "2b136e36-f444-45bc-919a-11253278e0dd",
           "Position": {
-            "x": 7.356,
-            "y": -0.634,
-            "z": 1.463
+            "x": 1.279,
+            "y": -1.433,
+            "z": 3.258
           },
           "RotationAngles": {
             "x": 0.0,
-            "y": 270.0,
+            "y": 180.0,
             "z": 0.0
           },
           "PrefabName": "assets/bundled/prefabs/static/recycler_static.prefab"

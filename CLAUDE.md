@@ -273,15 +273,16 @@ version, channel, and Rust protocol.
   `data/MonumentAddons/Default.json`, which Monument Addons enables on first load, places one `recycler_static` at
   each monument type that has a map name and no vanilla recycler: 17 keyed by prefab short name (`fishing_village_a`,
   `oilrig_1`, `train_tunnel_double_entrance`, and so on), plus two Underwater Lab rooms, `moonpool_1200x1500_3way`
-  and `module_1200x1200_3way_ladder`, because lab interiors are assembled from modules and an offset from the lab
-  root misses on other layouts. A lab gets one recycler per such room it holds. Positions are local to
-  `MonumentInfo.transform` (the module's transform for a lab room) and come from a survey of the Pandora map (seed
-  1739235182) that spawned a recycler at each spot and checked overlap and ground contact, except the
+  and `moonpool_1200x1500_1way`, because lab interiors are assembled from modules and an offset from the lab root
+  misses on other layouts. A lab gets one recycler per such room it holds. Positions are local to
+  `MonumentInfo.transform` (the module's transform for a lab room) and come from a survey of seed 1739235182 on
+  buildid 25797215 that spawned a recycler at each spot and checked overlap and ground contact, except the
   `desert_military_base_d` and `moonpool_1200x1500_3way` entries, kept from surveys of earlier maps. They apply to
   every future map, but a monument type none of the surveyed maps had gets none until someone places one in game
-  or reruns the survey in `docs/monument-survey.md`. The 23 other named monument types on this map ship a recycler
-  already. Recyclers in a safe zone turn yellow, as vanilla ones do. Monument Addons respawns its entities from the
-  profile on every load and keeps them out of the `.sav`. `data/MonumentAddons.json` holds the enabled profiles and
+  or reruns the survey in `docs/monument-survey.md`, and a lab room's furnishings change between layouts, which
+  can block its spot. The 23 other named monument types on this map ship a recycler already. Recyclers in a safe
+  zone turn yellow, as vanilla ones do. Monument Addons respawns its entities from the profile on every load and
+  keeps them out of the `.sav`. `data/MonumentAddons.json` holds the enabled profiles and
   each player's selected profile by SteamID, so it stays untracked. `c.grant group admin monumentaddons.admin`
   unlocks the in-game commands `maspawn <entity>`, `makill`, `maundo`, `masave`, `mashow`, and `mahelp`. Skip the
   bundled `MonumentsRecycler` example profile: its oil rig keys `OilrigAI` and `OilrigAI2` predate the rename to

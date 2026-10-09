@@ -1,8 +1,8 @@
 # Monument survey and recycler placement
 
 How `server/carbon/data/MonumentAddons/Default.json` (commit `cbfef8e`) was produced, and how to redo it after a
-map wipe or for a monument the current profile does not cover. Verified against Rust buildid 25454815, Carbon
-edge `Carbon.Common 2.1.1278.0`, uMod Monument Addons 0.21.4 and Monument Finder 3.1.5, on 2026-09-24.
+map wipe or for a monument the current profile does not cover. Last run against Rust buildid 25797215, Carbon edge
+`Carbon.Common 2.1.1287.0`, uMod Monument Addons 0.21.5 and Monument Finder 3.1.5, on 2026-10-09.
 
 Two tools:
 
@@ -100,6 +100,8 @@ PrefabName}]}}}`. Position and rotation are local to the monument's own transfor
   module shortName instead, relative to the module's own transform, so it holds wherever that room appears; the
   module prefab is shared by lab variants a to d. On another map the room may be missing from a lab or appear
   twice, giving that lab no recycler or two, so re-check the module counts with `survey.labdump` after a wipe.
+  A room's furnishings (junk piles, crates, greebles, cabinets) also change between layouts, so a spot verified on
+  one map can be blocked on the next; `survey.labsolve` checks it again.
 - `make-profile.sh` only handles entries `survey.solve` produces for ordinary `MonumentInfo` monuments; it does
   not handle the cargo ship, the underground train tunnel cells, or lab modules (see its header comment). The
   surface Train Tunnel Links (`train_tunnel_double_entrance`, `train_tunnel_double_entrance_b_72m`), where the
@@ -107,10 +109,11 @@ PrefabName}]}}}`. Position and rotation are local to the monument's own transfor
 
 ## Map-specific provenance
 
-The current `Default.json` comes from a re-survey on seed 1739235182 (worldsize 4500, buildid 25454815) on
-2026-09-26. The earlier surveys ran at worldsize 3500 on seed 783331605 (commit `cbfef8e`) and on 1970515526
-(commit `2266533`). The raw outputs are kept untracked under `research/monument-addons/survey-<seed>/` on the host
-that ran them, so a fresh clone lacks them. Treat them as worked examples of the JSON shapes above.
+The current `Default.json` comes from a re-survey on seed 1739235182 (worldsize 4500, buildid 25797215) on
+2026-10-09. The earlier surveys ran at worldsize 3500 on seed 783331605 (commit `cbfef8e`) and on 1970515526
+(commit `2266533`), and at 4500 on 1739235182 with buildid 25454815 (commit `69b7dd4`). The raw outputs are kept
+untracked under `research/monument-addons/survey-<seed>/` (`survey-1739235182-b25797215/` for the latest) on the
+host that ran them, so a fresh clone lacks them. Treat them as worked examples of the JSON shapes above.
 
 Each re-survey runs `survey.solve` with the profile disabled (`maprofile disable Default` works over RCON, as the
 server console holds every permission), so every placement is verified on the new terrain instead of carried
@@ -119,10 +122,23 @@ Cabins) got its first entry. That map's lab has no `module_1200x1200_3way_ladder
 `moonpool_1200x1500_3way`, the room submarines dock in, from `survey.labsolve`; a lab that holds both rooms gets
 two recyclers, and one with neither gets none.
 
-On 1739235182, of the 13 earlier entries whose monument that map has, 10 moved, 2 only turned, and 1 stayed.
-`desert_military_base_c` got an entry next to the `_d` variant, and each Train Tunnel Link got one on the terrain
-over its tunnel portal, 12.7 m above the rails. That map's lab holds `module_1200x1200_3way_ladder` once and no
-`moonpool_1200x1500_3way`, so it gets one recycler; `survey.labsolve` found a single clear spot in that room, in
-another corner than before. With the profile enabled, `survey.dump` counted 53 recyclers, 36 vanilla and 17 from
-the profile. After the next map wipe or force-wipe update, repeat that: disable the profile, `survey.solve`,
-`survey.labdump` for the room counts, and `survey.labsolve` for a room the new lab holds once.
+On 1739235182 (buildid 25454815), of the 13 earlier entries whose monument that map has, 10 moved, 2 only turned,
+and 1 stayed. `desert_military_base_c` got an entry next to the `_d` variant, and each Train Tunnel Link got one on
+the terrain over its tunnel portal, 12.7 m above the rails. That map's lab holds `module_1200x1200_3way_ladder` once
+and no `moonpool_1200x1500_3way`, so it gets one recycler; `survey.labsolve` found a single clear spot in that room,
+in another corner than before. With the profile enabled, `survey.dump` counted 53 recyclers, 36 vanilla and 17 from
+the profile.
+
+Buildid 25797215 generates a different layout from the same seed, with the same named monuments. Of the 16
+surveyed entries, `survey.solve` kept 8, shifted `swamp_c` and `train_tunnel_double_entrance` less than 3 cm in
+height, and moved or turned `nuclear_missile_silo`, `stables_a`, `stables_b`, `mining_quarry_a`, `mining_quarry_c`,
+and `train_tunnel_double_entrance_b_72m`. The lab's module counts matched the old ones, but `survey.labsolve`
+found no clear candidate in `module_1200x1200_3way_ladder` at any margin. `survey.labscan` found clear spots only
+in `moonpool_1200x1500_1way` and at the edge of `module_900x900_3way`, so the profile replaces the ladder room with
+`moonpool_1200x1500_1way` at the spot `survey.labsolve` verified. With the profile enabled, `survey.dump` counted 56
+recyclers: 39 vanilla, 3 of them in the Deep Sea safe zone, and 17 from the profile. The dump assigns the
+`train_tunnel_double_entrance` recycler to `ue_canyon_a` by bounds, since that link sits inside the canyon.
+
+After the next map wipe or force-wipe update, repeat that: disable the profile, `survey.solve`, `survey.labdump` for
+the room counts, `survey.labscan` for the rooms with a clear spot, and `survey.labsolve` for a room the new lab holds
+once.
