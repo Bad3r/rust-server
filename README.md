@@ -77,6 +77,7 @@ Press Ctrl+C to stop.
   Blueprints, deaths, and identities use a separate version number and survive the wipe.
 - Before choosing a new seed, `uv run scripts/seed-scan.py --random 24 --jobs 4` generates random seeds on throwaway servers next to the live one and ranks them in `seedscan/<buildid>/<size>/index.html`, with every map rendered and labeled.
   [docs/map-seeds.md](docs/map-seeds.md) covers what the seed and the world size decide, and how to switch the world to a new seed.
+- [docs/livestock.md](docs/livestock.md) covers the cattle and sheep of the October 2026 update: `spawn` names, a test farm from the F1 console, taming by trust, needs, breeding, and the `livestock.*` commands.
 
 ## Repository layout
 

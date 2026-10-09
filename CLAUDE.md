@@ -161,6 +161,12 @@ mode had written to `serverauto.cfg` back to their earlier values, after which b
 `server.gamemode` line, so switching modes always needs that second step. `docs/game-modes.md` covers all ten modes
 and what the primitive run changed.
 
+Buildid 25797215 added livestock: wild cattle and sheep herds (`cow.population`, `sheep.population`), a Livestock
+Vendor at the stables monuments, animal fences, and `livestock.*` commands and convars. `docs/livestock.md` covers
+the `spawn` names, trust, needs, breeding, products, and a test farm from F1. Most `livestock.*` commands act on the
+animal in the caller's view and answer `This command has to be run by a player.` over RCON; `livestock.census` works
+there.
+
 ## IPv4-only host
 
 The host boots with `ipv6.disable=1`. Unity's Mono sets `Socket.OSSupportsIPv6` from a build-time platform flag
