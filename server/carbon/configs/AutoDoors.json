@@ -126,6 +126,10 @@
     "door.hinged.industrial.a": {
       "enabled": true,
       "displayName": "Industrial Door"
+    },
+    "wall.animal.fence.gate": {
+      "enabled": true,
+      "displayName": "Animal Fence Gate"
     }
   },
   "Version": {
