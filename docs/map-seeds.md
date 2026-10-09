@@ -97,9 +97,9 @@ clients as `levelConfig`, and with `server.autouploadmap` on they download the u
 ## Switching the pve world to a new seed
 
 With the server stopped and `server/server/pve/` backed up, change `+server.seed` (and `+server.worldsize`, if it
-changes) in `start.sh`. The next boot generates `proceduralmap.<size>.<seed>.288.map` and a fresh `.sav`. The old
+changes) in `start.sh`. The next boot generates `proceduralmap.<size>.<seed>.<protocol>.map` and a fresh `.sav`. The old
 seed's files stay: `World.CleanupOldFiles` deletes only `.map` and `.dat` files of other save protocols, so setting
-the old seed back returns to the old world. Blueprints (`player.blueprints.17.db`) carry over; bases, items, and
+the old seed back returns to the old world. Blueprints (`player.blueprints.18.db`) carry over; bases, items, and
 sleepers stay in the old `.sav`.
 
 A full wipe also moves everything else in the identity out with `rip`, except `cfg/server.cfg`, which git tracks,
@@ -117,8 +117,17 @@ On 2026-09-26 a full wipe moved the pve world to seed 1739235182 at worldsize 45
 live map's land, biome, and path figures matched the scan, and all 135 monuments sat within 0.5 m of their scanned
 positions.
 
+On 2026-10-09 the force-wipe update to buildid 25797215 moved the save protocol to 289 and the player database
+version to 18, so the world and blueprints started over on the same seed and size. That build keeps the terrain of
+1739235182 (59.5% land, 4 rivers, biome shares within 0.6 points) but lays out the rest anew: 13 of the 46 named
+monuments stayed within 5 m (the coastal and offshore ones, the Abandoned Military Base, and the Arctic Research
+Base), while the other 33, the roads, and the rails moved, and the map holds 131 monuments instead of 135. Every
+named monument type kept its count. `seedscan/25454815/4500/` shows the old layout. The previous world and
+databases are in `backups/pve-20261009T093145/`.
+
 The Monument Addons recyclers in `data/MonumentAddons/Default.json` are keyed by monument prefab, so they reappear
 on a new map, but a monument type the surveyed map lacked gets none. The survey in
 [monument-survey.md](monument-survey.md) was re-run after each switch: on 1970515526 (commit 2266533) it added
 `swamp_c` (Abandoned Cabins) and a second lab room, and on 1739235182 it added `desert_military_base_c` and the two
-surface Train Tunnel Links. Redo it after each wipe.
+surface Train Tunnel Links. On buildid 25797215 it moved 6 spots and swapped the lab's ladder room for its 1-way
+moonpool room. Redo it after each wipe.

@@ -375,11 +375,13 @@ whole directory, only while the server is stopped, before anything risky; earlie
 - `proceduralmap.<worldsize>.<seed>.<save protocol>.map` caches the generated map, and `Loading World` reads it in
   under a second. `Generating procedural map of size ...` still appears on every boot.
 - `*.db` files are SQLite in WAL mode, and most data currently sits in the `*.db-wal` files (for example,
-  `player.states.288.db` is 4 KB with a 160 KB WAL). Never delete a `-wal` file or copy a `.db` without it.
-- `288` is the save protocol (`Protocol: 2633.288.1` in the log is network.save.report). A Facepunch force-wipe
+  `player.states.289.db` is 4 KB with a 20 KB WAL). Never delete a `-wal` file or copy a `.db` without it.
+- `289` is the save protocol (`Protocol: 2634.289.1` in the log is network.save.report). A Facepunch force-wipe
   update bumps it, and the server then ignores the old files and generates a fresh world under the new number.
   Because `start.sh` always updates, that update wipes the world. Blueprints, deaths, and identities use a separate
-  version (`*.17.db`) and survive map wipes until that number changes.
+  version (`*.18.db`) and survive map wipes until that number changes, which buildid 25797215 did by moving it from
+  17, wiping blueprints. Such an update can also change world generation: on that build the same seed and size
+  kept the terrain but placed most inland monuments, roads, and rails elsewhere (see `docs/map-seeds.md`).
 - `cfg/serverauto.cfg` holds about 390 saved convars. The server rewrites it only on `quit` (logged as
   `Config Saved`), so edit it only while the server is stopped. `cfg/users.cfg` holds owner and moderator entries.
   `cfg/relay_cfg.json` is disabled but contains an `AuthToken`; treat it as secret.
