@@ -87,7 +87,9 @@ never print it. Rust masks it as `******` in the logged command line.
 1. Creates `home/`, then, unless `SKIP_UPDATE=1`, runs `steamcmd.sh +app_update 258550` under `steam-run` with
    `HOME=$root/home`, so steamcmd never touches the real `~/.steam` of the running Steam client. It updates on every
    start because the Steam client auto-updates and refuses servers on an older network protocol. `steamcmd/` is
-   untracked, so on a fresh clone it first extracts Valve's `steamcmd_linux.tar.gz` there.
+   untracked, so on a fresh clone it first extracts Valve's `steamcmd_linux.tar.gz` there. When the update fails
+   with the app in the FilesMissing state (bit 0x20 of `StateFlags` in `server/steamapps/appmanifest_258550.acf`),
+   it runs once more with `+app_update 258550 validate` (see below); any other failure, or a failed retry, exits.
 2. Exits with an error when `server/RustDedicated` is missing, which happens only on a fresh clone started with
    `SKIP_UPDATE=1`.
 3. Builds `server/HarmonyMods/Ipv4Only.dll` from `harmony/Ipv4Only.cs` with nixpkgs `mcs` when the DLL is missing
@@ -113,11 +115,10 @@ to an unsaved kill.
 
 Carbon's `Startup.Entrypoint` deletes `Microsoft.CodeAnalysis.dll`, `Microsoft.CodeAnalysis.CSharp.dll`,
 `System.Collections.Immutable.dll`, the `x64` and `x86` folders, and any Oxide DLLs from `RustDedicated_Data/Managed`
-on every boot. A Rust update whose delta reuses chunks of those files then fails in step 1 with `Error! App '258550'
-state is 0x426 after update job` (`home/Steam/logs/content_log.txt`: `Failed updating depot 258552 ... (Missing game
-files)`), and `start.sh` exits. With the server stopped, running steamcmd once as step 1 does but with
-`+app_update 258550 validate` restores the files and applies the update, as it did for buildid 25823813 on
-2026-10-09.
+on every boot. A Rust update whose delta reuses chunks of those files then stops with `Error! App '258550' state is
+0x426 after update job` (`home/Steam/logs/content_log.txt`: `Failed updating depot 258552 ... (Missing game
+files)`), and 0x426 includes FilesMissing. Step 1 then retries with `validate`, which hashes the whole install,
+downloads the deleted files again, and applies the update, as a manual run did for buildid 25823813 on 2026-10-09.
 
 `-insecure` and `+server.encryption 0` turn EAC off for the Proton client.
 

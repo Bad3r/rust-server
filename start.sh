@@ -20,8 +20,27 @@ if [[ "${SKIP_UPDATE:-0}" != 1 ]]; then
     curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz |
       tar -xz -C "$root/steamcmd"
   fi
-  HOME="$root/home" steam-run "$root/steamcmd/steamcmd.sh" \
-    +force_install_dir "$server" +login anonymous +app_update 258550 +quit
+  app_update() {
+    HOME="$root/home" steam-run "$root/steamcmd/steamcmd.sh" \
+      +force_install_dir "$server" +login anonymous +app_update 258550 "$@" +quit
+  }
+  status=0
+  app_update || status=$?
+  if ((status != 0)); then
+    # Carbon deletes some RustDedicated_Data/Managed DLLs on every boot, so a delta update that reuses their chunks
+    # stops with the app in the FilesMissing state (StateFlags bit 0x20); validate downloads them again.
+    manifest="$server/steamapps/appmanifest_258550.acf"
+    flags=0
+    if [[ -f $manifest ]]; then
+      flags="$(sed -n 's/^[[:space:]]*"StateFlags"[[:space:]]*"\([0-9]*\)".*/\1/p' "$manifest")"
+    fi
+    if ((${flags:-0} & 32)); then
+      echo "steamcmd stopped on missing game files (StateFlags $flags); retrying with validate" >&2
+      app_update validate
+    else
+      exit "$status"
+    fi
+  fi
 fi
 
 if [[ ! -x "$server/RustDedicated" ]]; then
