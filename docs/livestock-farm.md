@@ -86,15 +86,16 @@ Every 30 s the plugin runs these steps in order, each entity in its own guard, s
 5. Sex safety: a species with no male or no female gets a juvenile of that sex, and a species with no animals gets
    its starter herd again, each at most every 10 minutes, doubling up to 2 hours while the reseeded animals die or
    when a release left the gap.
-6. Breeding: after 60 minutes without a new pregnancy while under the cap, an eligible female is made pregnant by an
-   eligible male, retried every 10 minutes.
+6. Breeding: a species' mating is held while births could take it 2 past its cap, or while its due cull cannot run
+   (Herd). Otherwise, after 60 minutes without a new pregnancy while under the cap, an eligible female is made
+   pregnant by an eligible male, retried every 10 minutes.
 7. Crops: hold soil water at the planter's ideal 60%, fertilize, harvest ripe plants, take clones from saplings while
    the clone stock is short, clear dying plants, and replant empty slots.
 8. Compost: dung into the composter, fertilizer out to the dung box.
 9. Chickens: eggs out, feed, water, and petting; a coop short of chickens hatches a stored egg.
 10. Troughs: feed and water.
 11. Spoiled produce: to the coops first (chickens eat it), then the composter.
-12. Cull: above the cap, one surplus animal is killed and butchered into storage.
+12. Cull: above the cap, one surplus adult is killed and butchered into storage; juveniles are never culled.
 
 ## Feed, water, and fertilizer
 
@@ -135,12 +136,23 @@ for what it will make, since a full composter drops its output on the ground. Ea
 ## Herd
 
 `Cattle cap` 6 and `Sheep cap` 8 count adults and juveniles, except a juvenile that sex safety spawned, which counts
-only once it grows up. Above a cap the plugin culls one animal per pass: surplus males first, then the oldest adult,
-never a pregnant female, a ewe that has just lambed, or the last adult of a sex. It kills the animal the way
-`DieOffNavmesh` does, waits for the corpse, and butchers it through the `OnDispenserGather` and `OnDispenserBonus`
-hooks, so GatherManager's 2x applies: a cow gives 40 beef, 200 bone fragments, 80 animal fat, 200 leather, and 60
-cloth; a sheep 24 mutton, 100 bone fragments, 40 fat, 40 leather, and 20 cloth, plus twice any wool it carried. A
-cull waits until storage has room for the whole yield.
+only once it grows up. Above a cap the plugin culls one adult per pass: while the heads exceed the cap, an adult male
+beyond one, oldest first; while the adults alone exceed it, the oldest open adult female. It never culls a pregnant
+female, a ewe that has just lambed, the last adult of a sex, or a juvenile: the `calf`, `calfmale`, and `lamb` corpses
+carry an empty `ResourceDispenser`, so butchering one yields nothing. A species over its cap only by its juveniles
+waits for them to grow up. It kills the animal the way `DieOffNavmesh` does, waits for the corpse, and butchers it
+through the `OnDispenserGather` and `OnDispenserBonus` hooks, so GatherManager's 2x applies: a cow gives 40 beef, 200
+bone fragments, 80 animal fat, 200 leather, and 60 cloth; a sheep 24 mutton, 100 bone fragments, 40 fat, 40 leather,
+and 20 cloth, plus twice any wool it carried. A cull waits until storage has room for the whole yield.
+
+Births can take a species past its cap while its young grow up, so the plugin holds a species' mating while its heads
+plus the young its pregnancies can bear (1 each, plus the mother's Fertility gene scale above 1, rounded up, at most
+`livestock.maxlittersize`) reach its cap plus 2, and while a due cull cannot run because storage has no room for the
+yield or no adult may be culled. A hold gives every open adult female a 90 s breeding cooldown (3 upkeep intervals),
+renewed every pass, and `CanBePregnant` refuses a female on cooldown, so no mating path, vanilla or the fallback, starts
+a pregnancy. A longer cooldown of the animal's own is left alone, pregnancies already begun go on, and the cooldowns
+lapse within 90 s of the hold ending. The log notes when a hold starts and ends, and `farm.status` names the next cull
+of a species over its cap or what it waits for, and why a species' mating is held.
 
 Aging is untouched: juveniles grow up, and adults die of old age, which goes through `Die` directly, so the damage
 block does not stop it. Neglect does not go through damage either; the needs net keeps contentment at 0.5 or more,

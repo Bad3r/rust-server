@@ -97,6 +97,10 @@ namespace Oxide.Plugins
         private const float RepairResetSeconds = 1800f;
         // Water the pump keeps for the sprinklers when it tops up a trough or coop below its minimum.
         private const int PumpReserve = 500;
+        // A breeding hold lasts this many upkeep intervals, so one skipped pass cannot open a gap.
+        private const float HoldPasses = 3f;
+        // Heads over a species' cap at which BreedingHold stops new pregnancies; the personal-space budget allows it.
+        private const int BirthOvershoot = 2;
         // A stray unled for this long inside the farm radius goes back to the herd point.
         private const float StrayReturnSeconds = 300f;
         private const float NeedLogSeconds = 1800f;
@@ -188,6 +192,12 @@ namespace Oxide.Plugins
         // Repairs defer a spawn while a player or animal stands in its footprint plus 0.5 m.
         private bool _deferOccupied;
         private bool _removing;
+        // Species over their cap whose cull is due but cannot run, and why; their mating is held (BreedingHold).
+        private readonly Dictionary<string, string> _cullBlocked = new Dictionary<string, string>();
+        // Species over their cap only by their juveniles, logged once per wait.
+        private readonly HashSet<string> _cullWaiting = new HashSet<string>();
+        // Why each species' mating is held, as last logged.
+        private readonly Dictionary<string, string> _breedHeld = new Dictionary<string, string>();
 
         #region Configuration
 
@@ -3304,12 +3314,27 @@ namespace Oxide.Plugins
             int cap = CapOf(species);
             int count = CapCount(herd);
             if (count <= cap)
+            {
+                _cullBlocked.Remove(species);
+                _cullWaiting.Remove(species);
                 return;
+            }
             string reason;
-            LivestockAnimal victim = PickCull(herd, out reason);
+            bool due;
+            LivestockAnimal victim = PickCull(herd, cap, a => !_data.CapExempt.Contains(IdOf(a)), out reason, out due);
+            if (victim == null && !due)
+            {
+                _cullBlocked.Remove(species);
+                if (_cullWaiting.Add(species))
+                    Event("cull", $"{species} at {count}/{cap}: {reason}");
+                return;
+            }
+            _cullWaiting.Remove(species);
             if (victim == null)
             {
                 Failure($"cull:{species}", $"{species} at {count}/{cap}, but {reason}", "cull");
+                _cullBlocked[species] = reason;
+                HoldBreeding(herd);
                 return;
             }
             List<Item> expected = ExpectedYield(victim);
@@ -3321,31 +3346,89 @@ namespace Oxide.Plugins
             {
                 Full(BoxMeat, $"no room for the yield of {Describe(victim)} ({yield}); {species} stays at " +
                               $"{count}/{cap} until there is");
+                _cullBlocked[species] = $"no room in storage for the yield of {Describe(victim)}";
+                HoldBreeding(herd);
                 return;
             }
-            Cull(victim, species, count, cap);
+            _cullBlocked.Remove(species);
+            Cull(victim, reason, species, count, cap);
         }
 
-        private static LivestockAnimal PickCull(List<LivestockAnimal> herd, out string reason)
+        // Mating stops while a species' heads plus the young its pregnancies can bear reach its cap plus
+        // BirthOvershoot, and while a cull that is due cannot run (no room for the yield, or no adult it may cull). A
+        // pregnancy begun one head short can still bring twins, and several can begin within one pass, so births can
+        // pass the cap by a little more than BirthOvershoot. Null when mating may go on.
+        private string BreedingHold(string species, List<LivestockAnimal> herd)
         {
-            List<LivestockAnimal> adults = herd.Where(a => a.IsAdult()).ToList();
-            List<LivestockAnimal> males = adults.Where(a => a.IsMale).ToList();
-            List<LivestockAnimal> females = adults.Where(a => a.IsFemale).ToList();
-            reason = null;
-            if (males.Count > 1)
-                return males.OrderBy(LifeLeft).First();
-            if (females.Count <= 1)
+            string blocked;
+            if (_cullBlocked.TryGetValue(species, out blocked))
+                return $"a cull is due but cannot run: {blocked}";
+            int heads = CapCount(herd);
+            List<LivestockAnimal> pregnant = herd.Where(a => a.IsAdult() && a.IsFemale && a.IsPregnant()).ToList();
+            int young = pregnant.Sum(MaxLitter);
+            int cap = CapOf(species);
+            return heads + young >= cap + BirthOvershoot
+                ? $"{heads} heads and {pregnant.Count} pregnancies of up to {young} young reach the cap of {cap} " +
+                  $"plus {BirthOvershoot}"
+                : null;
+        }
+
+        // LivestockAnimal.LitterSize rolls 1 plus the Fertility gene's excess over 1, rounded up or down at random,
+        // capped at livestock.maxlittersize, and rolls again for every young, so this is the most one birth brings.
+        private static int MaxLitter(LivestockAnimal mother) =>
+            Mathf.Clamp(1 + Mathf.CeilToInt(Mathf.Max(0f, mother.GeneScale(LivestockGene.Fertility) - 1f)), 1,
+                Mathf.Max(1, ConVar.Livestock.maxLitterSize));
+
+        // Open adult females get a short breeding cooldown, renewed every pass while the hold lasts (CanBePregnant
+        // needs none running); it lapses within HoldPasses upkeep intervals after, a longer cooldown of the animal's
+        // own is left alone, and pregnancies already begun go on.
+        private void HoldBreeding(List<LivestockAnimal> herd)
+        {
+            float hold = HoldPasses * Mathf.Max(5f, _config.UpkeepSeconds);
+            foreach (LivestockAnimal female in herd.Where(a => a.IsAdult() && a.IsFemale && !a.IsPregnant()))
+                if (!female.breedCooldown.IsRunning || female.breedCooldown.Remaining < hold)
+                    female.breedCooldown.Start(hold);
+        }
+
+        // Who goes when a species is over its cap. Juveniles never go: calf, calfmale, and lamb corpses yield nothing.
+        // While the heads exceed the cap, an adult male beyond one goes, oldest first; while the adults alone exceed
+        // it, the oldest open adult female goes while another adult female stands. A herd over its cap only by its
+        // juveniles waits for them to grow up; due says a cull is called for but cannot run, which holds mating. Never
+        // a pregnant or calving female, never the last adult of a sex, never a cap-exempt reseeded animal (eligible).
+        private static LivestockAnimal PickCull(List<LivestockAnimal> herd, int cap,
+            Func<LivestockAnimal, bool> eligible, out string reason, out bool due)
+        {
+            List<LivestockAnimal> counted = herd.Where(eligible).ToList();
+            List<LivestockAnimal> adultMales = counted.Where(a => a.IsAdult() && a.IsMale).ToList();
+            List<LivestockAnimal> adultFemales = counted.Where(a => a.IsAdult() && a.IsFemale).ToList();
+            int adults = adultMales.Count + adultFemales.Count;
+            due = false;
+            if (counted.Count > cap && adultMales.Count > 1)
             {
-                reason = $"only {males.Count} adult male and {females.Count} adult female, which are never culled";
+                reason = $"oldest of {adultMales.Count} adult males, one of which is kept";
+                return adultMales.OrderBy(LifeLeft).First();
+            }
+            if (adults > cap)
+            {
+                LivestockAnimal female = adultFemales.Count > 1
+                    ? adultFemales.Where(f => !f.IsPregnant() && !f.IsCarrying).OrderBy(LifeLeft).FirstOrDefault()
+                    : null;
+                if (female != null)
+                {
+                    reason = $"oldest open adult female, with {adults} adults over the cap of {cap}";
+                    return female;
+                }
+                due = true;
+                reason = adultFemales.Count <= 1
+                    ? $"its {adults} adults exceed the cap of {cap}, but {adultMales.Count} adult male and " +
+                      $"{adultFemales.Count} adult female are never culled"
+                    : $"its {adults} adults exceed the cap of {cap}, but every other adult female is pregnant or " +
+                      "calving";
                 return null;
             }
-            List<LivestockAnimal> open = females.Where(f => !f.IsPregnant() && !f.IsCarrying).ToList();
-            if (open.Count == 0)
-            {
-                reason = "every adult female is pregnant or calving";
-                return null;
-            }
-            return open.OrderBy(LifeLeft).First();
+            reason = $"its {counted.Count - adults} juveniles put it over the cap, so it waits for them to grow up " +
+                     "(a juvenile's corpse yields nothing)";
+            return null;
         }
 
         // The corpse prefab's yield, read without spawning it, plus the unshorn wool Sheep.AddCorpseYield adds. It runs
@@ -3370,12 +3453,15 @@ namespace Oxide.Plugins
             return GatherItems(dispenser, wool);
         }
 
-        private void Cull(LivestockAnimal victim, string species, int count, int cap)
+        private void Cull(LivestockAnimal victim, string reason, string species, int count, int cap)
         {
             ulong id = IdOf(victim);
             string description = Describe(victim);
             _pendingCulls[id] = new PendingCull { Description = description, Since = Time.realtimeSinceStartup };
-            Event("cull", $"{description} with {Duration(LifeLeft(victim))} of life left; {species} {count}/{cap}");
+            string age = victim.IsAdult()
+                ? $"{Duration(LifeLeft(victim))} of life left"
+                : $"{Duration(LifeLeft(victim))} from growing up";
+            Event("cull", $"{description}, {age}: {reason}; {species} {count}/{cap}");
             // BaseNPC2.DieOffNavmesh kills with the same hit, so the FSM plays its death and drops the corpse.
             var hit = new HitInfo();
             hit.damageTypes.Set(Rust.DamageType.Generic, victim.MaxHealth());
@@ -3529,7 +3615,26 @@ namespace Oxide.Plugins
         {
             float now = Time.realtimeSinceStartup;
             foreach (string species in AllSpecies)
-                Guard("breeding", species, () => Breed(species, pass, now));
+                Guard("breeding", species, () =>
+                {
+                    List<LivestockAnimal> herd = Herd(pass, species);
+                    string hold = BreedingHold(species, herd);
+                    string was;
+                    _breedHeld.TryGetValue(species, out was);
+                    if (hold != null)
+                    {
+                        HoldBreeding(herd);
+                        if (was == null)
+                            Event("breeding", $"{species}: mating held: {hold}");
+                        _breedHeld[species] = hold;
+                    }
+                    else if (was != null)
+                    {
+                        _breedHeld.Remove(species);
+                        Event("breeding", $"{species}: mating no longer held");
+                    }
+                    Breed(species, pass, now);
+                });
         }
 
         private void Breed(string species, UpkeepPass pass, float now)
@@ -4811,6 +4916,9 @@ namespace Oxide.Plugins
             _withinRadius.Clear();
             _needLoggedAt.Clear();
             _growingNames.Clear();
+            _cullBlocked.Clear();
+            _cullWaiting.Clear();
+            _breedHeld.Clear();
             _penHull = null;
             _relinkWanted = false;
             _recordChecked = false;
@@ -5030,6 +5138,23 @@ namespace Oxide.Plugins
                                   $"{herd.Count(a => a.IsInfant() && a.IsFemale)}), last new pregnancy " +
                                   $"{Duration(since)} ago, reseed wait {(reseed?.Wait ?? ReseedBaseMinutes):0} min" +
                                   ReseedLeft(reseed));
+                    int over = CapCount(herd) - CapOf(species);
+                    if (over > 0)
+                    {
+                        string reason;
+                        string blocked;
+                        bool due;
+                        LivestockAnimal next = PickCull(herd, CapOf(species), a => !_data.CapExempt.Contains(IdOf(a)),
+                            out reason, out due);
+                        sb.AppendLine($"  over its cap by {over}: " + (next == null
+                            ? reason
+                            : _cullBlocked.TryGetValue(species, out blocked)
+                                ? blocked
+                                : $"the next pass culls {Describe(next)} ({reason})"));
+                    }
+                    string hold = BreedingHold(species, herd);
+                    if (hold != null)
+                        sb.AppendLine($"  mating held: {hold}");
                     foreach (LivestockAnimal animal in herd.OrderBy(a => a.IsInfant()).ThenBy(a => a.IsFemale))
                         sb.AppendLine("  " + AnimalLine(animal, pass.Owner));
                 }

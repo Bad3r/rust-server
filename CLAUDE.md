@@ -372,7 +372,8 @@ version, channel, and Rust protocol.
   foundation; two coops, seven boxes, a composter, and a fridge on its own foundation with a solar panel and battery;
   and four planters watered by a solar river pump. Every 30 s it bonds, houses, feeds, waters, milks, and shears the
   cattle and sheep, tends the coops, harvests, clones, and replants the crops, composts the dung, breeds as a
-  fallback, culls above 6 cattle and 8 sheep, returns strays, and re-places missing structures. It creates wheat or
+  fallback, culls adults (never juveniles) above 6 cattle and 8 sheep, holds mating once births could pass those
+  caps by 2 or a due cull cannot run, returns strays, and re-places missing structures. It creates wheat or
   water only below a stock's minimum and logs each top-up. Damage to the farm from anything but a real player is
   cancelled. Its record, `data/LivestockFarm/<identity>.json` (untracked), is written only on world saves and
   unload and is tied to the save's creation time, so after every wipe `farm.build` has to run again. `farm.status`,
