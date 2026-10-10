@@ -323,7 +323,9 @@ version, channel, and Rust protocol.
   55864 reports it). Vanilla's `skin_looking`, `skin_radius`, `upgrade_looking`,
   and `upgrade_radius` apply skins without a plugin, but only from a connected admin's F1 console (over RCON they
   throw a NullReferenceException on `arg.Player().eyes`), and they refuse Gingerbread, whose grade asset has
-  `enabledInStandalone` 0.
+  `enabledInStandalone` 0. The livestock farm's blocks keep their layout grade and skin: `LivestockFarm.cs` refuses
+  vanilla upgrades of them (`CanChangeGrade`) and puts back any other change, a hammer reskin one tick later and the
+  rest on its next 30 s upkeep pass.
 - Item skins: `Skins.cs` is uMod's Skins 2.2.5 by misticos (MIT), and `SkinsCatalog.cs` is local. `/skin` opens a
   36-slot loot panel; an item dropped in its first slot fills the others with skinned copies, 35 a page, and taking
   one applies it through `ItemManager.Create`, which checks no ownership. Skins calls `OnSkinsFetch` before merging
@@ -367,18 +369,29 @@ version, channel, and Rust protocol.
   yourself". Facepunch's developers also get auth level 3; admin rights here still come from `users.cfg`.
   `docs/developer-and-admin-switches.md` starts with the client command and lists everything else the flag changes,
   the other client settings the server trusts (`global.god`, `player.infiniteammo`, and more), and creative mode.
-- Livestock farm: `LivestockFarm.cs` is local. `farm.build` over RCON places one farm per identity, by default on
-  Pandora's E6 river meadow: a 63-fence pen with a gate, two Hitch & Troughs, and the herd's cupboard on a
-  foundation; two coops, seven boxes, a composter, and a fridge on its own foundation with a solar panel and battery;
-  and four planters watered by a solar river pump. Every 30 s it bonds, houses, feeds, waters, milks, and shears the
-  cattle and sheep, tends the coops, harvests, clones, and replants the crops, composts the dung, breeds as a
-  fallback, culls adults (never juveniles) above 6 cattle and 8 sheep, holds mating once births could pass those
-  caps by 2 or a due cull cannot run, returns strays, and re-places missing structures. It creates wheat or
-  water only below a stock's minimum and logs each top-up. Damage to the farm from anything but a real player is
-  cancelled. Its record, `data/LivestockFarm/<identity>.json` (untracked), is written only on world saves and
-  unload and is tied to the save's creation time, so after every wipe `farm.build` has to run again. `farm.status`,
-  `farm.tick`, `farm.relink`, `farm.repair`, and `farm.remove confirm` need RCON, the server console, or auth level
-  2. `docs/livestock-farm.md` covers the layout, the loop, the config, and recovery.
+- Livestock farm: `LivestockFarm.cs` is local. `farm.build` over RCON places one farm per identity on Pandora's E6 river
+  meadow from the layout in `configs/LivestockFarm.json` (384 entries and 29 power and water links, the same as its
+  built-in default), every building block in Frontier timber (`Building grade` wood, `Building skin` 10232): a 71-fence
+  pen with a gate, 4 Hitch & Troughs, and a field shelter over the herd's cupboard; a 5 x 4 barn by the pen gate holding
+  12 boxes and barrels, 2 fridges, and a large battery that a Wind Turbine and 2 roof panels charge; a farmhouse with
+  the owner's bed; a water tower whose large catcher feeds two troughs by hose; a fenced garden of 8 planters, 4 of them
+  heated around a scarecrow deck, watered by the river pump; 2 static planters it only harvests; a 4-coop chicken run;
+  and painted PANDORA FARM signs. Its lanterns, torches, candles, and hearth are always-lit statics that Night Lantern
+  never switches. Every 30 s it bonds, houses, feeds, waters, milks, and shears the cattle and sheep, tends the coops,
+  harvests, clones, and replants the crops, composts the dung, breeds as a fallback, culls adults above 9 cattle and 9
+  sheep (never a juvenile, whose corpse yields nothing), holds mating while the heads plus the young of current
+  pregnancies reach the cap plus 2 or a due cull cannot run, returns strays, re-places missing structures, restores each
+  block's grade and skin, and repaints a sign whose image is gone. It creates wheat or water only below a stock's
+  minimum and logs each top-up. Damage to the farm from anything but a real player is cancelled; no player upgrades,
+  demolishes, rotates, wallpapers, or builds pieces onto its blocks (deployables still go in, so the owner can furnish
+  the barn and farmhouse), spray-reskins a part, makes its bed public, or repaints its signs, and only the owner may put
+  a lock or door closer on a part. `farm.upgrade` prints, and `farm.upgrade confirm` applies, the change from a standing
+  farm to the config's layout, moving, emptying, and retiring old parts while keeping the herd, chickens, crops, and
+  items. Its record, `data/LivestockFarm/<identity>.json` (untracked), is written only on world saves and unload
+  (`farm.build`, `farm.upgrade confirm`, and `farm.remove confirm` end with one) and is tied to the save's creation
+  time, so after every wipe `farm.build` has to run again. `farm.status`, `farm.upgrade`, `farm.links <building>`,
+  `farm.tick`, `farm.relink`, `farm.repair`, and `farm.remove confirm` need RCON, the server console, or auth level 2.
+  `docs/livestock-farm.md` covers the layout, the loop, upgrades, the config, and recovery.
 - Mono profiler: `config.profiler.json` enables it and tracks `Assembly-CSharp`, `Assembly-CSharp-firstpass`, and
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
   need a restart. `c.profile <seconds> -c` records calls, `c.profiler.print -t` exports a table to

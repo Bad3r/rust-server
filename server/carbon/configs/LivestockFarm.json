@@ -56,8 +56,8 @@
       "Count": 1
     }
   ],
-  "Cattle cap (adults and juveniles)": 6,
-  "Sheep cap (adults and juveniles)": 8,
+  "Cattle cap (adults and juveniles)": 9,
+  "Sheep cap (adults and juveniles)": 9,
   "Breeding fallback after minutes without a new pregnancy": 60.0,
   "Breeding fallback retry minutes": 10.0,
   "Need threshold (0-1)": 0.5,
@@ -121,6 +121,50 @@
       "clone.wheat",
       "clone.wheat",
       "clone.wheat"
+    ],
+    "planter-05": [
+      "clone.corn",
+      "clone.corn",
+      "clone.corn",
+      "clone.corn",
+      "clone.corn",
+      "clone.corn",
+      "clone.corn",
+      "clone.corn",
+      "clone.corn"
+    ],
+    "planter-06": [
+      "clone.pumpkin",
+      "clone.pumpkin",
+      "clone.pumpkin",
+      "clone.pumpkin",
+      "clone.pumpkin",
+      "clone.pumpkin",
+      "clone.pumpkin",
+      "clone.pumpkin",
+      "clone.pumpkin"
+    ],
+    "planter-07": [
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat",
+      "clone.wheat"
+    ],
+    "planter-08": [
+      "clone.corn",
+      "clone.pumpkin",
+      "clone.corn",
+      "clone.pumpkin",
+      "clone.corn",
+      "clone.pumpkin",
+      "clone.corn",
+      "clone.pumpkin",
+      "clone.corn"
     ]
   },
   "Clone genes": "GGYYYY",
@@ -139,6 +183,8 @@
   "Repeat an identical failure log after minutes": 10.0,
   "Repeat a full container log after minutes": 60.0,
   "Status events kept per kind": 8,
+  "Building grade": "wood",
+  "Building skin": 10232,
   "Layout": {
     "Centre": {
       "x": -1542.9,
@@ -146,150 +192,6 @@
     },
     "Yaw": 0.0,
     "Entries": [
-      {
-        "Id": "fence-01",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": -24.65,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-02",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": -21.75,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-03",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": -18.85,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-04",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": -15.95,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-05",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": -13.05,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-06",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": -10.15,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-07",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": -7.25,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-08",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": -4.35,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-09",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": -1.45,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-10",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": 1.45,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-11",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": 4.35,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-12",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": 7.25,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-13",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": 10.15,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-14",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": 13.05,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-15",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": 15.95,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-16",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": 18.85,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-17",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": 21.75,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
-      {
-        "Id": "fence-18",
-        "Role": "fence",
-        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
-        "X": 24.65,
-        "Z": -20.3,
-        "Yaw": 90.0
-      },
       {
         "Id": "fence-19",
         "Role": "fence",
@@ -664,7 +566,72 @@
         "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
         "X": 0.0,
         "Z": 0.0,
-        "Yaw": 0.0
+        "Yaw": 0.0,
+        "Building": "shelter",
+        "Layer": 0
+      },
+      {
+        "Id": "shelter-half-x0z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.half/wall.half.prefab",
+        "X": 0.0,
+        "Z": -1.5,
+        "Yaw": 90.0,
+        "Building": "shelter",
+        "Layer": 2
+      },
+      {
+        "Id": "shelter-half-x0z0-W-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.half/wall.half.prefab",
+        "X": -1.5,
+        "Z": 0.0,
+        "Yaw": 180.0,
+        "Building": "shelter",
+        "Layer": 2
+      },
+      {
+        "Id": "shelter-half-x0z0-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.half/wall.half.prefab",
+        "X": 0.0,
+        "Z": 1.5,
+        "Yaw": 270.0,
+        "Building": "shelter",
+        "Layer": 2
+      },
+      {
+        "Id": "shelter-roof-x0z0-h1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 0.0,
+        "Z": 0.0,
+        "Yaw": 270.0,
+        "Building": "shelter",
+        "Y": 1.5,
+        "Layer": 5
+      },
+      {
+        "Id": "shelter-gable-x0z0-S-h1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 0.0,
+        "Z": -1.5,
+        "Yaw": 90.0,
+        "Building": "shelter",
+        "Y": 1.5,
+        "Layer": 6
+      },
+      {
+        "Id": "shelter-gable-x0z0-N-h1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 0.0,
+        "Z": 1.5,
+        "Yaw": 270.0,
+        "Building": "shelter",
+        "Y": 1.5,
+        "Layer": 6
       },
       {
         "Id": "cupboard-01",
@@ -707,124 +674,2908 @@
         "Yaw": 0.0
       },
       {
-        "Id": "box-milk",
-        "Role": "box_milk",
-        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
-        "X": 28.9,
-        "Z": 13.3,
-        "Yaw": 0.0
+        "Id": "fence-64",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": -21.75,
+        "Yaw": 180.0,
+        "Layer": 2
       },
       {
-        "Id": "box-wool",
-        "Role": "box_wool",
-        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
-        "X": 31.0,
-        "Z": 13.3,
-        "Yaw": 0.0
+        "Id": "fence-65",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": -24.65,
+        "Yaw": 180.0,
+        "Layer": 2
       },
       {
-        "Id": "box-eggs",
-        "Role": "box_eggs",
-        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
-        "X": 33.1,
-        "Z": 13.3,
-        "Yaw": 0.0
+        "Id": "fence-66",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": -27.55,
+        "Yaw": 180.0,
+        "Layer": 2
       },
       {
-        "Id": "box-dung",
-        "Role": "box_dung",
-        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
-        "X": 35.2,
-        "Z": 13.3,
-        "Yaw": 0.0
+        "Id": "fence-67",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": -30.45,
+        "Yaw": 180.0,
+        "Layer": 2
       },
       {
-        "Id": "box-meat",
-        "Role": "box_meat",
-        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
-        "X": 37.3,
-        "Z": 13.3,
-        "Yaw": 0.0
+        "Id": "fence-68",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 24.65,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
       },
       {
-        "Id": "box-feed",
-        "Role": "box_feed",
-        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
-        "X": 39.4,
-        "Z": 13.3,
-        "Yaw": 0.0
+        "Id": "fence-69",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 21.75,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
       },
       {
-        "Id": "box-clones",
-        "Role": "box_clones",
-        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
-        "X": 41.5,
-        "Z": 13.3,
-        "Yaw": 0.0
+        "Id": "fence-70",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 18.85,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
       },
       {
-        "Id": "composter-01",
-        "Role": "composter",
-        "Prefab": "assets/prefabs/deployable/composter/composter.prefab",
-        "X": 30.0,
-        "Z": 10.0,
-        "Yaw": 0.0
+        "Id": "fence-71",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 15.95,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
       },
       {
-        "Id": "platform-01",
-        "Role": "platform",
+        "Id": "fence-72",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 13.05,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-73",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 10.15,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-74",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 7.25,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-75",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 4.35,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-76",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 1.45,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-77",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -1.45,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-78",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -4.35,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-79",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -7.25,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-80",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -10.15,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-81",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -13.05,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-82",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -15.95,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-83",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -18.85,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-84",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -21.75,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-85",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -24.65,
+        "Z": -31.9,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-86",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": -30.45,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-87",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": -27.55,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-88",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": -24.65,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-89",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": -26.1,
+        "Z": -21.75,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "trough-03",
+        "Role": "trough",
+        "Prefab": "assets/prefabs/deployable/hitch & trough/hitchtrough.deployed.prefab",
+        "X": -13.05,
+        "Z": -26.0,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "trough-04",
+        "Role": "trough",
+        "Prefab": "assets/prefabs/deployable/hitch & trough/hitchtrough.deployed.prefab",
+        "X": 15.75,
+        "Z": -26.0,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "catcher-03",
+        "Role": "catcher_small",
+        "Prefab": "assets/prefabs/deployable/water catcher/water_catcher_small.prefab",
+        "X": -15.7,
+        "Z": -24.7,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "catcher-04",
+        "Role": "catcher_small",
+        "Prefab": "assets/prefabs/deployable/water catcher/water_catcher_small.prefab",
+        "X": 13.35,
+        "Z": -26.0,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "tower-fnd-x0z0",
+        "Role": "block",
         "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
-        "X": 33.15,
-        "Z": 10.25,
-        "Yaw": 0.0
-      },
-      {
-        "Id": "fridge-01",
-        "Role": "fridge",
-        "Prefab": "assets/prefabs/deployable/fridge/fridge.deployed.prefab",
-        "X": 32.6,
-        "Z": 10.0,
+        "X": 0.0,
+        "Z": 24.25,
         "Yaw": 0.0,
-        "On": "platform-01"
+        "Building": "tower",
+        "Layer": 0
       },
       {
-        "Id": "battery-01",
-        "Role": "battery",
-        "Prefab": "assets/prefabs/deployable/playerioents/batteries/smallrechargablebattery.deployed.prefab",
-        "X": 33.8,
-        "Z": 10.0,
+        "Id": "tower-wall-x0z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 0.0,
+        "Z": 22.75,
+        "Yaw": 90.0,
+        "Building": "tower",
+        "Layer": 2
+      },
+      {
+        "Id": "tower-wall-x0z0-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 0.0,
+        "Z": 25.75,
+        "Yaw": 270.0,
+        "Building": "tower",
+        "Layer": 2
+      },
+      {
+        "Id": "tower-wall-x0z0-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 1.5,
+        "Z": 24.25,
         "Yaw": 0.0,
-        "On": "platform-01"
+        "Building": "tower",
+        "Layer": 2
       },
       {
-        "Id": "solar-02",
+        "Id": "tower-doorway-x0z0-W-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.doorway/wall.doorway.prefab",
+        "X": -1.5,
+        "Z": 24.25,
+        "Yaw": 180.0,
+        "Building": "tower",
+        "Layer": 2
+      },
+      {
+        "Id": "tower-fframe-x0z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor.frame/floor.frame.prefab",
+        "X": 0.0,
+        "Z": 24.25,
+        "Yaw": 0.0,
+        "Building": "tower",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "tower-frame-x0z0-S-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 0.0,
+        "Z": 22.75,
+        "Yaw": 90.0,
+        "Building": "tower",
+        "Y": 3.0,
+        "Layer": 4
+      },
+      {
+        "Id": "tower-frame-x0z0-W-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": -1.5,
+        "Z": 24.25,
+        "Yaw": 180.0,
+        "Building": "tower",
+        "Y": 3.0,
+        "Layer": 4
+      },
+      {
+        "Id": "tower-frame-x0z0-N-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 0.0,
+        "Z": 25.75,
+        "Yaw": 270.0,
+        "Building": "tower",
+        "Y": 3.0,
+        "Layer": 4
+      },
+      {
+        "Id": "tower-frame-x0z0-E-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 1.5,
+        "Z": 24.25,
+        "Yaw": 0.0,
+        "Building": "tower",
+        "Y": 3.0,
+        "Layer": 4
+      },
+      {
+        "Id": "tower-floor-x0z0-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 0.0,
+        "Z": 24.25,
+        "Yaw": 0.0,
+        "Building": "tower",
+        "Y": 6.0,
+        "Layer": 5
+      },
+      {
+        "Id": "tower-door-x0z0-W-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/door.hinged/door.hinged.wood.prefab",
+        "X": -1.5,
+        "Z": 24.25,
+        "Yaw": 0.0,
+        "Building": "tower",
+        "Parent": "tower-doorway-x0z0-W-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "tower-hatch-x0z0-s1",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/floor.ladder.hatch/floor.ladder.hatch.prefab",
+        "X": 0.0,
+        "Z": 24.25,
+        "Yaw": 0.0,
+        "Building": "tower",
+        "Y": 3.0,
+        "Parent": "tower-fframe-x0z0-s1",
+        "Layer": 8
+      },
+      {
+        "Id": "catcher-05",
+        "Role": "catcher_large",
+        "Prefab": "assets/prefabs/deployable/water catcher/water_catcher_large.prefab",
+        "X": 0.0,
+        "Z": 24.25,
+        "Yaw": 0.0,
+        "On": "tower-floor-x0z0-s2",
+        "Building": "tower",
+        "Y": 6.1,
+        "Layer": 9
+      },
+      {
+        "Id": "tower-splitter",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/playerioents/fluidsplitter/fluidsplitter.prefab",
+        "X": 0.0,
+        "Z": 25.65,
+        "Yaw": 180.0,
+        "Building": "tower",
+        "Y": 2.0,
+        "Parent": "tower-wall-x0z0-N-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "tower-torch",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/torchholder_on.static.prefab",
+        "X": -1.6,
+        "Z": 25.2,
+        "Yaw": 270.0,
+        "Building": "tower",
+        "Y": 1.9,
+        "Parent": "tower-doorway-x0z0-W-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-fnd-x0z0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 31.0,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x0z1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 31.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x0z2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 31.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x0z3",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 31.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x1z0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 34.0,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x1z1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 34.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x1z2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 34.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x1z3",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 34.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x2z0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 37.0,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x2z1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 37.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x2z2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 37.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x2z3",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 37.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x3z0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 40.0,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x3z1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 40.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x3z2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 40.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x3z3",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 40.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x4z0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 43.0,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x4z1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 43.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x4z2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 43.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-fnd-x4z3",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 43.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 0
+      },
+      {
+        "Id": "barn-wall-x0z0-W-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 29.5,
+        "Z": 3.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-wall-x4z0-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 44.5,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-frame-x0z1-W-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 29.5,
+        "Z": 6.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-frame-x4z1-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 44.5,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-frame-x0z2-W-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 29.5,
+        "Z": 9.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-frame-x4z2-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 44.5,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-wall-x0z3-W-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 29.5,
+        "Z": 12.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-wall-x4z3-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 44.5,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-wall-x0z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 31.0,
+        "Z": 2.4,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-wall-x0z3-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 31.0,
+        "Z": 14.4,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-window-x1z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.window/wall.window.prefab",
+        "X": 34.0,
+        "Z": 2.4,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-window-x1z3-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.window/wall.window.prefab",
+        "X": 34.0,
+        "Z": 14.4,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-wall-x2z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 37.0,
+        "Z": 2.4,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-wall-x2z3-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 37.0,
+        "Z": 14.4,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-window-x3z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.window/wall.window.prefab",
+        "X": 40.0,
+        "Z": 2.4,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-window-x3z3-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.window/wall.window.prefab",
+        "X": 40.0,
+        "Z": 14.4,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-wall-x4z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 43.0,
+        "Z": 2.4,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-wall-x4z3-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 43.0,
+        "Z": 14.4,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Layer": 2
+      },
+      {
+        "Id": "barn-floor-x0z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 31.0,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x0z1-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 31.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x0z2-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 31.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x0z3-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 31.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x1z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 34.0,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x1z1-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 34.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x1z2-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 34.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x1z3-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 34.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x2z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 37.0,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x2z1-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 37.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x2z2-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 37.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x2z3-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 37.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x3z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 40.0,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x3z1-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 40.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x3z2-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 40.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x3z3-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 40.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x4z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 43.0,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x4z1-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 43.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-fframe-x4z2-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor.frame/floor.frame.prefab",
+        "X": 43.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-floor-x4z3-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 43.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "barn-roof-x0z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 31.0,
+        "Z": 3.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "barn-gable-x0z0-W-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 29.5,
+        "Z": 3.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-roof-x0z3-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 31.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "barn-gable-x0z3-W-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 29.5,
+        "Z": 12.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-roof-x0z1-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 31.0,
+        "Z": 6.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 6
+      },
+      {
+        "Id": "barn-frame-x0z1-W-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 29.5,
+        "Z": 6.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-gable-x0z1-W-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 29.5,
+        "Z": 6.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-roof-x0z2-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 31.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 6
+      },
+      {
+        "Id": "barn-gable-x0z2-W-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 29.5,
+        "Z": 9.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-gable-x0z2-W-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 29.5,
+        "Z": 9.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-roof-x1z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 34.0,
+        "Z": 3.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "barn-roof-x1z3-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 34.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "barn-roof-x1z1-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 34.0,
+        "Z": 6.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 6
+      },
+      {
+        "Id": "barn-roof-x1z2-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 34.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 6
+      },
+      {
+        "Id": "barn-roof-x2z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 37.0,
+        "Z": 3.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "barn-roof-x2z3-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 37.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "barn-roof-x2z1-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 37.0,
+        "Z": 6.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 6
+      },
+      {
+        "Id": "barn-roof-x2z2-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 37.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 6
+      },
+      {
+        "Id": "barn-roof-x3z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 40.0,
+        "Z": 3.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "barn-roof-x3z3-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 40.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "barn-roof-x3z1-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 40.0,
+        "Z": 6.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 6
+      },
+      {
+        "Id": "barn-roof-x3z2-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 40.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 6
+      },
+      {
+        "Id": "barn-roof-x4z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 43.0,
+        "Z": 3.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "barn-gable-x4z0-E-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 44.5,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-roof-x4z3-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 43.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "barn-gable-x4z3-E-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 44.5,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-roof-x4z1-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 43.0,
+        "Z": 6.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 6
+      },
+      {
+        "Id": "barn-gable-x4z1-E-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 44.5,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-gable-x4z1-E-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 44.5,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-roof-x4z2-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 43.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 6
+      },
+      {
+        "Id": "barn-gable-x4z2-E-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 44.5,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-gable-x4z2-E-s2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 44.5,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 6.0,
+        "Layer": 7
+      },
+      {
+        "Id": "barn-ddoor-x0z1-W-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/door.double.hinged/door.double.hinged.wood.prefab",
+        "X": 29.5,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Parent": "barn-frame-x0z1-W-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "barn-ddoor-x4z1-E-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/door.double.hinged/door.double.hinged.wood.prefab",
+        "X": 44.5,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Parent": "barn-frame-x4z1-E-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "barn-ddoor-x0z2-W-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/door.double.hinged/door.double.hinged.wood.prefab",
+        "X": 29.5,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Parent": "barn-frame-x0z2-W-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "barn-ddoor-x4z2-E-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/door.double.hinged/door.double.hinged.wood.prefab",
+        "X": 44.5,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Parent": "barn-frame-x4z2-E-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "barn-bars-x1z0-S-s0",
+        "Role": "insert",
+        "Prefab": "assets/prefabs/building/wall.window.bars/wall.window.bars.wood.prefab",
+        "X": 34.0,
+        "Z": 2.4,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Y": 1.0,
+        "Parent": "barn-window-x1z0-S-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "barn-bars-x1z3-N-s0",
+        "Role": "insert",
+        "Prefab": "assets/prefabs/building/wall.window.bars/wall.window.bars.wood.prefab",
+        "X": 34.0,
+        "Z": 14.4,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Y": 1.0,
+        "Parent": "barn-window-x1z3-N-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "barn-bars-x3z0-S-s0",
+        "Role": "insert",
+        "Prefab": "assets/prefabs/building/wall.window.bars/wall.window.bars.wood.prefab",
+        "X": 40.0,
+        "Z": 2.4,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Y": 1.0,
+        "Parent": "barn-window-x3z0-S-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "barn-bars-x3z3-N-s0",
+        "Role": "insert",
+        "Prefab": "assets/prefabs/building/wall.window.bars/wall.window.bars.wood.prefab",
+        "X": 40.0,
+        "Z": 14.4,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Y": 1.0,
+        "Parent": "barn-window-x3z3-N-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "barn-ddoor-x0z1-W-s1",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/door.double.hinged/door.double.hinged.wood.prefab",
+        "X": 29.5,
+        "Z": 6.9,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Parent": "barn-frame-x0z1-W-s1",
+        "Layer": 8
+      },
+      {
+        "Id": "barn-hatch-x4z2-s1",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/floor.ladder.hatch/floor.ladder.hatch.prefab",
+        "X": 43.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 3.0,
+        "Parent": "barn-fframe-x4z2-s1",
+        "Layer": 8
+      },
+      {
+        "Id": "barn-solar-01",
         "Role": "solar",
         "Prefab": "assets/prefabs/deployable/playerioents/generators/solar_panels_roof/solarpanel.large.deployed.prefab",
-        "X": 36.3,
-        "Z": 10.0,
-        "Yaw": 350.0
+        "X": 34.0,
+        "Z": 9.9148,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Y": 7.7648,
+        "Parent": "barn-roof-x1z2-s2",
+        "Roll": 45.0,
+        "Layer": 9,
+        "Replaces": "solar-02"
       },
       {
-        "Id": "coop-01",
-        "Role": "coop",
-        "Prefab": "assets/prefabs/deployable/chickencoop/chickencoop.deployed.prefab",
-        "X": 42.1,
-        "Z": 6.8,
-        "Yaw": 0.0
+        "Id": "barn-solar-02",
+        "Role": "solar",
+        "Prefab": "assets/prefabs/deployable/playerioents/generators/solar_panels_roof/solarpanel.large.deployed.prefab",
+        "X": 40.0,
+        "Z": 9.9148,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Y": 7.7648,
+        "Parent": "barn-roof-x3z2-s2",
+        "Roll": 45.0,
+        "Layer": 9,
+        "Replaces": "solar-01"
       },
       {
-        "Id": "coop-02",
-        "Role": "coop",
-        "Prefab": "assets/prefabs/deployable/chickencoop/chickencoop.deployed.prefab",
-        "X": 46.1,
-        "Z": 6.8,
-        "Yaw": 0.0
+        "Id": "barn-sign",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.huge.wood.prefab",
+        "X": 44.65,
+        "Z": 8.4,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Y": 3.55,
+        "Parent": "barn-gable-x4z1-E-s1",
+        "Mount": true,
+        "Layer": 9,
+        "Image": "pandora-farm-sign.huge.wood-1024x256"
+      },
+      {
+        "Id": "barn-feed-1",
+        "Role": "box_feed",
+        "Prefab": "assets/prefabs/deployable/large wood storage/skins/component_storage_boxes_dlc/box_food/component.box.food.large.prefab",
+        "X": 30.695,
+        "Z": 13.725,
+        "Yaw": 180.0,
+        "On": "barn-fnd-x0z3",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9,
+        "Replaces": "box-feed"
+      },
+      {
+        "Id": "barn-feed-2",
+        "Role": "box_feed",
+        "Prefab": "assets/prefabs/deployable/large wood storage/skins/component_storage_boxes_dlc/box_food/component.box.food.large.prefab",
+        "X": 32.785,
+        "Z": 13.725,
+        "Yaw": 180.0,
+        "On": "barn-fnd-x1z3",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "barn-clones",
+        "Role": "box_clones",
+        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
+        "X": 34.87,
+        "Z": 13.725,
+        "Yaw": 180.0,
+        "On": "barn-fnd-x1z3",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9,
+        "Replaces": "box-clones"
+      },
+      {
+        "Id": "barn-dung",
+        "Role": "box_dung",
+        "Prefab": "assets/prefabs/misc/decor_dlc/storagebarrel/storage_barrel_c.prefab",
+        "X": 36.71,
+        "Z": 13.76,
+        "Yaw": 180.0,
+        "On": "barn-fnd-x2z3",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9,
+        "Replaces": "box-dung"
+      },
+      {
+        "Id": "barn-wool-1",
+        "Role": "box_wool",
+        "Prefab": "assets/prefabs/misc/decor_dlc/storagebarrel/storage_barrel_c.prefab",
+        "X": 38.31,
+        "Z": 13.76,
+        "Yaw": 180.0,
+        "On": "barn-fnd-x2z3",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9,
+        "Replaces": "box-wool"
+      },
+      {
+        "Id": "barn-wool-2",
+        "Role": "box_wool",
+        "Prefab": "assets/prefabs/misc/decor_dlc/storagebarrel/storage_barrel_c.prefab",
+        "X": 39.91,
+        "Z": 13.76,
+        "Yaw": 180.0,
+        "On": "barn-fnd-x3z3",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "fridge-02",
+        "Role": "fridge",
+        "Prefab": "assets/prefabs/deployable/fridge/fridge.deployed.prefab",
+        "X": 30.295,
+        "Z": 3.035,
+        "Yaw": 0.0,
+        "On": "barn-fnd-x0z0",
+        "Building": "barn",
+        "Y": 0.119,
+        "Layer": 9,
+        "Replaces": "fridge-01"
+      },
+      {
+        "Id": "fridge-03",
+        "Role": "fridge",
+        "Prefab": "assets/prefabs/deployable/fridge/fridge.deployed.prefab",
+        "X": 31.535,
+        "Z": 3.035,
+        "Yaw": 0.0,
+        "On": "barn-fnd-x0z0",
+        "Building": "barn",
+        "Y": 0.119,
+        "Layer": 9
+      },
+      {
+        "Id": "barn-milk",
+        "Role": "box_milk",
+        "Prefab": "assets/prefabs/misc/decor_dlc/storagebarrel/storage_barrel_b.prefab",
+        "X": 32.76,
+        "Z": 3.03,
+        "Yaw": 0.0,
+        "On": "barn-fnd-x1z0",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9,
+        "Replaces": "box-milk"
+      },
+      {
+        "Id": "barn-eggs-1",
+        "Role": "box_eggs",
+        "Prefab": "assets/prefabs/misc/decor_dlc/storagebarrel/storage_barrel_b.prefab",
+        "X": 33.97,
+        "Z": 3.03,
+        "Yaw": 0.0,
+        "On": "barn-fnd-x1z0",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9,
+        "Replaces": "box-eggs"
+      },
+      {
+        "Id": "barn-eggs-2",
+        "Role": "box_eggs",
+        "Prefab": "assets/prefabs/misc/decor_dlc/storagebarrel/storage_barrel_b.prefab",
+        "X": 35.18,
+        "Z": 3.03,
+        "Yaw": 0.0,
+        "On": "barn-fnd-x1z0",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "barn-meat-1",
+        "Role": "box_meat",
+        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
+        "X": 36.8,
+        "Z": 3.075,
+        "Yaw": 0.0,
+        "On": "barn-fnd-x2z0",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9,
+        "Replaces": "box-meat"
+      },
+      {
+        "Id": "barn-meat-2",
+        "Role": "box_meat",
+        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
+        "X": 38.83,
+        "Z": 3.075,
+        "Yaw": 0.0,
+        "On": "barn-fnd-x3z0",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "barn-meat-3",
+        "Role": "box_meat",
+        "Prefab": "assets/prefabs/deployable/large wood storage/box.wooden.large.prefab",
+        "X": 40.86,
+        "Z": 3.075,
+        "Yaw": 0.0,
+        "On": "barn-fnd-x3z0",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "battery-02",
+        "Role": "battery",
+        "Prefab": "assets/prefabs/deployable/playerioents/batteries/large/large.rechargable.battery.deployed.prefab",
+        "X": 42.485,
+        "Z": 3.2,
+        "Yaw": 0.0,
+        "On": "barn-fnd-x4z0",
+        "Building": "barn",
+        "Y": 0.099,
+        "Layer": 9,
+        "Replaces": "battery-01"
+      },
+      {
+        "Id": "barn-combiner-01",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/playerioents/gates/combiner/electrical.combiner.deployed.prefab",
+        "X": 44.4,
+        "Z": 3.0,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Y": 1.35,
+        "Parent": "barn-wall-x4z0-E-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-combiner-02",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/playerioents/gates/combiner/electrical.combiner.deployed.prefab",
+        "X": 44.4,
+        "Z": 3.45,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Y": 1.35,
+        "Parent": "barn-wall-x4z0-E-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-splitter-01",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/playerioents/splitter/splitter.prefab",
+        "X": 44.4,
+        "Z": 4.05,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Y": 1.35,
+        "Parent": "barn-wall-x4z0-E-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-splitter-02",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/playerioents/splitter/splitter.prefab",
+        "X": 44.4,
+        "Z": 4.65,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Y": 1.35,
+        "Parent": "barn-wall-x4z0-E-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-light-01",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/ceiling light/ceilinglight.deployed.prefab",
+        "X": 34.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 2.973,
+        "Parent": "barn-floor-x1z1-s1",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-light-02",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/ceiling light/ceilinglight.deployed.prefab",
+        "X": 40.0,
+        "Z": 6.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 2.973,
+        "Parent": "barn-floor-x3z1-s1",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-light-03",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/ceiling light/ceilinglight.deployed.prefab",
+        "X": 34.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 2.973,
+        "Parent": "barn-floor-x1z2-s1",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-light-04",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/ceiling light/ceilinglight.deployed.prefab",
+        "X": 40.0,
+        "Z": 9.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 2.973,
+        "Parent": "barn-floor-x3z2-s1",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-light-05",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/ceiling light/ceilinglight.deployed.prefab",
+        "X": 37.0,
+        "Z": 3.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 2.973,
+        "Parent": "barn-floor-x2z0-s1",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-light-06",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/ceiling light/ceilinglight.deployed.prefab",
+        "X": 37.0,
+        "Z": 12.9,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 2.973,
+        "Parent": "barn-floor-x2z3-s1",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-torch-e1",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/torchholder_on.static.prefab",
+        "X": 44.6,
+        "Z": 4.9,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Y": 2.0,
+        "Parent": "barn-wall-x4z0-E-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-torch-e2",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/torchholder_on.static.prefab",
+        "X": 44.6,
+        "Z": 11.9,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Y": 2.0,
+        "Parent": "barn-wall-x4z3-E-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-torch-w1",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/torchholder_on.static.prefab",
+        "X": 29.4,
+        "Z": 4.9,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Y": 2.0,
+        "Parent": "barn-wall-x0z0-W-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-torch-w2",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/torchholder_on.static.prefab",
+        "X": 29.4,
+        "Z": 11.9,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Y": 2.0,
+        "Parent": "barn-wall-x0z3-W-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "house-fnd-x0z0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 43.0,
+        "Z": -16.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 0
+      },
+      {
+        "Id": "house-fnd-x0z1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 43.0,
+        "Z": -13.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 0
+      },
+      {
+        "Id": "house-fnd-x0z2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 43.0,
+        "Z": -10.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 0
+      },
+      {
+        "Id": "house-fnd-x1z0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 46.0,
+        "Z": -16.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 0
+      },
+      {
+        "Id": "house-fnd-x1z1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 46.0,
+        "Z": -13.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 0
+      },
+      {
+        "Id": "house-fnd-x1z2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 46.0,
+        "Z": -10.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 0
+      },
+      {
+        "Id": "house-fnd-x2z0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 49.0,
+        "Z": -16.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 0
+      },
+      {
+        "Id": "house-fnd-x2z1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 49.0,
+        "Z": -13.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 0
+      },
+      {
+        "Id": "house-fnd-x2z2",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 49.0,
+        "Z": -10.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 0
+      },
+      {
+        "Id": "house-window-x0z0-W-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.window/wall.window.prefab",
+        "X": 41.5,
+        "Z": -16.5,
+        "Yaw": 180.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-wall-x0z1-W-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 41.5,
+        "Z": -13.5,
+        "Yaw": 180.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-window-x0z2-W-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.window/wall.window.prefab",
+        "X": 41.5,
+        "Z": -10.5,
+        "Yaw": 180.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-wall-x0z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 43.0,
+        "Z": -18.0,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-window-x1z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.window/wall.window.prefab",
+        "X": 46.0,
+        "Z": -18.0,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-window-x0z2-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.window/wall.window.prefab",
+        "X": 43.0,
+        "Z": -9.0,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-wall-x1z2-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 46.0,
+        "Z": -9.0,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-window-x1z0-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.window/wall.window.prefab",
+        "X": 47.5,
+        "Z": -16.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-doorway-x1z1-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.doorway/wall.doorway.prefab",
+        "X": 47.5,
+        "Z": -13.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-window-x1z2-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.window/wall.window.prefab",
+        "X": 47.5,
+        "Z": -10.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-wall-x0z0-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 43.0,
+        "Z": -15.0,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-doorway-x1z0-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.doorway/wall.doorway.prefab",
+        "X": 46.0,
+        "Z": -15.0,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-frame-x2z0-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 50.5,
+        "Z": -16.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-frame-x2z1-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 50.5,
+        "Z": -13.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-frame-x2z2-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 50.5,
+        "Z": -10.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-frame-x2z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 49.0,
+        "Z": -18.0,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-frame-x2z2-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 49.0,
+        "Z": -9.0,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Layer": 2
+      },
+      {
+        "Id": "house-floor-x2z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 49.0,
+        "Z": -16.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "house-floor-x2z1-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 49.0,
+        "Z": -13.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "house-floor-x2z2-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 49.0,
+        "Z": -10.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "house-roof-x0z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 43.0,
+        "Z": -16.5,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "house-gable-x0z0-S-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 43.0,
+        "Z": -18.0,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 6
+      },
+      {
+        "Id": "house-roof-x1z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 46.0,
+        "Z": -16.5,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "house-gable-x1z0-S-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 46.0,
+        "Z": -18.0,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 6
+      },
+      {
+        "Id": "house-roof-x0z1-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 43.0,
+        "Z": -13.5,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "house-roof-x1z1-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 46.0,
+        "Z": -13.5,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "house-roof-x0z2-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 43.0,
+        "Z": -10.5,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "house-gable-x0z2-N-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 43.0,
+        "Z": -9.0,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 6
+      },
+      {
+        "Id": "house-roof-x1z2-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/roof/roof.prefab",
+        "X": 46.0,
+        "Z": -10.5,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 5
+      },
+      {
+        "Id": "house-gable-x1z2-N-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 46.0,
+        "Z": -9.0,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Y": 3.0,
+        "Layer": 6
+      },
+      {
+        "Id": "house-door-x1z1-E-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/door.hinged/door.hinged.wood.prefab",
+        "X": 47.5,
+        "Z": -13.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Parent": "house-doorway-x1z1-E-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-door-x1z0-N-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/door.hinged/door.hinged.wood.prefab",
+        "X": 46.0,
+        "Z": -15.0,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Parent": "house-doorway-x1z0-N-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-glass-x0z0-W-s0",
+        "Role": "insert",
+        "Prefab": "assets/prefabs/building/wall.window.reinforcedglass/wall.window.glass.reinforced.prefab",
+        "X": 41.5,
+        "Z": -16.5,
+        "Yaw": 180.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x0z0-W-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-shutter-x0z0-W-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/wall.window.shutter/shutter.wood.a.prefab",
+        "X": 41.5,
+        "Z": -16.5,
+        "Yaw": 180.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x0z0-W-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-glass-x0z2-W-s0",
+        "Role": "insert",
+        "Prefab": "assets/prefabs/building/wall.window.reinforcedglass/wall.window.glass.reinforced.prefab",
+        "X": 41.5,
+        "Z": -10.5,
+        "Yaw": 180.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x0z2-W-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-shutter-x0z2-W-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/wall.window.shutter/shutter.wood.a.prefab",
+        "X": 41.5,
+        "Z": -10.5,
+        "Yaw": 180.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x0z2-W-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-glass-x1z0-S-s0",
+        "Role": "insert",
+        "Prefab": "assets/prefabs/building/wall.window.reinforcedglass/wall.window.glass.reinforced.prefab",
+        "X": 46.0,
+        "Z": -18.0,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x1z0-S-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-shutter-x1z0-S-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/wall.window.shutter/shutter.wood.a.prefab",
+        "X": 46.0,
+        "Z": -18.0,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x1z0-S-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-glass-x0z2-N-s0",
+        "Role": "insert",
+        "Prefab": "assets/prefabs/building/wall.window.reinforcedglass/wall.window.glass.reinforced.prefab",
+        "X": 43.0,
+        "Z": -9.0,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x0z2-N-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-shutter-x0z2-N-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/wall.window.shutter/shutter.wood.a.prefab",
+        "X": 43.0,
+        "Z": -9.0,
+        "Yaw": 270.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x0z2-N-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-glass-x1z0-E-s0",
+        "Role": "insert",
+        "Prefab": "assets/prefabs/building/wall.window.reinforcedglass/wall.window.glass.reinforced.prefab",
+        "X": 47.5,
+        "Z": -16.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x1z0-E-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-shutter-x1z0-E-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/wall.window.shutter/shutter.wood.a.prefab",
+        "X": 47.5,
+        "Z": -16.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x1z0-E-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-glass-x1z2-E-s0",
+        "Role": "insert",
+        "Prefab": "assets/prefabs/building/wall.window.reinforcedglass/wall.window.glass.reinforced.prefab",
+        "X": 47.5,
+        "Z": -10.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x1z2-E-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-shutter-x1z2-E-s0",
+        "Role": "door",
+        "Prefab": "assets/prefabs/building/wall.window.shutter/shutter.wood.a.prefab",
+        "X": 47.5,
+        "Z": -10.5,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Y": 1.0,
+        "Parent": "house-window-x1z2-E-s0",
+        "Layer": 8
+      },
+      {
+        "Id": "house-bed",
+        "Role": "bed",
+        "Prefab": "assets/prefabs/deployable/bed/bed_deployed.prefab",
+        "X": 44.45,
+        "Z": -17.13,
+        "Yaw": 0.0,
+        "On": "house-fnd-x0z0",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-rug-bedroom",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/rug/rug.deployed.prefab",
+        "X": 44.45,
+        "Z": -16.05,
+        "Yaw": 90.0,
+        "On": "house-fnd-x0z0",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-candles-bedroom",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/candleset_small_on.static.prefab",
+        "X": 41.95,
+        "Z": -15.35,
+        "Yaw": 0.0,
+        "On": "house-fnd-x0z0",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-hearth",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/fireplace_on.static.prefab",
+        "X": 42.46,
+        "Z": -13.1,
+        "Yaw": 90.0,
+        "On": "house-fnd-x0z1",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-rug-hearth",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/rug/rug.bear.deployed.prefab",
+        "X": 44.45,
+        "Z": -13.1,
+        "Yaw": 90.0,
+        "On": "house-fnd-x0z1",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-rockingchair-hearth",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/misc/decor_dlc/rockingchair/rockingchair.deployed.prefab",
+        "X": 45.0,
+        "Z": -13.1,
+        "Yaw": 270.0,
+        "On": "house-fnd-x1z1",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-table",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/table/table.deployed.prefab",
+        "X": 43.3,
+        "Z": -10.3,
+        "Yaw": 0.0,
+        "On": "house-fnd-x0z2",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-chair-1",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/chair_b.static.prefab",
+        "X": 42.7,
+        "Z": -11.45,
+        "Yaw": 0.0,
+        "On": "house-fnd-x0z2",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-chair-2",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/chair_b.static.prefab",
+        "X": 43.9,
+        "Z": -11.45,
+        "Yaw": 0.0,
+        "On": "house-fnd-x0z2",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-cookingbench",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/cookingworkbench/cookingworkbench.deployed.prefab",
+        "X": 46.0,
+        "Z": -9.9,
+        "Yaw": 180.0,
+        "On": "house-fnd-x1z2",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-candles-table",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/candleset_large_on.static.prefab",
+        "X": 43.3,
+        "Z": -10.3,
+        "Yaw": 0.0,
+        "Building": "house",
+        "Y": 0.929,
+        "Parent": "house-table",
+        "Layer": 9
+      },
+      {
+        "Id": "house-rockingchair-porch",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/misc/decor_dlc/rockingchair/rockingchair.deployed.prefab",
+        "X": 49.6,
+        "Z": -16.9,
+        "Yaw": 90.0,
+        "On": "house-fnd-x2z0",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-bench-porch",
+        "Role": "decor",
+        "Prefab": "assets/content/props/wooden_bench/wooden_bench_a_mountable.prefab",
+        "X": 47.95,
+        "Z": -10.5,
+        "Yaw": 90.0,
+        "On": "house-fnd-x2z2",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-lantern-1",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "X": 50.15,
+        "Z": -17.65,
+        "Yaw": 0.0,
+        "On": "house-fnd-x2z0",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-lantern-2",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "X": 50.15,
+        "Z": -9.35,
+        "Yaw": 0.0,
+        "On": "house-fnd-x2z2",
+        "Building": "house",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "house-torch-1",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/torchholder_on.static.prefab",
+        "X": 47.6,
+        "Z": -12.55,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Y": 1.9,
+        "Parent": "house-doorway-x1z1-E-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "house-torch-2",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/torchholder_on.static.prefab",
+        "X": 47.6,
+        "Z": -14.45,
+        "Yaw": 90.0,
+        "Building": "house",
+        "Y": 1.9,
+        "Parent": "house-doorway-x1z1-E-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "gate-02",
+        "Role": "gate",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfencegate.deployed.prefab",
+        "X": 27.55,
+        "Z": 14.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-90",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": 21.6,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-91",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 26.1,
+        "Z": 24.2,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-92",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 27.605,
+        "Z": 25.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-93",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 30.615,
+        "Z": 25.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-94",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 33.625,
+        "Z": 25.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-95",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 36.635,
+        "Z": 25.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-96",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 39.645,
+        "Z": 25.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-97",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 42.655,
+        "Z": 25.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-98",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 45.665,
+        "Z": 25.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-99",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 48.675,
+        "Z": 25.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-100",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 51.685,
+        "Z": 25.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-101",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 54.695,
+        "Z": 25.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-102",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 56.2,
+        "Z": 24.125,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-103",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 56.2,
+        "Z": 21.375,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-104",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 56.2,
+        "Z": 18.625,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-105",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 56.2,
+        "Z": 15.875,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-106",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 54.75,
+        "Z": 14.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-107",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 51.85,
+        "Z": 14.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-108",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 48.95,
+        "Z": 14.5,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "gate-03",
+        "Role": "gate",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfencegate.deployed.prefab",
+        "X": 46.05,
+        "Z": 14.5,
+        "Yaw": 90.0,
+        "Layer": 2
       },
       {
         "Id": "planter-01",
         "Role": "planter",
         "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
         "X": 29.5,
+        "Z": 19.1,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "planter-02",
+        "Role": "planter",
+        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
+        "X": 32.9,
+        "Z": 19.1,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "planter-03",
+        "Role": "planter",
+        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
+        "X": 36.3,
+        "Z": 19.1,
+        "Yaw": 0.0
+      },
+      {
+        "Id": "planter-04",
+        "Role": "planter",
+        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
+        "X": 39.7,
         "Z": 19.1,
         "Yaw": 0.0
       },
@@ -837,28 +3588,12 @@
         "Yaw": 180.0
       },
       {
-        "Id": "planter-02",
-        "Role": "planter",
-        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
-        "X": 32.9,
-        "Z": 19.1,
-        "Yaw": 0.0
-      },
-      {
         "Id": "sprinkler-02",
         "Role": "sprinkler",
         "Prefab": "assets/prefabs/deployable/playerioents/sprinkler/electric.sprinkler.deployed.prefab",
         "X": 32.9,
         "Z": 21.3,
         "Yaw": 180.0
-      },
-      {
-        "Id": "planter-03",
-        "Role": "planter",
-        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
-        "X": 36.3,
-        "Z": 19.1,
-        "Yaw": 0.0
       },
       {
         "Id": "sprinkler-03",
@@ -869,14 +3604,6 @@
         "Yaw": 180.0
       },
       {
-        "Id": "planter-04",
-        "Role": "planter",
-        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
-        "X": 39.7,
-        "Z": 19.1,
-        "Yaw": 0.0
-      },
-      {
         "Id": "sprinkler-04",
         "Role": "sprinkler",
         "Prefab": "assets/prefabs/deployable/playerioents/sprinkler/electric.sprinkler.deployed.prefab",
@@ -885,25 +3612,602 @@
         "Yaw": 180.0
       },
       {
+        "Id": "deck-fnd-x0z0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 50.2,
+        "Z": 19.9,
+        "Yaw": 0.0,
+        "Building": "deck",
+        "Layer": 0
+      },
+      {
+        "Id": "scarecrow-01",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/misc/halloween/scarecrow/scarecrow.deployed.prefab",
+        "X": 50.2,
+        "Z": 19.9,
+        "Yaw": 225.0,
+        "On": "deck-fnd-x0z0",
+        "Building": "deck",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "heater-01",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/playerioents/electricheater/electrical.heater.prefab",
+        "X": 50.2,
+        "Z": 21.4,
+        "Yaw": 0.0,
+        "Building": "deck",
+        "Y": -0.022,
+        "Parent": "deck-fnd-x0z0",
+        "Layer": 9
+      },
+      {
+        "Id": "heater-02",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/playerioents/electricheater/electrical.heater.prefab",
+        "X": 51.7,
+        "Z": 19.9,
+        "Yaw": 90.0,
+        "Building": "deck",
+        "Y": -0.022,
+        "Parent": "deck-fnd-x0z0",
+        "Layer": 9
+      },
+      {
+        "Id": "heater-03",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/playerioents/electricheater/electrical.heater.prefab",
+        "X": 50.2,
+        "Z": 18.4,
+        "Yaw": 180.0,
+        "Building": "deck",
+        "Y": -0.0178,
+        "Parent": "deck-fnd-x0z0",
+        "Layer": 9
+      },
+      {
+        "Id": "heater-04",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/playerioents/electricheater/electrical.heater.prefab",
+        "X": 48.7,
+        "Z": 19.9,
+        "Yaw": 270.0,
+        "Building": "deck",
+        "Y": -0.022,
+        "Parent": "deck-fnd-x0z0",
+        "Layer": 9
+      },
+      {
+        "Id": "planter-05",
+        "Role": "planter",
+        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
+        "X": 46.77,
+        "Z": 19.9,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "planter-06",
+        "Role": "planter",
+        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
+        "X": 50.2,
+        "Z": 23.33,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "planter-07",
+        "Role": "planter",
+        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
+        "X": 53.63,
+        "Z": 19.9,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "planter-08",
+        "Role": "planter",
+        "Prefab": "assets/prefabs/deployable/planters/planter.large.deployed.prefab",
+        "X": 50.2,
+        "Z": 16.47,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "sprinkler-05",
+        "Role": "sprinkler",
+        "Prefab": "assets/prefabs/deployable/playerioents/sprinkler/electric.sprinkler.deployed.prefab",
+        "X": 47.45,
+        "Z": 22.7,
+        "Yaw": 180.0,
+        "Layer": 10
+      },
+      {
+        "Id": "sprinkler-06",
+        "Role": "sprinkler",
+        "Prefab": "assets/prefabs/deployable/playerioents/sprinkler/electric.sprinkler.deployed.prefab",
+        "X": 52.95,
+        "Z": 17.1,
+        "Yaw": 180.0,
+        "Layer": 10
+      },
+      {
+        "Id": "composter-02",
+        "Role": "composter",
+        "Prefab": "assets/prefabs/deployable/composter/composter.prefab",
+        "X": 28.0,
+        "Z": 23.6,
+        "Yaw": 0.0,
+        "Layer": 10,
+        "Replaces": "composter-01"
+      },
+      {
+        "Id": "beehive-01",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/beehive/beehive.deployed.prefab",
+        "X": 43.2,
+        "Z": 24.3,
+        "Yaw": 180.0,
+        "Layer": 10
+      },
+      {
+        "Id": "gate-04",
+        "Role": "gate",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfencegate.deployed.prefab",
+        "X": 29.45,
+        "Z": -16.3,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-109",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 32.35,
+        "Z": -16.3,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-110",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 35.25,
+        "Z": -16.3,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-111",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 38.15,
+        "Z": -16.3,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-112",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 39.6,
+        "Z": -17.75,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-113",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 39.6,
+        "Z": -20.65,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-114",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 39.6,
+        "Z": -23.55,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-115",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 38.15,
+        "Z": -25.0,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-116",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 35.25,
+        "Z": -25.0,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-117",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 32.35,
+        "Z": -25.0,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-118",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 29.45,
+        "Z": -25.0,
+        "Yaw": 90.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-119",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 28.0,
+        "Z": -23.55,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-120",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 28.0,
+        "Z": -20.65,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "fence-121",
+        "Role": "fence",
+        "Prefab": "assets/prefabs/deployable/animal fence/animalfence.deployed.prefab",
+        "X": 28.0,
+        "Z": -17.75,
+        "Yaw": 180.0,
+        "Layer": 2
+      },
+      {
+        "Id": "coop-03",
+        "Role": "coop",
+        "Prefab": "assets/prefabs/deployable/chickencoop/chickencoop.deployed.prefab",
+        "X": 33.6,
+        "Z": -18.65,
+        "Yaw": 0.0,
+        "Layer": 10,
+        "Replaces": "coop-01"
+      },
+      {
+        "Id": "coop-04",
+        "Role": "coop",
+        "Prefab": "assets/prefabs/deployable/chickencoop/chickencoop.deployed.prefab",
+        "X": 37.6,
+        "Z": -18.65,
+        "Yaw": 0.0,
+        "Layer": 10,
+        "Replaces": "coop-02"
+      },
+      {
+        "Id": "coop-05",
+        "Role": "coop",
+        "Prefab": "assets/prefabs/deployable/chickencoop/chickencoop.deployed.prefab",
+        "X": 33.6,
+        "Z": -22.65,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "coop-06",
+        "Role": "coop",
+        "Prefab": "assets/prefabs/deployable/chickencoop/chickencoop.deployed.prefab",
+        "X": 37.6,
+        "Z": -22.65,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "windmill-01",
+        "Role": "windmill",
+        "Prefab": "assets/prefabs/deployable/windmill/electric.windmill.small.prefab",
+        "X": 61.0,
+        "Z": 19.0,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "sign-town",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.post.town.roof.prefab",
+        "X": 52.9,
+        "Z": -0.9,
+        "Yaw": 106.6,
+        "Layer": 10,
+        "Image": "pandora-farm-sign.post.town-512x256"
+      },
+      {
+        "Id": "mailbox-01",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/mailbox/mailbox.deployed.prefab",
+        "X": 51.0,
+        "Z": -3.6,
+        "Yaw": 286.6,
+        "Layer": 10
+      },
+      {
+        "Id": "planter-static-01",
+        "Role": "planter_static",
+        "Prefab": "assets/prefabs/misc/decor_dlc/rail road planter/railroadplanter.respawning.static.prefab",
+        "X": 44.5,
+        "Z": -6.1,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "planter-static-02",
+        "Role": "planter_static",
+        "Prefab": "assets/prefabs/misc/decor_dlc/minecart planter/minecart.planter.respawning.static.prefab",
+        "X": 46.4,
+        "Z": 3.2,
+        "Yaw": 90.0,
+        "Layer": 10
+      },
+      {
+        "Id": "well-01",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/water well/waterwellstatic.prefab",
+        "X": 51.5,
+        "Z": 7.6,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "bench-01",
+        "Role": "decor",
+        "Prefab": "assets/content/props/wooden_bench/wooden_bench_a_mountable.prefab",
+        "X": 51.6,
+        "Z": 10.9,
+        "Yaw": 180.0,
+        "Layer": 10
+      },
+      {
+        "Id": "logpile-01",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/autospawn/resource/wood_log_pile/wood-pile.prefab",
+        "X": 43.0,
+        "Z": -21.0,
+        "Yaw": 90.0,
+        "Layer": 10
+      },
+      {
+        "Id": "lantern-01",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "X": 50.6,
+        "Z": 1.6,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "lantern-02",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "X": 48.4,
+        "Z": 4.6,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "lantern-03",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "X": 48.6,
+        "Z": 13.3,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "lantern-04",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "X": 27.5,
+        "Z": 3.6,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "lantern-05",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "X": -3.2,
+        "Z": 22.0,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "lantern-06",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "X": 27.4,
+        "Z": -15.0,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "lantern-07",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "X": 40.5,
+        "Z": -13.6,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "lantern-08",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "X": 30.0,
+        "Z": -0.6,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
         "Id": "pump-01",
         "Role": "pump",
         "Prefab": "assets/prefabs/deployable/playerioents/waterpump/water.pump.deployed.prefab",
         "X": 29.5,
         "Z": 29.3,
         "Yaw": 0.0
-      },
-      {
-        "Id": "solar-01",
-        "Role": "solar",
-        "Prefab": "assets/prefabs/deployable/playerioents/generators/solar_panels_roof/solarpanel.large.deployed.prefab",
-        "X": 32.2,
-        "Z": 24.0,
-        "Yaw": 330.0
       }
     ],
     "Connections": [
       {
-        "From": "solar-01",
+        "From": "windmill-01",
+        "FromSlot": 0,
+        "To": "barn-combiner-01",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-solar-01",
+        "FromSlot": 0,
+        "To": "barn-combiner-01",
+        "ToSlot": 1,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-combiner-01",
+        "FromSlot": 0,
+        "To": "barn-combiner-02",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-solar-02",
+        "FromSlot": 0,
+        "To": "barn-combiner-02",
+        "ToSlot": 1,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-combiner-02",
+        "FromSlot": 0,
+        "To": "battery-02",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "battery-02",
+        "FromSlot": 0,
+        "To": "barn-splitter-01",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-splitter-01",
+        "FromSlot": 0,
+        "To": "barn-splitter-02",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-splitter-02",
+        "FromSlot": 0,
+        "To": "fridge-02",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-splitter-02",
+        "FromSlot": 1,
+        "To": "fridge-03",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-splitter-01",
+        "FromSlot": 1,
+        "To": "barn-light-01",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-light-01",
+        "FromSlot": 0,
+        "To": "barn-light-02",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-light-02",
+        "FromSlot": 0,
+        "To": "barn-light-03",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-light-03",
+        "FromSlot": 0,
+        "To": "barn-light-04",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-light-04",
+        "FromSlot": 0,
+        "To": "barn-light-05",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-light-05",
+        "FromSlot": 0,
+        "To": "barn-light-06",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "barn-splitter-01",
+        "FromSlot": 2,
+        "To": "heater-01",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "heater-01",
+        "FromSlot": 0,
+        "To": "heater-02",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "heater-02",
+        "FromSlot": 0,
+        "To": "heater-03",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "heater-03",
+        "FromSlot": 0,
+        "To": "heater-04",
+        "ToSlot": 0,
+        "Kind": "power"
+      },
+      {
+        "From": "heater-04",
         "FromSlot": 0,
         "To": "pump-01",
         "ToSlot": 0,
@@ -938,18 +4242,39 @@
         "Kind": "water"
       },
       {
-        "From": "solar-02",
+        "From": "sprinkler-04",
         "FromSlot": 0,
-        "To": "battery-01",
+        "To": "sprinkler-05",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "water"
       },
       {
-        "From": "battery-01",
+        "From": "sprinkler-05",
         "FromSlot": 0,
-        "To": "fridge-01",
+        "To": "sprinkler-06",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "water"
+      },
+      {
+        "From": "catcher-05",
+        "FromSlot": 0,
+        "To": "tower-splitter",
+        "ToSlot": 0,
+        "Kind": "water"
+      },
+      {
+        "From": "tower-splitter",
+        "FromSlot": 0,
+        "To": "trough-01",
+        "ToSlot": 0,
+        "Kind": "water"
+      },
+      {
+        "From": "tower-splitter",
+        "FromSlot": 1,
+        "To": "trough-02",
+        "ToSlot": 0,
+        "Kind": "water"
       }
     ]
   }

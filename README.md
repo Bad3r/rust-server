@@ -53,9 +53,9 @@ Press Ctrl+C to stop.
   After joining, run `client.skins_access 1` in the F1 console, and the game's own menus list every skin; the client does not keep the setting between sessions, and `developerflag.status` over RCON shows the state.
   It needs `c.grant user <SteamID> developerflag.use` over RCON once.
   [docs/developer-and-admin-switches.md](docs/developer-and-admin-switches.md) covers the client command, what else developer mode changes, other hidden client switches such as god mode and infinite ammo, and the built-in creative mode.
-- A livestock farm on the E6 river meadow runs itself, via the local [LivestockFarm.cs](server/carbon/plugins/LivestockFarm.cs): cattle, sheep, and coop chickens fed from four planters of potatoes, corn, pumpkins, and wheat that it harvests and replants, with milk, wool, eggs, meat, and the rest collected into boxes and a solar-powered fridge.
-  It bonds, feeds, waters, breeds, and culls the herd, repairs anything destroyed, and creates feed or water only when a stock runs low; nothing but a player can damage it.
-  `farm.build` over RCON places it, `farm.status` shows the herd and the stores, and [docs/livestock-farm.md](docs/livestock-farm.md) covers the rest.
+- A livestock farm on the E6 river meadow runs itself, via the local [LivestockFarm.cs](server/carbon/plugins/LivestockFarm.cs): cattle, sheep, and chickens in 4 coops on a Frontier timber farmstead with a barn, a farmhouse, a field shelter, a water tower, and a wind turbine, fed from 8 planters of potatoes, corn, pumpkins, and wheat, 4 of them heated, that it harvests and replants, with milk, wool, eggs, meat, and the rest collected into the barn's boxes, barrels, and two fridges.
+  It bonds, feeds, waters, breeds, and culls the herd at 9 cattle and 9 sheep, culling adults only, repairs anything destroyed, and creates feed or water only when a stock runs low; nothing but a player can damage it, and its buildings cannot be upgraded, demolished, or built onto and return to Frontier timber after any reskin, though you can furnish the barn and farmhouse with your own deployables.
+  `farm.build` over RCON places it, `farm.upgrade confirm` turns a standing farm into the current layout in place, keeping the animals, crops, and stored items, `farm.status` shows the herd and the stores, and [docs/livestock-farm.md](docs/livestock-farm.md) covers the rest.
 - Vehicles do not decay: [server.cfg](server/server/pve/cfg/server.cfg) sets every vehicle decay convar and the idle workcart despawn timer to 1e9 minutes, about 1900 years of uptime.
   Emptied ore and fuel wagons still despawn 10 minutes after unloading, so full ones keep respawning.
 - Playing alone costs nothing: [server.cfg](server/server/pve/cfg/server.cfg) keeps ore, barrels, and pickups at the density and respawn rate of a full server instead of 62.5% with one player of four.
@@ -79,7 +79,7 @@ Press Ctrl+C to stop.
 - A Facepunch force-wipe update bumps the save protocol number, and the server then generates a fresh world.
   Blueprints, deaths, and identities use a separate version number and survive the wipe unless that number changes too, as it did with buildid 25797215 in October 2026.
   Such an update can also change world generation, so the same seed may place monuments, roads, and rails elsewhere.
-  After any wipe, `farm.build` over RCON places the livestock farm again.
+  After any wipe, `farm.build` over RCON places the livestock farm again from the layout in its config, buildings included.
 - Before choosing a new seed, `uv run scripts/seed-scan.py --random 24 --jobs 4` generates random seeds on throwaway servers next to the live one and ranks them in `seedscan/<buildid>/<size>/index.html`, with every map rendered and labeled.
   [docs/map-seeds.md](docs/map-seeds.md) covers what the seed and the world size decide, and how to switch the world to a new seed.
 - [docs/livestock.md](docs/livestock.md) covers the cattle and sheep of the October 2026 update: `spawn` names, a test farm from the F1 console, taming by trust, needs, breeding, and the `livestock.*` commands.

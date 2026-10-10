@@ -58,6 +58,16 @@ namespace Oxide.Plugins
         private const string RoleFridge = "fridge";
         private const string RolePlaceholder = "fridge_spot";
         private const string RolePlatform = "platform";
+        private const string RoleBlock = "block";
+        private const string RoleDoor = "door";
+        private const string RoleInsert = "insert";
+        private const string RoleDecor = "decor";
+        private const string RoleSign = "sign";
+        private const string RoleBed = "bed";
+        private const string RolePlanterStatic = "planter_static";
+        private const string RoleWindmill = "windmill";
+        private const string RoleBattery = "battery";
+        private const string RoleSolar = "solar";
         private const string BoxMilk = "box_milk";
         private const string BoxWool = "box_wool";
         private const string BoxEggs = "box_eggs";
@@ -65,6 +75,14 @@ namespace Oxide.Plugins
         private const string BoxMeat = "box_meat";
         private const string BoxFeed = "box_feed";
         private const string BoxClones = "box_clones";
+        // The roles of the original layout (94 entries, no buildings); IsGuarded leaves them as open to players as
+        // they always were.
+        private static readonly HashSet<string> V1Roles = new HashSet<string>
+        {
+            RoleFence, RoleGate, RoleFoundation, RolePlatform, RoleCupboard, RoleTrough, RoleCoop, RoleComposter,
+            RolePlanter, RolePump, RoleFridge, RolePlaceholder, RoleBattery, RoleSolar, "sprinkler", "catcher_small",
+            BoxMilk, BoxWool, BoxEggs, BoxDung, BoxMeat, BoxFeed, BoxClones,
+        };
 
         private const string SpoiledProduce = "spoiled.produce";
         private const string WoolShortname = "wool";
@@ -82,11 +100,27 @@ namespace Oxide.Plugins
         private const float VegetationMargin = 0.5f;
         // Animal fence and gate rails are 2.9 m long; their ends span the pen polygon.
         private const float RailHalfLength = 1.45f;
+        // Rail ends this close belong to one fence line (a gate's ends sit 0.05 m from its neighbours').
+        private const float RailJoin = 0.3f;
         // farm.build and farm.repair take over a matching entity this close to an entry's spot.
         private const float AdoptDistance = 0.5f;
         private const float AdoptHeight = 2f;
         // Colliders reaching into this sphere around a spot are checked for adoption; pivots must still be close.
         private const float AdoptSearchRadius = 3f;
+        // Blocks and inserts link only within 0.02 m of their sockets, and stacked half walls stand 1.5 m apart.
+        private const float AdoptBlockDistance = 0.1f;
+        // A block rests on lower-layer blocks of its building within this distance across: a roof 1.5 m from its
+        // wall, a floor from its walls, foundation steps 4.5 m from their foundation's centre.
+        private const float SupportRadius = 4.6f;
+        // Triangle foundations and floors: apex this far from the base edge's midpoint (the pivot).
+        private const float TriangleDepth = 2.598f;
+        // An entry "On" a block may stand this far below the block's top (pivot plane) and OnMaxRise above it.
+        private const float OnTolerance = 0.05f;
+        private const float OnMaxRise = 2f;
+        // Window inserts (shutters, bars, glass) sit this far up their window wall.
+        private const float WindowInsertHeight = 1f;
+        // A sign's image is checked this often; FileStorage reads a row it does not cache from SQLite.
+        private const float SignCheckSeconds = 300f;
         private const float RelinkThrottleSeconds = 600f;
         private const float ReseedBaseMinutes = 10f;
         private const float ReseedMaxMinutes = 120f;
@@ -104,9 +138,10 @@ namespace Oxide.Plugins
         // A stray unled for this long inside the farm radius goes back to the herd point.
         private const float StrayReturnSeconds = 300f;
         private const float NeedLogSeconds = 1800f;
+        // A structure standing farther than this from its recorded position means the record outran the world.
+        private const float RecordDrift = 1f;
 
-        // Local x/z points of each prefab's GroundWatch area checks (research/farm/plugin-api.md section 5,
-        // infrastructure.md section 5), sampled when a role is in "Ground check roles".
+        // Local x/z points of each prefab's GroundWatch area checks, sampled when a role is in "Ground check roles".
         private static readonly Dictionary<string, Vector2[]> GroundChecks = new Dictionary<string, Vector2[]>
         {
             ["chickencoop.deployed"] = Grid(-1.55f, 1.55f, -1.55f, 1.55f, 5, 5),
@@ -137,6 +172,10 @@ namespace Oxide.Plugins
             new Dictionary<uint, Socket_Specific_Female[]>();
 
         private static readonly List<BaseEntity> NoEntities = new List<BaseEntity>();
+
+        // Veto results boxed once: OnNpcTarget runs for every predator sensing every farm animal.
+        private static readonly object True = true;
+        private static readonly object False = false;
 
         private static readonly LivestockAnimal.Need[] TrackedNeeds =
         {
@@ -192,12 +231,22 @@ namespace Oxide.Plugins
         // Repairs defer a spawn while a player or animal stands in its footprint plus 0.5 m.
         private bool _deferOccupied;
         private bool _removing;
+        private bool _reattachQueued;
+        // Net ids of old parts farm.upgrade lifts, moves, or retires while it places; a new foundation may cover them.
+        private readonly HashSet<ulong> _retiring = new HashSet<ulong>();
+        // Each building's base height while PlanUpgrade runs, worked out once (a plan changes nothing it rests on);
+        // null otherwise, so placement, which changes what stands, works it out on every call.
+        private Dictionary<string, BaseHeight> _planBases;
         // Species over their cap whose cull is due but cannot run, and why; their mating is held (BreedingHold).
         private readonly Dictionary<string, string> _cullBlocked = new Dictionary<string, string>();
         // Species over their cap only by their juveniles, logged once per wait.
         private readonly HashSet<string> _cullWaiting = new HashSet<string>();
         // Why each species' mating is held, as last logged.
         private readonly Dictionary<string, string> _breedHeld = new Dictionary<string, string>();
+        // When each farm sign's image and lock were last checked, by net id.
+        private readonly Dictionary<ulong, float> _signCheckedAt = new Dictionary<ulong, float>();
+        // Blocks ApplyGrade gave the plain grade since the last LogPlainSkins, by the skin their prefab lacks.
+        private readonly Dictionary<string, List<string>> _plainSkins = new Dictionary<string, List<string>>();
 
         #region Configuration
 
@@ -242,10 +291,10 @@ namespace Oxide.Plugins
             public List<HerdEntry> StarterHerd = DefaultHerd();
 
             [JsonProperty("Cattle cap (adults and juveniles)")]
-            public int CattleCap = 6;
+            public int CattleCap = 9;
 
             [JsonProperty("Sheep cap (adults and juveniles)")]
-            public int SheepCap = 8;
+            public int SheepCap = 9;
 
             [JsonProperty("Breeding fallback after minutes without a new pregnancy")]
             public float BreedingFallbackMinutes = 60f;
@@ -336,6 +385,13 @@ namespace Oxide.Plugins
             [JsonProperty("Status events kept per kind")]
             public int EventsPerKind = 8;
 
+            // Defaults for layout entries of role block or with a Building; 10232 is the Frontier wood skin.
+            [JsonProperty("Building grade")]
+            public string BuildingGrade = "wood";
+
+            [JsonProperty("Building skin")]
+            public ulong BuildingSkin = 10232;
+
             [JsonProperty("Layout", ObjectCreationHandling = ObjectCreationHandling.Replace)]
             public FarmLayout Layout = DefaultLayout();
         }
@@ -364,7 +420,7 @@ namespace Oxide.Plugins
             public int Count;
         }
 
-        // Same shape as research/farm/site/layout.json, so that file pastes in as the "Layout" value.
+        // The "Layout" value: the farm centre and yaw, the entries, and the IO connections.
         private class FarmLayout
         {
             [JsonProperty("Centre", ObjectCreationHandling = ObjectCreationHandling.Replace)]
@@ -400,9 +456,47 @@ namespace Oxide.Plugins
             [JsonProperty("Yaw")]
             public float Yaw;
 
-            // Id of the platform or foundation the entry stands on, upright at its top, placed after it.
+            // Id of the foundation or floor the entry stands on, upright at its top, placed after it.
             [JsonProperty("On", NullValueHandling = NullValueHandling.Ignore)]
             public string On;
+
+            // The fields below are optional; absent, an entry behaves as in a layout without buildings, and they stay
+            // out of the saved config.
+            [JsonProperty("Building", NullValueHandling = NullValueHandling.Ignore)]
+            public string Building = null;
+
+            // Above the building's base height T with Building (even with On), above On's top, else above the terrain.
+            [JsonProperty("Y", DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public float Y = 0f;
+
+            [JsonProperty("Parent", NullValueHandling = NullValueHandling.Ignore)]
+            public string Parent = null;
+
+            [JsonProperty("Mount", DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public bool Mount = false;
+
+            [JsonProperty("Pitch", DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public float Pitch = 0f;
+
+            [JsonProperty("Roll", DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public float Roll = 0f;
+
+            [JsonProperty("Grade", NullValueHandling = NullValueHandling.Ignore)]
+            public string Grade = null;
+
+            [JsonProperty("Skin", NullValueHandling = NullValueHandling.Ignore)]
+            public ulong? Skin = null;
+
+            [JsonProperty("Layer", NullValueHandling = NullValueHandling.Ignore)]
+            public int? Layer = null;
+
+            [JsonProperty("Image", NullValueHandling = NullValueHandling.Ignore)]
+            public string Image = null;
+
+            // Id of an old record this entry takes over at farm.upgrade: the same prefab moves there with what it
+            // holds; another prefab gets its items.
+            [JsonProperty("Replaces", NullValueHandling = NullValueHandling.Ignore)]
+            public string Replaces = null;
         }
 
         private class LayoutConnection
@@ -439,35 +533,87 @@ namespace Oxide.Plugins
         {
             ["planter-01"] = Enumerable.Repeat("clone.potato", 9).ToList(),
             ["planter-02"] = Enumerable.Repeat("clone.potato", 9).ToList(),
-            ["planter-03"] = Enumerable.Range(0, 9).Select(i => i % 2 == 0 ? "clone.corn" : "clone.pumpkin").ToList(),
+            ["planter-03"] = new List<string>
+            {
+                "clone.corn", "clone.pumpkin", "clone.corn", "clone.pumpkin", "clone.corn", "clone.pumpkin",
+                "clone.corn", "clone.pumpkin", "clone.corn",
+            },
             ["planter-04"] = Enumerable.Repeat("clone.wheat", 9).ToList(),
+            ["planter-05"] = Enumerable.Repeat("clone.corn", 9).ToList(),
+            ["planter-06"] = Enumerable.Repeat("clone.pumpkin", 9).ToList(),
+            ["planter-07"] = Enumerable.Repeat("clone.wheat", 9).ToList(),
+            ["planter-08"] = new List<string>
+            {
+                "clone.corn", "clone.pumpkin", "clone.corn", "clone.pumpkin", "clone.corn", "clone.pumpkin",
+                "clone.corn", "clone.pumpkin", "clone.corn",
+            },
         };
 
-        // research/farm/site/layout.json as of 2026-10-09 15:43: E6 meadow, 63 fences and a gate, two troughs, yard,
-        // coops, four planters on one solar pump, and a fridge and its battery on a foundation platform, charged by
-        // their own solar panel.
+        // research/farm/v2/design/config-v2.json as of 2026-10-10 16:28: 384 entries (buildings barn, deck, house,
+        // shelter, tower) and 29 connections. research/farm/v2/plugin/tools/make_defaults.py writes this method,
+        // DefaultSlotPlan, and the setting defaults from that file; edit the file and rerun it.
         private static FarmLayout DefaultLayout()
         {
+            const string wallHalf = "assets/prefabs/building core/wall.half/wall.half.prefab";
+            const string roof = "assets/prefabs/building core/roof/roof.prefab";
+            const string wall = "assets/prefabs/building core/wall/wall.prefab";
+            const string wallDoorway = "assets/prefabs/building core/wall.doorway/wall.doorway.prefab";
+            const string floorFrame = "assets/prefabs/building core/floor.frame/floor.frame.prefab";
+            const string wallFrame = "assets/prefabs/building core/wall.frame/wall.frame.prefab";
+            const string floor = "assets/prefabs/building core/floor/floor.prefab";
+            const string doorHingedWood = "assets/prefabs/building/door.hinged/door.hinged.wood.prefab";
+            const string floorLadderHatch = "assets/prefabs/building/floor.ladder.hatch/floor.ladder.hatch.prefab";
+            const string waterCatcherLarge = "assets/prefabs/deployable/water catcher/water_catcher_large.prefab";
+            const string fluidsplitter = "assets/prefabs/deployable/playerioents/fluidsplitter/fluidsplitter.prefab";
+            const string torchholderOnStatic = "assets/bundled/prefabs/static/torchholder_on.static.prefab";
+            const string wallWindow = "assets/prefabs/building core/wall.window/wall.window.prefab";
+            const string doorDoubleHingedWood =
+                "assets/prefabs/building/door.double.hinged/door.double.hinged.wood.prefab";
+            const string wallWindowBarsWood = "assets/prefabs/building/wall.window.bars/wall.window.bars.wood.prefab";
+            const string signHugeWood = "assets/prefabs/deployable/signs/sign.huge.wood.prefab";
+            const string componentBoxFoodLarge =
+                "assets/prefabs/deployable/large wood storage/skins/component_storage_boxes_dlc/box_food/" +
+                "component.box.food.large.prefab";
+            const string storageBarrelC = "assets/prefabs/misc/decor_dlc/storagebarrel/storage_barrel_c.prefab";
+            const string storageBarrelB = "assets/prefabs/misc/decor_dlc/storagebarrel/storage_barrel_b.prefab";
+            const string largeRechargableBatteryDeployed =
+                "assets/prefabs/deployable/playerioents/batteries/large/large.rechargable.battery.deployed.prefab";
+            const string electricalCombinerDeployed =
+                "assets/prefabs/deployable/playerioents/gates/combiner/electrical.combiner.deployed.prefab";
+            const string splitter = "assets/prefabs/deployable/playerioents/splitter/splitter.prefab";
+            const string ceilinglightDeployed = "assets/prefabs/deployable/ceiling light/ceilinglight.deployed.prefab";
+            const string wallWindowGlassReinforced =
+                "assets/prefabs/building/wall.window.reinforcedglass/wall.window.glass.reinforced.prefab";
+            const string shutterWoodA = "assets/prefabs/building/wall.window.shutter/shutter.wood.a.prefab";
+            const string bedDeployed = "assets/prefabs/deployable/bed/bed_deployed.prefab";
+            const string rugDeployed = "assets/prefabs/deployable/rug/rug.deployed.prefab";
+            const string candlesetSmallOnStatic = "assets/bundled/prefabs/static/candleset_small_on.static.prefab";
+            const string fireplaceOnStatic = "assets/bundled/prefabs/static/fireplace_on.static.prefab";
+            const string rugBearDeployed = "assets/prefabs/deployable/rug/rug.bear.deployed.prefab";
+            const string rockingchairDeployed =
+                "assets/prefabs/misc/decor_dlc/rockingchair/rockingchair.deployed.prefab";
+            const string tableDeployed = "assets/prefabs/deployable/table/table.deployed.prefab";
+            const string chairBStatic = "assets/bundled/prefabs/static/chair_b.static.prefab";
+            const string cookingworkbenchDeployed =
+                "assets/prefabs/deployable/cookingworkbench/cookingworkbench.deployed.prefab";
+            const string candlesetLargeOnStatic = "assets/bundled/prefabs/static/candleset_large_on.static.prefab";
+            const string woodenBenchAMountable = "assets/content/props/wooden_bench/wooden_bench_a_mountable.prefab";
+            const string lanternOnStatic = "assets/bundled/prefabs/static/lantern_on.static.prefab";
+            const string scarecrowDeployed = "assets/prefabs/misc/halloween/scarecrow/scarecrow.deployed.prefab";
+            const string electricalHeater =
+                "assets/prefabs/deployable/playerioents/electricheater/electrical.heater.prefab";
+            const string beehiveDeployed = "assets/prefabs/deployable/beehive/beehive.deployed.prefab";
+            const string electricWindmillSmall = "assets/prefabs/deployable/windmill/electric.windmill.small.prefab";
+            const string signPostTownRoof = "assets/prefabs/deployable/signs/sign.post.town.roof.prefab";
+            const string mailboxDeployed = "assets/prefabs/deployable/mailbox/mailbox.deployed.prefab";
+            const string railroadplanterRespawningStatic =
+                "assets/prefabs/misc/decor_dlc/rail road planter/railroadplanter.respawning.static.prefab";
+            const string minecartPlanterRespawningStatic =
+                "assets/prefabs/misc/decor_dlc/minecart planter/minecart.planter.respawning.static.prefab";
+            const string waterwellstatic = "assets/prefabs/deployable/water well/waterwellstatic.prefab";
+            const string woodPile = "assets/bundled/prefabs/autospawn/resource/wood_log_pile/wood-pile.prefab";
             var layout = new FarmLayout { Centre = new XZ { X = -1542.9f, Z = 1227.3f }, Yaw = 0.0f };
             List<LayoutEntry> e = layout.Entries;
-            e.Add(Entry("fence-01", "fence", FencePrefab, -24.65f, -20.3f, 90.0f));
-            e.Add(Entry("fence-02", "fence", FencePrefab, -21.75f, -20.3f, 90.0f));
-            e.Add(Entry("fence-03", "fence", FencePrefab, -18.85f, -20.3f, 90.0f));
-            e.Add(Entry("fence-04", "fence", FencePrefab, -15.95f, -20.3f, 90.0f));
-            e.Add(Entry("fence-05", "fence", FencePrefab, -13.05f, -20.3f, 90.0f));
-            e.Add(Entry("fence-06", "fence", FencePrefab, -10.15f, -20.3f, 90.0f));
-            e.Add(Entry("fence-07", "fence", FencePrefab, -7.25f, -20.3f, 90.0f));
-            e.Add(Entry("fence-08", "fence", FencePrefab, -4.35f, -20.3f, 90.0f));
-            e.Add(Entry("fence-09", "fence", FencePrefab, -1.45f, -20.3f, 90.0f));
-            e.Add(Entry("fence-10", "fence", FencePrefab, 1.45f, -20.3f, 90.0f));
-            e.Add(Entry("fence-11", "fence", FencePrefab, 4.35f, -20.3f, 90.0f));
-            e.Add(Entry("fence-12", "fence", FencePrefab, 7.25f, -20.3f, 90.0f));
-            e.Add(Entry("fence-13", "fence", FencePrefab, 10.15f, -20.3f, 90.0f));
-            e.Add(Entry("fence-14", "fence", FencePrefab, 13.05f, -20.3f, 90.0f));
-            e.Add(Entry("fence-15", "fence", FencePrefab, 15.95f, -20.3f, 90.0f));
-            e.Add(Entry("fence-16", "fence", FencePrefab, 18.85f, -20.3f, 90.0f));
-            e.Add(Entry("fence-17", "fence", FencePrefab, 21.75f, -20.3f, 90.0f));
-            e.Add(Entry("fence-18", "fence", FencePrefab, 24.65f, -20.3f, 90.0f));
             e.Add(Entry("fence-19", "fence", FencePrefab, 26.1f, -18.85f, 180.0f));
             e.Add(Entry("fence-20", "fence", FencePrefab, 26.1f, -15.95f, 180.0f));
             e.Add(Entry("fence-21", "fence", FencePrefab, 26.1f, -13.05f, 180.0f));
@@ -514,50 +660,521 @@ namespace Oxide.Plugins
             e.Add(Entry("fence-61", "fence", FencePrefab, -26.1f, -13.05f, 180.0f));
             e.Add(Entry("fence-62", "fence", FencePrefab, -26.1f, -15.95f, 180.0f));
             e.Add(Entry("fence-63", "fence", FencePrefab, -26.1f, -18.85f, 180.0f));
-            e.Add(Entry("foundation-01", "foundation", FoundationPrefab, 0.0f, 0.0f, 0.0f));
+            e.Add(Entry("foundation-01", "foundation", FoundationPrefab, 0.0f, 0.0f, 0.0f, building: "shelter",
+                layer: 0));
+            e.Add(Entry("shelter-half-x0z0-S-s0", "block", wallHalf, 0.0f, -1.5f, 90.0f, building: "shelter",
+                layer: 2));
+            e.Add(Entry("shelter-half-x0z0-W-s0", "block", wallHalf, -1.5f, 0.0f, 180.0f, building: "shelter",
+                layer: 2));
+            e.Add(Entry("shelter-half-x0z0-N-s0", "block", wallHalf, 0.0f, 1.5f, 270.0f, building: "shelter",
+                layer: 2));
+            e.Add(Entry("shelter-roof-x0z0-h1", "block", roof, 0.0f, 0.0f, 270.0f, y: 1.5f, building: "shelter",
+                layer: 5));
+            e.Add(Entry("shelter-gable-x0z0-S-h1", "block", wall, 0.0f, -1.5f, 90.0f, y: 1.5f, building: "shelter",
+                layer: 6));
+            e.Add(Entry("shelter-gable-x0z0-N-h1", "block", wall, 0.0f, 1.5f, 270.0f, y: 1.5f, building: "shelter",
+                layer: 6));
             e.Add(Entry("cupboard-01", "cupboard", CupboardPrefab, 0.0f, 0.0f, 0.0f));
             e.Add(Entry("trough-01", "trough", TroughPrefab, -13.05f, 0.0f, 0.0f));
             e.Add(Entry("trough-02", "trough", TroughPrefab, 13.05f, 0.0f, 0.0f));
             e.Add(Entry("catcher-01", "catcher_small", SmallCatcherPrefab, -15.7f, 1.3f, 0.0f));
             e.Add(Entry("catcher-02", "catcher_small", SmallCatcherPrefab, 10.65f, 0.0f, 0.0f));
-            e.Add(Entry("box-milk", "box_milk", LargeBoxPrefab, 28.9f, 13.3f, 0.0f));
-            e.Add(Entry("box-wool", "box_wool", LargeBoxPrefab, 31.0f, 13.3f, 0.0f));
-            e.Add(Entry("box-eggs", "box_eggs", LargeBoxPrefab, 33.1f, 13.3f, 0.0f));
-            e.Add(Entry("box-dung", "box_dung", LargeBoxPrefab, 35.2f, 13.3f, 0.0f));
-            e.Add(Entry("box-meat", "box_meat", LargeBoxPrefab, 37.3f, 13.3f, 0.0f));
-            e.Add(Entry("box-feed", "box_feed", LargeBoxPrefab, 39.4f, 13.3f, 0.0f));
-            e.Add(Entry("box-clones", "box_clones", LargeBoxPrefab, 41.5f, 13.3f, 0.0f));
-            e.Add(Entry("composter-01", "composter", ComposterPrefab, 30.0f, 10.0f, 0.0f));
-            e.Add(Entry("platform-01", "platform", FoundationPrefab, 33.15f, 10.25f, 0.0f));
-            e.Add(Entry("fridge-01", "fridge", FridgePrefab, 32.6f, 10.0f, 0.0f, "platform-01"));
-            e.Add(Entry("battery-01", "battery", BatteryPrefab, 33.8f, 10.0f, 0.0f, "platform-01"));
-            e.Add(Entry("solar-02", "solar", SolarPrefab, 36.3f, 10.0f, 350.0f));
-            e.Add(Entry("coop-01", "coop", CoopPrefab, 42.1f, 6.8f, 0.0f));
-            e.Add(Entry("coop-02", "coop", CoopPrefab, 46.1f, 6.8f, 0.0f));
+            e.Add(Entry("fence-64", "fence", FencePrefab, 26.1f, -21.75f, 180.0f, layer: 2));
+            e.Add(Entry("fence-65", "fence", FencePrefab, 26.1f, -24.65f, 180.0f, layer: 2));
+            e.Add(Entry("fence-66", "fence", FencePrefab, 26.1f, -27.55f, 180.0f, layer: 2));
+            e.Add(Entry("fence-67", "fence", FencePrefab, 26.1f, -30.45f, 180.0f, layer: 2));
+            e.Add(Entry("fence-68", "fence", FencePrefab, 24.65f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-69", "fence", FencePrefab, 21.75f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-70", "fence", FencePrefab, 18.85f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-71", "fence", FencePrefab, 15.95f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-72", "fence", FencePrefab, 13.05f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-73", "fence", FencePrefab, 10.15f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-74", "fence", FencePrefab, 7.25f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-75", "fence", FencePrefab, 4.35f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-76", "fence", FencePrefab, 1.45f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-77", "fence", FencePrefab, -1.45f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-78", "fence", FencePrefab, -4.35f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-79", "fence", FencePrefab, -7.25f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-80", "fence", FencePrefab, -10.15f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-81", "fence", FencePrefab, -13.05f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-82", "fence", FencePrefab, -15.95f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-83", "fence", FencePrefab, -18.85f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-84", "fence", FencePrefab, -21.75f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-85", "fence", FencePrefab, -24.65f, -31.9f, 90.0f, layer: 2));
+            e.Add(Entry("fence-86", "fence", FencePrefab, -26.1f, -30.45f, 180.0f, layer: 2));
+            e.Add(Entry("fence-87", "fence", FencePrefab, -26.1f, -27.55f, 180.0f, layer: 2));
+            e.Add(Entry("fence-88", "fence", FencePrefab, -26.1f, -24.65f, 180.0f, layer: 2));
+            e.Add(Entry("fence-89", "fence", FencePrefab, -26.1f, -21.75f, 180.0f, layer: 2));
+            e.Add(Entry("trough-03", "trough", TroughPrefab, -13.05f, -26.0f, 0.0f, layer: 10));
+            e.Add(Entry("trough-04", "trough", TroughPrefab, 15.75f, -26.0f, 0.0f, layer: 10));
+            e.Add(Entry("catcher-03", "catcher_small", SmallCatcherPrefab, -15.7f, -24.7f, 0.0f, layer: 10));
+            e.Add(Entry("catcher-04", "catcher_small", SmallCatcherPrefab, 13.35f, -26.0f, 0.0f, layer: 10));
+            e.Add(Entry("tower-fnd-x0z0", "block", FoundationPrefab, 0.0f, 24.25f, 0.0f, building: "tower", layer: 0));
+            e.Add(Entry("tower-wall-x0z0-S-s0", "block", wall, 0.0f, 22.75f, 90.0f, building: "tower", layer: 2));
+            e.Add(Entry("tower-wall-x0z0-N-s0", "block", wall, 0.0f, 25.75f, 270.0f, building: "tower", layer: 2));
+            e.Add(Entry("tower-wall-x0z0-E-s0", "block", wall, 1.5f, 24.25f, 0.0f, building: "tower", layer: 2));
+            e.Add(Entry("tower-doorway-x0z0-W-s0", "block", wallDoorway, -1.5f, 24.25f, 180.0f, building: "tower",
+                layer: 2));
+            e.Add(Entry("tower-fframe-x0z0-s1", "block", floorFrame, 0.0f, 24.25f, 0.0f, y: 3.0f, building: "tower",
+                layer: 3));
+            e.Add(Entry("tower-frame-x0z0-S-s1", "block", wallFrame, 0.0f, 22.75f, 90.0f, y: 3.0f, building: "tower",
+                layer: 4));
+            e.Add(Entry("tower-frame-x0z0-W-s1", "block", wallFrame, -1.5f, 24.25f, 180.0f, y: 3.0f, building: "tower",
+                layer: 4));
+            e.Add(Entry("tower-frame-x0z0-N-s1", "block", wallFrame, 0.0f, 25.75f, 270.0f, y: 3.0f, building: "tower",
+                layer: 4));
+            e.Add(Entry("tower-frame-x0z0-E-s1", "block", wallFrame, 1.5f, 24.25f, 0.0f, y: 3.0f, building: "tower",
+                layer: 4));
+            e.Add(Entry("tower-floor-x0z0-s2", "block", floor, 0.0f, 24.25f, 0.0f, y: 6.0f, building: "tower",
+                layer: 5));
+            e.Add(Entry("tower-door-x0z0-W-s0", "door", doorHingedWood, -1.5f, 24.25f, 0.0f, building: "tower",
+                parent: "tower-doorway-x0z0-W-s0", layer: 8));
+            e.Add(Entry("tower-hatch-x0z0-s1", "door", floorLadderHatch, 0.0f, 24.25f, 0.0f, y: 3.0f, building: "tower",
+                parent: "tower-fframe-x0z0-s1", layer: 8));
+            e.Add(Entry("catcher-05", "catcher_large", waterCatcherLarge, 0.0f, 24.25f, 0.0f, on: "tower-floor-x0z0-s2",
+                y: 6.1f, building: "tower", layer: 9));
+            e.Add(Entry("tower-splitter", "decor", fluidsplitter, 0.0f, 25.65f, 180.0f, y: 2.0f, building: "tower",
+                parent: "tower-wall-x0z0-N-s0", layer: 9));
+            e.Add(Entry("tower-torch", "decor", torchholderOnStatic, -1.6f, 25.2f, 270.0f, y: 1.9f, building: "tower",
+                parent: "tower-doorway-x0z0-W-s0", layer: 9));
+            e.Add(Entry("barn-fnd-x0z0", "block", FoundationPrefab, 31.0f, 3.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x0z1", "block", FoundationPrefab, 31.0f, 6.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x0z2", "block", FoundationPrefab, 31.0f, 9.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x0z3", "block", FoundationPrefab, 31.0f, 12.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x1z0", "block", FoundationPrefab, 34.0f, 3.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x1z1", "block", FoundationPrefab, 34.0f, 6.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x1z2", "block", FoundationPrefab, 34.0f, 9.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x1z3", "block", FoundationPrefab, 34.0f, 12.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x2z0", "block", FoundationPrefab, 37.0f, 3.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x2z1", "block", FoundationPrefab, 37.0f, 6.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x2z2", "block", FoundationPrefab, 37.0f, 9.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x2z3", "block", FoundationPrefab, 37.0f, 12.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x3z0", "block", FoundationPrefab, 40.0f, 3.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x3z1", "block", FoundationPrefab, 40.0f, 6.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x3z2", "block", FoundationPrefab, 40.0f, 9.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x3z3", "block", FoundationPrefab, 40.0f, 12.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x4z0", "block", FoundationPrefab, 43.0f, 3.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x4z1", "block", FoundationPrefab, 43.0f, 6.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x4z2", "block", FoundationPrefab, 43.0f, 9.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-fnd-x4z3", "block", FoundationPrefab, 43.0f, 12.9f, 0.0f, building: "barn", layer: 0));
+            e.Add(Entry("barn-wall-x0z0-W-s0", "block", wall, 29.5f, 3.9f, 180.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-wall-x4z0-E-s0", "block", wall, 44.5f, 3.9f, 0.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-frame-x0z1-W-s0", "block", wallFrame, 29.5f, 6.9f, 180.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-frame-x4z1-E-s0", "block", wallFrame, 44.5f, 6.9f, 0.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-frame-x0z2-W-s0", "block", wallFrame, 29.5f, 9.9f, 180.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-frame-x4z2-E-s0", "block", wallFrame, 44.5f, 9.9f, 0.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-wall-x0z3-W-s0", "block", wall, 29.5f, 12.9f, 180.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-wall-x4z3-E-s0", "block", wall, 44.5f, 12.9f, 0.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-wall-x0z0-S-s0", "block", wall, 31.0f, 2.4f, 90.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-wall-x0z3-N-s0", "block", wall, 31.0f, 14.4f, 270.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-window-x1z0-S-s0", "block", wallWindow, 34.0f, 2.4f, 90.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-window-x1z3-N-s0", "block", wallWindow, 34.0f, 14.4f, 270.0f, building: "barn",
+                layer: 2));
+            e.Add(Entry("barn-wall-x2z0-S-s0", "block", wall, 37.0f, 2.4f, 90.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-wall-x2z3-N-s0", "block", wall, 37.0f, 14.4f, 270.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-window-x3z0-S-s0", "block", wallWindow, 40.0f, 2.4f, 90.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-window-x3z3-N-s0", "block", wallWindow, 40.0f, 14.4f, 270.0f, building: "barn",
+                layer: 2));
+            e.Add(Entry("barn-wall-x4z0-S-s0", "block", wall, 43.0f, 2.4f, 90.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-wall-x4z3-N-s0", "block", wall, 43.0f, 14.4f, 270.0f, building: "barn", layer: 2));
+            e.Add(Entry("barn-floor-x0z0-s1", "block", floor, 31.0f, 3.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x0z1-s1", "block", floor, 31.0f, 6.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x0z2-s1", "block", floor, 31.0f, 9.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x0z3-s1", "block", floor, 31.0f, 12.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x1z0-s1", "block", floor, 34.0f, 3.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x1z1-s1", "block", floor, 34.0f, 6.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x1z2-s1", "block", floor, 34.0f, 9.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x1z3-s1", "block", floor, 34.0f, 12.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x2z0-s1", "block", floor, 37.0f, 3.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x2z1-s1", "block", floor, 37.0f, 6.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x2z2-s1", "block", floor, 37.0f, 9.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x2z3-s1", "block", floor, 37.0f, 12.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x3z0-s1", "block", floor, 40.0f, 3.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x3z1-s1", "block", floor, 40.0f, 6.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x3z2-s1", "block", floor, 40.0f, 9.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x3z3-s1", "block", floor, 40.0f, 12.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x4z0-s1", "block", floor, 43.0f, 3.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-floor-x4z1-s1", "block", floor, 43.0f, 6.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-fframe-x4z2-s1", "block", floorFrame, 43.0f, 9.9f, 0.0f, y: 3.0f, building: "barn",
+                layer: 3));
+            e.Add(Entry("barn-floor-x4z3-s1", "block", floor, 43.0f, 12.9f, 0.0f, y: 3.0f, building: "barn", layer: 3));
+            e.Add(Entry("barn-roof-x0z0-s1", "block", roof, 31.0f, 3.9f, 180.0f, y: 3.0f, building: "barn", layer: 5));
+            e.Add(Entry("barn-gable-x0z0-W-s1", "block", wall, 29.5f, 3.9f, 180.0f, y: 3.0f, building: "barn",
+                layer: 7));
+            e.Add(Entry("barn-roof-x0z3-s1", "block", roof, 31.0f, 12.9f, 0.0f, y: 3.0f, building: "barn", layer: 5));
+            e.Add(Entry("barn-gable-x0z3-W-s1", "block", wall, 29.5f, 12.9f, 180.0f, y: 3.0f, building: "barn",
+                layer: 7));
+            e.Add(Entry("barn-roof-x0z1-s2", "block", roof, 31.0f, 6.9f, 180.0f, y: 6.0f, building: "barn", layer: 6));
+            e.Add(Entry("barn-frame-x0z1-W-s1", "block", wallFrame, 29.5f, 6.9f, 180.0f, y: 3.0f, building: "barn",
+                layer: 7));
+            e.Add(Entry("barn-gable-x0z1-W-s2", "block", wall, 29.5f, 6.9f, 180.0f, y: 6.0f, building: "barn",
+                layer: 7));
+            e.Add(Entry("barn-roof-x0z2-s2", "block", roof, 31.0f, 9.9f, 0.0f, y: 6.0f, building: "barn", layer: 6));
+            e.Add(Entry("barn-gable-x0z2-W-s1", "block", wall, 29.5f, 9.9f, 180.0f, y: 3.0f, building: "barn",
+                layer: 7));
+            e.Add(Entry("barn-gable-x0z2-W-s2", "block", wall, 29.5f, 9.9f, 180.0f, y: 6.0f, building: "barn",
+                layer: 7));
+            e.Add(Entry("barn-roof-x1z0-s1", "block", roof, 34.0f, 3.9f, 180.0f, y: 3.0f, building: "barn", layer: 5));
+            e.Add(Entry("barn-roof-x1z3-s1", "block", roof, 34.0f, 12.9f, 0.0f, y: 3.0f, building: "barn", layer: 5));
+            e.Add(Entry("barn-roof-x1z1-s2", "block", roof, 34.0f, 6.9f, 180.0f, y: 6.0f, building: "barn", layer: 6));
+            e.Add(Entry("barn-roof-x1z2-s2", "block", roof, 34.0f, 9.9f, 0.0f, y: 6.0f, building: "barn", layer: 6));
+            e.Add(Entry("barn-roof-x2z0-s1", "block", roof, 37.0f, 3.9f, 180.0f, y: 3.0f, building: "barn", layer: 5));
+            e.Add(Entry("barn-roof-x2z3-s1", "block", roof, 37.0f, 12.9f, 0.0f, y: 3.0f, building: "barn", layer: 5));
+            e.Add(Entry("barn-roof-x2z1-s2", "block", roof, 37.0f, 6.9f, 180.0f, y: 6.0f, building: "barn", layer: 6));
+            e.Add(Entry("barn-roof-x2z2-s2", "block", roof, 37.0f, 9.9f, 0.0f, y: 6.0f, building: "barn", layer: 6));
+            e.Add(Entry("barn-roof-x3z0-s1", "block", roof, 40.0f, 3.9f, 180.0f, y: 3.0f, building: "barn", layer: 5));
+            e.Add(Entry("barn-roof-x3z3-s1", "block", roof, 40.0f, 12.9f, 0.0f, y: 3.0f, building: "barn", layer: 5));
+            e.Add(Entry("barn-roof-x3z1-s2", "block", roof, 40.0f, 6.9f, 180.0f, y: 6.0f, building: "barn", layer: 6));
+            e.Add(Entry("barn-roof-x3z2-s2", "block", roof, 40.0f, 9.9f, 0.0f, y: 6.0f, building: "barn", layer: 6));
+            e.Add(Entry("barn-roof-x4z0-s1", "block", roof, 43.0f, 3.9f, 180.0f, y: 3.0f, building: "barn", layer: 5));
+            e.Add(Entry("barn-gable-x4z0-E-s1", "block", wall, 44.5f, 3.9f, 0.0f, y: 3.0f, building: "barn", layer: 7));
+            e.Add(Entry("barn-roof-x4z3-s1", "block", roof, 43.0f, 12.9f, 0.0f, y: 3.0f, building: "barn", layer: 5));
+            e.Add(Entry("barn-gable-x4z3-E-s1", "block", wall, 44.5f, 12.9f, 0.0f, y: 3.0f, building: "barn",
+                layer: 7));
+            e.Add(Entry("barn-roof-x4z1-s2", "block", roof, 43.0f, 6.9f, 180.0f, y: 6.0f, building: "barn", layer: 6));
+            e.Add(Entry("barn-gable-x4z1-E-s1", "block", wall, 44.5f, 6.9f, 0.0f, y: 3.0f, building: "barn", layer: 7));
+            e.Add(Entry("barn-gable-x4z1-E-s2", "block", wall, 44.5f, 6.9f, 0.0f, y: 6.0f, building: "barn", layer: 7));
+            e.Add(Entry("barn-roof-x4z2-s2", "block", roof, 43.0f, 9.9f, 0.0f, y: 6.0f, building: "barn", layer: 6));
+            e.Add(Entry("barn-gable-x4z2-E-s1", "block", wall, 44.5f, 9.9f, 0.0f, y: 3.0f, building: "barn", layer: 7));
+            e.Add(Entry("barn-gable-x4z2-E-s2", "block", wall, 44.5f, 9.9f, 0.0f, y: 6.0f, building: "barn", layer: 7));
+            e.Add(Entry("barn-ddoor-x0z1-W-s0", "door", doorDoubleHingedWood, 29.5f, 6.9f, 0.0f, building: "barn",
+                parent: "barn-frame-x0z1-W-s0", layer: 8));
+            e.Add(Entry("barn-ddoor-x4z1-E-s0", "door", doorDoubleHingedWood, 44.5f, 6.9f, 0.0f, building: "barn",
+                parent: "barn-frame-x4z1-E-s0", layer: 8));
+            e.Add(Entry("barn-ddoor-x0z2-W-s0", "door", doorDoubleHingedWood, 29.5f, 9.9f, 0.0f, building: "barn",
+                parent: "barn-frame-x0z2-W-s0", layer: 8));
+            e.Add(Entry("barn-ddoor-x4z2-E-s0", "door", doorDoubleHingedWood, 44.5f, 9.9f, 0.0f, building: "barn",
+                parent: "barn-frame-x4z2-E-s0", layer: 8));
+            e.Add(Entry("barn-bars-x1z0-S-s0", "insert", wallWindowBarsWood, 34.0f, 2.4f, 90.0f, y: 1.0f,
+                building: "barn", parent: "barn-window-x1z0-S-s0", layer: 8));
+            e.Add(Entry("barn-bars-x1z3-N-s0", "insert", wallWindowBarsWood, 34.0f, 14.4f, 270.0f, y: 1.0f,
+                building: "barn", parent: "barn-window-x1z3-N-s0", layer: 8));
+            e.Add(Entry("barn-bars-x3z0-S-s0", "insert", wallWindowBarsWood, 40.0f, 2.4f, 90.0f, y: 1.0f,
+                building: "barn", parent: "barn-window-x3z0-S-s0", layer: 8));
+            e.Add(Entry("barn-bars-x3z3-N-s0", "insert", wallWindowBarsWood, 40.0f, 14.4f, 270.0f, y: 1.0f,
+                building: "barn", parent: "barn-window-x3z3-N-s0", layer: 8));
+            e.Add(Entry("barn-ddoor-x0z1-W-s1", "door", doorDoubleHingedWood, 29.5f, 6.9f, 180.0f, y: 3.0f,
+                building: "barn", parent: "barn-frame-x0z1-W-s1", layer: 8));
+            e.Add(Entry("barn-hatch-x4z2-s1", "door", floorLadderHatch, 43.0f, 9.9f, 0.0f, y: 3.0f, building: "barn",
+                parent: "barn-fframe-x4z2-s1", layer: 8));
+            e.Add(Entry("barn-solar-01", "solar", SolarPrefab, 34.0f, 9.9148f, 90.0f, y: 7.7648f, building: "barn",
+                parent: "barn-roof-x1z2-s2", roll: 45.0f, layer: 9, replaces: "solar-02"));
+            e.Add(Entry("barn-solar-02", "solar", SolarPrefab, 40.0f, 9.9148f, 90.0f, y: 7.7648f, building: "barn",
+                parent: "barn-roof-x3z2-s2", roll: 45.0f, layer: 9, replaces: "solar-01"));
+            e.Add(Entry("barn-sign", "sign", signHugeWood, 44.65f, 8.4f, 90.0f, y: 3.55f, building: "barn",
+                parent: "barn-gable-x4z1-E-s1", mount: true, layer: 9, image: "pandora-farm-sign.huge.wood-1024x256"));
+            e.Add(Entry("barn-feed-1", "box_feed", componentBoxFoodLarge, 30.695f, 13.725f, 180.0f, on: "barn-fnd-x0z3",
+                y: 0.099f, building: "barn", layer: 9, replaces: "box-feed"));
+            e.Add(Entry("barn-feed-2", "box_feed", componentBoxFoodLarge, 32.785f, 13.725f, 180.0f, on: "barn-fnd-x1z3",
+                y: 0.099f, building: "barn", layer: 9));
+            e.Add(Entry("barn-clones", "box_clones", LargeBoxPrefab, 34.87f, 13.725f, 180.0f, on: "barn-fnd-x1z3",
+                y: 0.099f, building: "barn", layer: 9, replaces: "box-clones"));
+            e.Add(Entry("barn-dung", "box_dung", storageBarrelC, 36.71f, 13.76f, 180.0f, on: "barn-fnd-x2z3", y: 0.099f,
+                building: "barn", layer: 9, replaces: "box-dung"));
+            e.Add(Entry("barn-wool-1", "box_wool", storageBarrelC, 38.31f, 13.76f, 180.0f, on: "barn-fnd-x2z3",
+                y: 0.099f, building: "barn", layer: 9, replaces: "box-wool"));
+            e.Add(Entry("barn-wool-2", "box_wool", storageBarrelC, 39.91f, 13.76f, 180.0f, on: "barn-fnd-x3z3",
+                y: 0.099f, building: "barn", layer: 9));
+            e.Add(Entry("fridge-02", "fridge", FridgePrefab, 30.295f, 3.035f, 0.0f, on: "barn-fnd-x0z0", y: 0.119f,
+                building: "barn", layer: 9, replaces: "fridge-01"));
+            e.Add(Entry("fridge-03", "fridge", FridgePrefab, 31.535f, 3.035f, 0.0f, on: "barn-fnd-x0z0", y: 0.119f,
+                building: "barn", layer: 9));
+            e.Add(Entry("barn-milk", "box_milk", storageBarrelB, 32.76f, 3.03f, 0.0f, on: "barn-fnd-x1z0", y: 0.099f,
+                building: "barn", layer: 9, replaces: "box-milk"));
+            e.Add(Entry("barn-eggs-1", "box_eggs", storageBarrelB, 33.97f, 3.03f, 0.0f, on: "barn-fnd-x1z0", y: 0.099f,
+                building: "barn", layer: 9, replaces: "box-eggs"));
+            e.Add(Entry("barn-eggs-2", "box_eggs", storageBarrelB, 35.18f, 3.03f, 0.0f, on: "barn-fnd-x1z0", y: 0.099f,
+                building: "barn", layer: 9));
+            e.Add(Entry("barn-meat-1", "box_meat", LargeBoxPrefab, 36.8f, 3.075f, 0.0f, on: "barn-fnd-x2z0", y: 0.099f,
+                building: "barn", layer: 9, replaces: "box-meat"));
+            e.Add(Entry("barn-meat-2", "box_meat", LargeBoxPrefab, 38.83f, 3.075f, 0.0f, on: "barn-fnd-x3z0", y: 0.099f,
+                building: "barn", layer: 9));
+            e.Add(Entry("barn-meat-3", "box_meat", LargeBoxPrefab, 40.86f, 3.075f, 0.0f, on: "barn-fnd-x3z0", y: 0.099f,
+                building: "barn", layer: 9));
+            e.Add(Entry("battery-02", "battery", largeRechargableBatteryDeployed, 42.485f, 3.2f, 0.0f,
+                on: "barn-fnd-x4z0", y: 0.099f, building: "barn", layer: 9, replaces: "battery-01"));
+            e.Add(Entry("barn-combiner-01", "decor", electricalCombinerDeployed, 44.4f, 3.0f, 270.0f, y: 1.35f,
+                building: "barn", parent: "barn-wall-x4z0-E-s0", layer: 9));
+            e.Add(Entry("barn-combiner-02", "decor", electricalCombinerDeployed, 44.4f, 3.45f, 270.0f, y: 1.35f,
+                building: "barn", parent: "barn-wall-x4z0-E-s0", layer: 9));
+            e.Add(Entry("barn-splitter-01", "decor", splitter, 44.4f, 4.05f, 270.0f, y: 1.35f, building: "barn",
+                parent: "barn-wall-x4z0-E-s0", layer: 9));
+            e.Add(Entry("barn-splitter-02", "decor", splitter, 44.4f, 4.65f, 270.0f, y: 1.35f, building: "barn",
+                parent: "barn-wall-x4z0-E-s0", layer: 9));
+            e.Add(Entry("barn-light-01", "decor", ceilinglightDeployed, 34.0f, 6.9f, 0.0f, y: 2.973f, building: "barn",
+                parent: "barn-floor-x1z1-s1", layer: 9));
+            e.Add(Entry("barn-light-02", "decor", ceilinglightDeployed, 40.0f, 6.9f, 0.0f, y: 2.973f, building: "barn",
+                parent: "barn-floor-x3z1-s1", layer: 9));
+            e.Add(Entry("barn-light-03", "decor", ceilinglightDeployed, 34.0f, 9.9f, 0.0f, y: 2.973f, building: "barn",
+                parent: "barn-floor-x1z2-s1", layer: 9));
+            e.Add(Entry("barn-light-04", "decor", ceilinglightDeployed, 40.0f, 9.9f, 0.0f, y: 2.973f, building: "barn",
+                parent: "barn-floor-x3z2-s1", layer: 9));
+            e.Add(Entry("barn-light-05", "decor", ceilinglightDeployed, 37.0f, 3.9f, 0.0f, y: 2.973f, building: "barn",
+                parent: "barn-floor-x2z0-s1", layer: 9));
+            e.Add(Entry("barn-light-06", "decor", ceilinglightDeployed, 37.0f, 12.9f, 0.0f, y: 2.973f, building: "barn",
+                parent: "barn-floor-x2z3-s1", layer: 9));
+            e.Add(Entry("barn-torch-e1", "decor", torchholderOnStatic, 44.6f, 4.9f, 90.0f, y: 2.0f, building: "barn",
+                parent: "barn-wall-x4z0-E-s0", layer: 9));
+            e.Add(Entry("barn-torch-e2", "decor", torchholderOnStatic, 44.6f, 11.9f, 90.0f, y: 2.0f, building: "barn",
+                parent: "barn-wall-x4z3-E-s0", layer: 9));
+            e.Add(Entry("barn-torch-w1", "decor", torchholderOnStatic, 29.4f, 4.9f, 270.0f, y: 2.0f, building: "barn",
+                parent: "barn-wall-x0z0-W-s0", layer: 9));
+            e.Add(Entry("barn-torch-w2", "decor", torchholderOnStatic, 29.4f, 11.9f, 270.0f, y: 2.0f, building: "barn",
+                parent: "barn-wall-x0z3-W-s0", layer: 9));
+            e.Add(Entry("house-fnd-x0z0", "block", FoundationPrefab, 43.0f, -16.5f, 0.0f, building: "house", layer: 0));
+            e.Add(Entry("house-fnd-x0z1", "block", FoundationPrefab, 43.0f, -13.5f, 0.0f, building: "house", layer: 0));
+            e.Add(Entry("house-fnd-x0z2", "block", FoundationPrefab, 43.0f, -10.5f, 0.0f, building: "house", layer: 0));
+            e.Add(Entry("house-fnd-x1z0", "block", FoundationPrefab, 46.0f, -16.5f, 0.0f, building: "house", layer: 0));
+            e.Add(Entry("house-fnd-x1z1", "block", FoundationPrefab, 46.0f, -13.5f, 0.0f, building: "house", layer: 0));
+            e.Add(Entry("house-fnd-x1z2", "block", FoundationPrefab, 46.0f, -10.5f, 0.0f, building: "house", layer: 0));
+            e.Add(Entry("house-fnd-x2z0", "block", FoundationPrefab, 49.0f, -16.5f, 0.0f, building: "house", layer: 0));
+            e.Add(Entry("house-fnd-x2z1", "block", FoundationPrefab, 49.0f, -13.5f, 0.0f, building: "house", layer: 0));
+            e.Add(Entry("house-fnd-x2z2", "block", FoundationPrefab, 49.0f, -10.5f, 0.0f, building: "house", layer: 0));
+            e.Add(Entry("house-window-x0z0-W-s0", "block", wallWindow, 41.5f, -16.5f, 180.0f, building: "house",
+                layer: 2));
+            e.Add(Entry("house-wall-x0z1-W-s0", "block", wall, 41.5f, -13.5f, 180.0f, building: "house", layer: 2));
+            e.Add(Entry("house-window-x0z2-W-s0", "block", wallWindow, 41.5f, -10.5f, 180.0f, building: "house",
+                layer: 2));
+            e.Add(Entry("house-wall-x0z0-S-s0", "block", wall, 43.0f, -18.0f, 90.0f, building: "house", layer: 2));
+            e.Add(Entry("house-window-x1z0-S-s0", "block", wallWindow, 46.0f, -18.0f, 90.0f, building: "house",
+                layer: 2));
+            e.Add(Entry("house-window-x0z2-N-s0", "block", wallWindow, 43.0f, -9.0f, 270.0f, building: "house",
+                layer: 2));
+            e.Add(Entry("house-wall-x1z2-N-s0", "block", wall, 46.0f, -9.0f, 270.0f, building: "house", layer: 2));
+            e.Add(Entry("house-window-x1z0-E-s0", "block", wallWindow, 47.5f, -16.5f, 0.0f, building: "house",
+                layer: 2));
+            e.Add(Entry("house-doorway-x1z1-E-s0", "block", wallDoorway, 47.5f, -13.5f, 0.0f, building: "house",
+                layer: 2));
+            e.Add(Entry("house-window-x1z2-E-s0", "block", wallWindow, 47.5f, -10.5f, 0.0f, building: "house",
+                layer: 2));
+            e.Add(Entry("house-wall-x0z0-N-s0", "block", wall, 43.0f, -15.0f, 270.0f, building: "house", layer: 2));
+            e.Add(Entry("house-doorway-x1z0-N-s0", "block", wallDoorway, 46.0f, -15.0f, 270.0f, building: "house",
+                layer: 2));
+            e.Add(Entry("house-frame-x2z0-E-s0", "block", wallFrame, 50.5f, -16.5f, 0.0f, building: "house", layer: 2));
+            e.Add(Entry("house-frame-x2z1-E-s0", "block", wallFrame, 50.5f, -13.5f, 0.0f, building: "house", layer: 2));
+            e.Add(Entry("house-frame-x2z2-E-s0", "block", wallFrame, 50.5f, -10.5f, 0.0f, building: "house", layer: 2));
+            e.Add(Entry("house-frame-x2z0-S-s0", "block", wallFrame, 49.0f, -18.0f, 90.0f, building: "house",
+                layer: 2));
+            e.Add(Entry("house-frame-x2z2-N-s0", "block", wallFrame, 49.0f, -9.0f, 270.0f, building: "house",
+                layer: 2));
+            e.Add(Entry("house-floor-x2z0-s1", "block", floor, 49.0f, -16.5f, 0.0f, y: 3.0f, building: "house",
+                layer: 3));
+            e.Add(Entry("house-floor-x2z1-s1", "block", floor, 49.0f, -13.5f, 0.0f, y: 3.0f, building: "house",
+                layer: 3));
+            e.Add(Entry("house-floor-x2z2-s1", "block", floor, 49.0f, -10.5f, 0.0f, y: 3.0f, building: "house",
+                layer: 3));
+            e.Add(Entry("house-roof-x0z0-s1", "block", roof, 43.0f, -16.5f, 270.0f, y: 3.0f, building: "house",
+                layer: 5));
+            e.Add(Entry("house-gable-x0z0-S-s1", "block", wall, 43.0f, -18.0f, 90.0f, y: 3.0f, building: "house",
+                layer: 6));
+            e.Add(Entry("house-roof-x1z0-s1", "block", roof, 46.0f, -16.5f, 90.0f, y: 3.0f, building: "house",
+                layer: 5));
+            e.Add(Entry("house-gable-x1z0-S-s1", "block", wall, 46.0f, -18.0f, 90.0f, y: 3.0f, building: "house",
+                layer: 6));
+            e.Add(Entry("house-roof-x0z1-s1", "block", roof, 43.0f, -13.5f, 270.0f, y: 3.0f, building: "house",
+                layer: 5));
+            e.Add(Entry("house-roof-x1z1-s1", "block", roof, 46.0f, -13.5f, 90.0f, y: 3.0f, building: "house",
+                layer: 5));
+            e.Add(Entry("house-roof-x0z2-s1", "block", roof, 43.0f, -10.5f, 270.0f, y: 3.0f, building: "house",
+                layer: 5));
+            e.Add(Entry("house-gable-x0z2-N-s1", "block", wall, 43.0f, -9.0f, 270.0f, y: 3.0f, building: "house",
+                layer: 6));
+            e.Add(Entry("house-roof-x1z2-s1", "block", roof, 46.0f, -10.5f, 90.0f, y: 3.0f, building: "house",
+                layer: 5));
+            e.Add(Entry("house-gable-x1z2-N-s1", "block", wall, 46.0f, -9.0f, 270.0f, y: 3.0f, building: "house",
+                layer: 6));
+            e.Add(Entry("house-door-x1z1-E-s0", "door", doorHingedWood, 47.5f, -13.5f, 0.0f, building: "house",
+                parent: "house-doorway-x1z1-E-s0", layer: 8));
+            e.Add(Entry("house-door-x1z0-N-s0", "door", doorHingedWood, 46.0f, -15.0f, 270.0f, building: "house",
+                parent: "house-doorway-x1z0-N-s0", layer: 8));
+            e.Add(Entry("house-glass-x0z0-W-s0", "insert", wallWindowGlassReinforced, 41.5f, -16.5f, 180.0f, y: 1.0f,
+                building: "house", parent: "house-window-x0z0-W-s0", layer: 8));
+            e.Add(Entry("house-shutter-x0z0-W-s0", "door", shutterWoodA, 41.5f, -16.5f, 180.0f, y: 1.0f,
+                building: "house", parent: "house-window-x0z0-W-s0", layer: 8));
+            e.Add(Entry("house-glass-x0z2-W-s0", "insert", wallWindowGlassReinforced, 41.5f, -10.5f, 180.0f, y: 1.0f,
+                building: "house", parent: "house-window-x0z2-W-s0", layer: 8));
+            e.Add(Entry("house-shutter-x0z2-W-s0", "door", shutterWoodA, 41.5f, -10.5f, 180.0f, y: 1.0f,
+                building: "house", parent: "house-window-x0z2-W-s0", layer: 8));
+            e.Add(Entry("house-glass-x1z0-S-s0", "insert", wallWindowGlassReinforced, 46.0f, -18.0f, 90.0f, y: 1.0f,
+                building: "house", parent: "house-window-x1z0-S-s0", layer: 8));
+            e.Add(Entry("house-shutter-x1z0-S-s0", "door", shutterWoodA, 46.0f, -18.0f, 90.0f, y: 1.0f,
+                building: "house", parent: "house-window-x1z0-S-s0", layer: 8));
+            e.Add(Entry("house-glass-x0z2-N-s0", "insert", wallWindowGlassReinforced, 43.0f, -9.0f, 270.0f, y: 1.0f,
+                building: "house", parent: "house-window-x0z2-N-s0", layer: 8));
+            e.Add(Entry("house-shutter-x0z2-N-s0", "door", shutterWoodA, 43.0f, -9.0f, 270.0f, y: 1.0f,
+                building: "house", parent: "house-window-x0z2-N-s0", layer: 8));
+            e.Add(Entry("house-glass-x1z0-E-s0", "insert", wallWindowGlassReinforced, 47.5f, -16.5f, 0.0f, y: 1.0f,
+                building: "house", parent: "house-window-x1z0-E-s0", layer: 8));
+            e.Add(Entry("house-shutter-x1z0-E-s0", "door", shutterWoodA, 47.5f, -16.5f, 0.0f, y: 1.0f,
+                building: "house", parent: "house-window-x1z0-E-s0", layer: 8));
+            e.Add(Entry("house-glass-x1z2-E-s0", "insert", wallWindowGlassReinforced, 47.5f, -10.5f, 0.0f, y: 1.0f,
+                building: "house", parent: "house-window-x1z2-E-s0", layer: 8));
+            e.Add(Entry("house-shutter-x1z2-E-s0", "door", shutterWoodA, 47.5f, -10.5f, 0.0f, y: 1.0f,
+                building: "house", parent: "house-window-x1z2-E-s0", layer: 8));
+            e.Add(Entry("house-bed", "bed", bedDeployed, 44.45f, -17.13f, 0.0f, on: "house-fnd-x0z0", y: 0.099f,
+                building: "house", layer: 9));
+            e.Add(Entry("house-rug-bedroom", "decor", rugDeployed, 44.45f, -16.05f, 90.0f, on: "house-fnd-x0z0",
+                y: 0.099f, building: "house", layer: 9));
+            e.Add(Entry("house-candles-bedroom", "decor", candlesetSmallOnStatic, 41.95f, -15.35f, 0.0f,
+                on: "house-fnd-x0z0", y: 0.099f, building: "house", layer: 9));
+            e.Add(Entry("house-hearth", "decor", fireplaceOnStatic, 42.46f, -13.1f, 90.0f, on: "house-fnd-x0z1",
+                y: 0.099f, building: "house", layer: 9));
+            e.Add(Entry("house-rug-hearth", "decor", rugBearDeployed, 44.45f, -13.1f, 90.0f, on: "house-fnd-x0z1",
+                y: 0.099f, building: "house", layer: 9));
+            e.Add(Entry("house-rockingchair-hearth", "decor", rockingchairDeployed, 45.0f, -13.1f, 270.0f,
+                on: "house-fnd-x1z1", y: 0.099f, building: "house", layer: 9));
+            e.Add(Entry("house-table", "decor", tableDeployed, 43.3f, -10.3f, 0.0f, on: "house-fnd-x0z2", y: 0.099f,
+                building: "house", layer: 9));
+            e.Add(Entry("house-chair-1", "decor", chairBStatic, 42.7f, -11.45f, 0.0f, on: "house-fnd-x0z2", y: 0.099f,
+                building: "house", layer: 9));
+            e.Add(Entry("house-chair-2", "decor", chairBStatic, 43.9f, -11.45f, 0.0f, on: "house-fnd-x0z2", y: 0.099f,
+                building: "house", layer: 9));
+            e.Add(Entry("house-cookingbench", "decor", cookingworkbenchDeployed, 46.0f, -9.9f, 180.0f,
+                on: "house-fnd-x1z2", y: 0.099f, building: "house", layer: 9));
+            e.Add(Entry("house-candles-table", "decor", candlesetLargeOnStatic, 43.3f, -10.3f, 0.0f, y: 0.929f,
+                building: "house", parent: "house-table", layer: 9));
+            e.Add(Entry("house-rockingchair-porch", "decor", rockingchairDeployed, 49.6f, -16.9f, 90.0f,
+                on: "house-fnd-x2z0", y: 0.099f, building: "house", layer: 9));
+            e.Add(Entry("house-bench-porch", "decor", woodenBenchAMountable, 47.95f, -10.5f, 90.0f,
+                on: "house-fnd-x2z2", y: 0.099f, building: "house", layer: 9));
+            e.Add(Entry("house-lantern-1", "decor", lanternOnStatic, 50.15f, -17.65f, 0.0f, on: "house-fnd-x2z0",
+                y: 0.099f, building: "house", layer: 9));
+            e.Add(Entry("house-lantern-2", "decor", lanternOnStatic, 50.15f, -9.35f, 0.0f, on: "house-fnd-x2z2",
+                y: 0.099f, building: "house", layer: 9));
+            e.Add(Entry("house-torch-1", "decor", torchholderOnStatic, 47.6f, -12.55f, 90.0f, y: 1.9f,
+                building: "house", parent: "house-doorway-x1z1-E-s0", layer: 9));
+            e.Add(Entry("house-torch-2", "decor", torchholderOnStatic, 47.6f, -14.45f, 90.0f, y: 1.9f,
+                building: "house", parent: "house-doorway-x1z1-E-s0", layer: 9));
+            e.Add(Entry("gate-02", "gate", GatePrefab, 27.55f, 14.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-90", "fence", FencePrefab, 26.1f, 21.6f, 180.0f, layer: 2));
+            e.Add(Entry("fence-91", "fence", FencePrefab, 26.1f, 24.2f, 180.0f, layer: 2));
+            e.Add(Entry("fence-92", "fence", FencePrefab, 27.605f, 25.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-93", "fence", FencePrefab, 30.615f, 25.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-94", "fence", FencePrefab, 33.625f, 25.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-95", "fence", FencePrefab, 36.635f, 25.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-96", "fence", FencePrefab, 39.645f, 25.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-97", "fence", FencePrefab, 42.655f, 25.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-98", "fence", FencePrefab, 45.665f, 25.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-99", "fence", FencePrefab, 48.675f, 25.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-100", "fence", FencePrefab, 51.685f, 25.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-101", "fence", FencePrefab, 54.695f, 25.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-102", "fence", FencePrefab, 56.2f, 24.125f, 180.0f, layer: 2));
+            e.Add(Entry("fence-103", "fence", FencePrefab, 56.2f, 21.375f, 180.0f, layer: 2));
+            e.Add(Entry("fence-104", "fence", FencePrefab, 56.2f, 18.625f, 180.0f, layer: 2));
+            e.Add(Entry("fence-105", "fence", FencePrefab, 56.2f, 15.875f, 180.0f, layer: 2));
+            e.Add(Entry("fence-106", "fence", FencePrefab, 54.75f, 14.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-107", "fence", FencePrefab, 51.85f, 14.5f, 90.0f, layer: 2));
+            e.Add(Entry("fence-108", "fence", FencePrefab, 48.95f, 14.5f, 90.0f, layer: 2));
+            e.Add(Entry("gate-03", "gate", GatePrefab, 46.05f, 14.5f, 90.0f, layer: 2));
             e.Add(Entry("planter-01", "planter", PlanterPrefab, 29.5f, 19.1f, 0.0f));
-            e.Add(Entry("sprinkler-01", "sprinkler", SprinklerPrefab, 29.5f, 21.3f, 180.0f));
             e.Add(Entry("planter-02", "planter", PlanterPrefab, 32.9f, 19.1f, 0.0f));
-            e.Add(Entry("sprinkler-02", "sprinkler", SprinklerPrefab, 32.9f, 21.3f, 180.0f));
             e.Add(Entry("planter-03", "planter", PlanterPrefab, 36.3f, 19.1f, 0.0f));
-            e.Add(Entry("sprinkler-03", "sprinkler", SprinklerPrefab, 36.3f, 21.3f, 180.0f));
             e.Add(Entry("planter-04", "planter", PlanterPrefab, 39.7f, 19.1f, 0.0f));
+            e.Add(Entry("sprinkler-01", "sprinkler", SprinklerPrefab, 29.5f, 21.3f, 180.0f));
+            e.Add(Entry("sprinkler-02", "sprinkler", SprinklerPrefab, 32.9f, 21.3f, 180.0f));
+            e.Add(Entry("sprinkler-03", "sprinkler", SprinklerPrefab, 36.3f, 21.3f, 180.0f));
             e.Add(Entry("sprinkler-04", "sprinkler", SprinklerPrefab, 39.7f, 21.3f, 180.0f));
+            e.Add(Entry("deck-fnd-x0z0", "block", FoundationPrefab, 50.2f, 19.9f, 0.0f, building: "deck", layer: 0));
+            e.Add(Entry("scarecrow-01", "decor", scarecrowDeployed, 50.2f, 19.9f, 225.0f, on: "deck-fnd-x0z0",
+                y: 0.099f, building: "deck", layer: 9));
+            e.Add(Entry("heater-01", "decor", electricalHeater, 50.2f, 21.4f, 0.0f, y: -0.022f, building: "deck",
+                parent: "deck-fnd-x0z0", layer: 9));
+            e.Add(Entry("heater-02", "decor", electricalHeater, 51.7f, 19.9f, 90.0f, y: -0.022f, building: "deck",
+                parent: "deck-fnd-x0z0", layer: 9));
+            e.Add(Entry("heater-03", "decor", electricalHeater, 50.2f, 18.4f, 180.0f, y: -0.0178f, building: "deck",
+                parent: "deck-fnd-x0z0", layer: 9));
+            e.Add(Entry("heater-04", "decor", electricalHeater, 48.7f, 19.9f, 270.0f, y: -0.022f, building: "deck",
+                parent: "deck-fnd-x0z0", layer: 9));
+            e.Add(Entry("planter-05", "planter", PlanterPrefab, 46.77f, 19.9f, 0.0f, layer: 10));
+            e.Add(Entry("planter-06", "planter", PlanterPrefab, 50.2f, 23.33f, 0.0f, layer: 10));
+            e.Add(Entry("planter-07", "planter", PlanterPrefab, 53.63f, 19.9f, 0.0f, layer: 10));
+            e.Add(Entry("planter-08", "planter", PlanterPrefab, 50.2f, 16.47f, 0.0f, layer: 10));
+            e.Add(Entry("sprinkler-05", "sprinkler", SprinklerPrefab, 47.45f, 22.7f, 180.0f, layer: 10));
+            e.Add(Entry("sprinkler-06", "sprinkler", SprinklerPrefab, 52.95f, 17.1f, 180.0f, layer: 10));
+            e.Add(Entry("composter-02", "composter", ComposterPrefab, 28.0f, 23.6f, 0.0f, layer: 10,
+                replaces: "composter-01"));
+            e.Add(Entry("beehive-01", "decor", beehiveDeployed, 43.2f, 24.3f, 180.0f, layer: 10));
+            e.Add(Entry("gate-04", "gate", GatePrefab, 29.45f, -16.3f, 90.0f, layer: 2));
+            e.Add(Entry("fence-109", "fence", FencePrefab, 32.35f, -16.3f, 90.0f, layer: 2));
+            e.Add(Entry("fence-110", "fence", FencePrefab, 35.25f, -16.3f, 90.0f, layer: 2));
+            e.Add(Entry("fence-111", "fence", FencePrefab, 38.15f, -16.3f, 90.0f, layer: 2));
+            e.Add(Entry("fence-112", "fence", FencePrefab, 39.6f, -17.75f, 180.0f, layer: 2));
+            e.Add(Entry("fence-113", "fence", FencePrefab, 39.6f, -20.65f, 180.0f, layer: 2));
+            e.Add(Entry("fence-114", "fence", FencePrefab, 39.6f, -23.55f, 180.0f, layer: 2));
+            e.Add(Entry("fence-115", "fence", FencePrefab, 38.15f, -25.0f, 90.0f, layer: 2));
+            e.Add(Entry("fence-116", "fence", FencePrefab, 35.25f, -25.0f, 90.0f, layer: 2));
+            e.Add(Entry("fence-117", "fence", FencePrefab, 32.35f, -25.0f, 90.0f, layer: 2));
+            e.Add(Entry("fence-118", "fence", FencePrefab, 29.45f, -25.0f, 90.0f, layer: 2));
+            e.Add(Entry("fence-119", "fence", FencePrefab, 28.0f, -23.55f, 180.0f, layer: 2));
+            e.Add(Entry("fence-120", "fence", FencePrefab, 28.0f, -20.65f, 180.0f, layer: 2));
+            e.Add(Entry("fence-121", "fence", FencePrefab, 28.0f, -17.75f, 180.0f, layer: 2));
+            e.Add(Entry("coop-03", "coop", CoopPrefab, 33.6f, -18.65f, 0.0f, layer: 10, replaces: "coop-01"));
+            e.Add(Entry("coop-04", "coop", CoopPrefab, 37.6f, -18.65f, 0.0f, layer: 10, replaces: "coop-02"));
+            e.Add(Entry("coop-05", "coop", CoopPrefab, 33.6f, -22.65f, 0.0f, layer: 10));
+            e.Add(Entry("coop-06", "coop", CoopPrefab, 37.6f, -22.65f, 0.0f, layer: 10));
+            e.Add(Entry("windmill-01", "windmill", electricWindmillSmall, 61.0f, 19.0f, 0.0f, layer: 10));
+            e.Add(Entry("sign-town", "sign", signPostTownRoof, 52.9f, -0.9f, 106.6f, layer: 10,
+                image: "pandora-farm-sign.post.town-512x256"));
+            e.Add(Entry("mailbox-01", "decor", mailboxDeployed, 51.0f, -3.6f, 286.6f, layer: 10));
+            e.Add(Entry("planter-static-01", "planter_static", railroadplanterRespawningStatic, 44.5f, -6.1f, 0.0f,
+                layer: 10));
+            e.Add(Entry("planter-static-02", "planter_static", minecartPlanterRespawningStatic, 46.4f, 3.2f, 90.0f,
+                layer: 10));
+            e.Add(Entry("well-01", "decor", waterwellstatic, 51.5f, 7.6f, 0.0f, layer: 10));
+            e.Add(Entry("bench-01", "decor", woodenBenchAMountable, 51.6f, 10.9f, 180.0f, layer: 10));
+            e.Add(Entry("logpile-01", "decor", woodPile, 43.0f, -21.0f, 90.0f, layer: 10));
+            e.Add(Entry("lantern-01", "decor", lanternOnStatic, 50.6f, 1.6f, 0.0f, layer: 10));
+            e.Add(Entry("lantern-02", "decor", lanternOnStatic, 48.4f, 4.6f, 0.0f, layer: 10));
+            e.Add(Entry("lantern-03", "decor", lanternOnStatic, 48.6f, 13.3f, 0.0f, layer: 10));
+            e.Add(Entry("lantern-04", "decor", lanternOnStatic, 27.5f, 3.6f, 0.0f, layer: 10));
+            e.Add(Entry("lantern-05", "decor", lanternOnStatic, -3.2f, 22.0f, 0.0f, layer: 10));
+            e.Add(Entry("lantern-06", "decor", lanternOnStatic, 27.4f, -15.0f, 0.0f, layer: 10));
+            e.Add(Entry("lantern-07", "decor", lanternOnStatic, 40.5f, -13.6f, 0.0f, layer: 10));
+            e.Add(Entry("lantern-08", "decor", lanternOnStatic, 30.0f, -0.6f, 0.0f, layer: 10));
             e.Add(Entry("pump-01", "pump", PumpPrefab, 29.5f, 29.3f, 0.0f));
-            e.Add(Entry("solar-01", "solar", SolarPrefab, 32.2f, 24.0f, 330.0f));
             List<LayoutConnection> c = layout.Connections;
-            c.Add(Link("solar-01", 0, "pump-01", 0, "power"));
+            c.Add(Link("windmill-01", 0, "barn-combiner-01", 0, "power"));
+            c.Add(Link("barn-solar-01", 0, "barn-combiner-01", 1, "power"));
+            c.Add(Link("barn-combiner-01", 0, "barn-combiner-02", 0, "power"));
+            c.Add(Link("barn-solar-02", 0, "barn-combiner-02", 1, "power"));
+            c.Add(Link("barn-combiner-02", 0, "battery-02", 0, "power"));
+            c.Add(Link("battery-02", 0, "barn-splitter-01", 0, "power"));
+            c.Add(Link("barn-splitter-01", 0, "barn-splitter-02", 0, "power"));
+            c.Add(Link("barn-splitter-02", 0, "fridge-02", 0, "power"));
+            c.Add(Link("barn-splitter-02", 1, "fridge-03", 0, "power"));
+            c.Add(Link("barn-splitter-01", 1, "barn-light-01", 0, "power"));
+            c.Add(Link("barn-light-01", 0, "barn-light-02", 0, "power"));
+            c.Add(Link("barn-light-02", 0, "barn-light-03", 0, "power"));
+            c.Add(Link("barn-light-03", 0, "barn-light-04", 0, "power"));
+            c.Add(Link("barn-light-04", 0, "barn-light-05", 0, "power"));
+            c.Add(Link("barn-light-05", 0, "barn-light-06", 0, "power"));
+            c.Add(Link("barn-splitter-01", 2, "heater-01", 0, "power"));
+            c.Add(Link("heater-01", 0, "heater-02", 0, "power"));
+            c.Add(Link("heater-02", 0, "heater-03", 0, "power"));
+            c.Add(Link("heater-03", 0, "heater-04", 0, "power"));
+            c.Add(Link("heater-04", 0, "pump-01", 0, "power"));
             c.Add(Link("pump-01", 0, "sprinkler-01", 0, "water"));
             c.Add(Link("sprinkler-01", 0, "sprinkler-02", 0, "water"));
             c.Add(Link("sprinkler-02", 0, "sprinkler-03", 0, "water"));
             c.Add(Link("sprinkler-03", 0, "sprinkler-04", 0, "water"));
-            c.Add(Link("solar-02", 0, "battery-01", 0, "power"));
-            c.Add(Link("battery-01", 0, "fridge-01", 0, "power"));
+            c.Add(Link("sprinkler-04", 0, "sprinkler-05", 0, "water"));
+            c.Add(Link("sprinkler-05", 0, "sprinkler-06", 0, "water"));
+            c.Add(Link("catcher-05", 0, "tower-splitter", 0, "water"));
+            c.Add(Link("tower-splitter", 0, "trough-01", 0, "water"));
+            c.Add(Link("tower-splitter", 1, "trough-02", 0, "water"));
             return layout;
         }
 
         private static LayoutEntry Entry(string id, string role, string prefab, float x, float z, float yaw,
-            string on = null) =>
-            new LayoutEntry { Id = id, Role = role, Prefab = prefab, X = x, Z = z, Yaw = yaw, On = on };
+            string on = null, float y = 0f, string building = null, string parent = null, bool mount = false,
+            float pitch = 0f, float roll = 0f, string grade = null, ulong? skin = null, int? layer = null,
+            string image = null, string replaces = null) =>
+            new LayoutEntry
+            {
+                Id = id, Role = role, Prefab = prefab, X = x, Z = z, Yaw = yaw, On = on, Y = y, Building = building,
+                Parent = parent, Mount = mount, Pitch = pitch, Roll = roll, Grade = grade, Skin = skin, Layer = layer,
+                Image = image, Replaces = replaces,
+            };
 
         private static LayoutConnection Link(string from, int fromSlot, string to, int toSlot, string kind) =>
             new LayoutConnection { From = from, FromSlot = fromSlot, To = to, ToSlot = toSlot, Kind = kind };
@@ -630,9 +1247,18 @@ namespace Oxide.Plugins
                 foreach (LayoutEntry entry in layout.Entries.Where(e => !string.IsNullOrEmpty(e?.On)))
                 {
                     LayoutEntry under = layout.Entries.FirstOrDefault(e => e != null && e.Id == entry.On);
-                    if (under == null || under == entry || (under.Role != RolePlatform && under.Role != RoleFoundation))
-                        problems.Add($"{entry.Id} is On {entry.On}, which is not a platform or foundation entry");
+                    bool surface = under != null && (under.Role == RolePlatform || under.Role == RoleFoundation ||
+                                                     (under.Role == RoleBlock && IsSurfacePrefab(under.Prefab)));
+                    if (under == entry || !surface)
+                        problems.Add($"{entry.Id} is On {entry.On}, which is not a platform, foundation, or floor " +
+                                     "entry");
+                    else if (LayerOf(under) > LayerOf(entry) ||
+                             (LayerOf(under) == LayerOf(entry) &&
+                              layout.Entries.IndexOf(under) > layout.Entries.IndexOf(entry)))
+                        problems.Add($"{entry.Id} is On {entry.On}, which is placed after it (Layer {LayerOf(under)} " +
+                                     $"against its own {LayerOf(entry)}, or later in the same layer)");
                 }
+                LayoutProblems(layout, problems);
                 foreach (LayoutConnection link in layout.Connections)
                     if (link == null || !ids.Contains(link.From ?? string.Empty) ||
                         !ids.Contains(link.To ?? string.Empty))
@@ -678,6 +1304,9 @@ namespace Oxide.Plugins
             CheckRange(problems, "Repeat an identical failure log after minutes", c.FailureRepeatMinutes, 0f);
             CheckRange(problems, "Repeat a full container log after minutes", c.FullRepeatMinutes, 0f);
             CheckRange(problems, "Status events kept per kind", c.EventsPerKind, 1f);
+            BuildingGrade.Enum grade;
+            if (!TryParseGrade(c.BuildingGrade, out grade))
+                problems.Add($"Building grade {c.BuildingGrade} is not one of {GradeNames}");
             return problems;
         }
 
@@ -689,6 +1318,108 @@ namespace Oxide.Plugins
             problems.Add(max >= float.MaxValue
                 ? $"{name} must be {min} or more"
                 : $"{name} must be between {min} and {max}");
+        }
+
+        // The building fields (Building, Y, Parent, Mount, Pitch, Roll, Grade, Skin, Layer, Image, Replaces); a layout
+        // without buildings sets none of them and passes unchanged.
+        private static void LayoutProblems(FarmLayout layout, List<string> problems)
+        {
+            Dictionary<string, LayoutEntry> byId = EntriesById(layout.Entries);
+            var foundations = new HashSet<string>(layout.Entries
+                .Where(e => e != null && !string.IsNullOrEmpty(e.Building) && IsFoundationPrefab(e.Prefab))
+                .Select(e => e.Building));
+            var replaced = new Dictionary<string, string>();
+            foreach (LayoutEntry entry in layout.Entries.Where(e => e != null && !string.IsNullOrEmpty(e.Id)))
+            {
+                string id = entry.Id;
+                string other;
+                if (entry.Replaces != null && entry.Replaces.Length == 0)
+                    problems.Add($"{id} has an empty Replaces; name the old record it takes over, or leave Replaces " +
+                                 "out");
+                else if (entry.Replaces != null && byId.ContainsKey(entry.Replaces))
+                    problems.Add($"{id} Replaces {entry.Replaces}, which stays in the layout; an Id that stays keeps " +
+                                 "its record where it stands");
+                else if (entry.Replaces != null && replaced.TryGetValue(entry.Replaces, out other))
+                    problems.Add($"{id} and {other} both Replace {entry.Replaces}");
+                else if (entry.Replaces != null)
+                    replaced[entry.Replaces] = id;
+                if (!Finite(entry.Y) || !Finite(entry.Pitch) || !Finite(entry.Roll))
+                    problems.Add($"{id} has a non-finite Y, Pitch, or Roll");
+                else if ((IsBlockRole(entry.Role) || entry.Role == RoleDoor || entry.Role == RoleInsert) &&
+                         (entry.Pitch != 0f || entry.Roll != 0f))
+                    problems.Add($"{id} needs Pitch and Roll 0: blocks, doors, and inserts sit level in their sockets");
+                else if (Mathf.Abs(Mathf.DeltaAngle(0f, entry.Pitch)) > 90f || Mathf.Abs(entry.Pitch) > 360f ||
+                         Mathf.Abs(entry.Roll) > 360f)
+                    problems.Add($"{id} needs a Pitch within 90 degrees of level, and Pitch and Roll between " +
+                                 "-360 and 360 degrees");
+                BuildingGrade.Enum grade;
+                if (entry.Grade != null && !TryParseGrade(entry.Grade, out grade))
+                    problems.Add($"{id} has Grade {entry.Grade}, which is not one of {GradeNames}");
+                if (entry.Image != null && entry.Role != RoleSign)
+                    problems.Add($"{id} has an Image but Role {entry.Role}; only sign entries are painted");
+                else if (entry.Image != null && !HasSignImage(entry.Image))
+                    problems.Add($"{id} names Image {entry.Image}, which the plugin does not carry (it carries " +
+                                 $"{string.Join(", ", SignImages.Keys)})");
+                if (entry.Role == RoleBlock && string.IsNullOrEmpty(entry.Building))
+                    problems.Add($"{id} is a block without a Building, so it has no base height");
+                if (!string.IsNullOrEmpty(entry.Building) && !foundations.Contains(entry.Building))
+                    problems.Add($"{id} names Building {entry.Building}, which has no foundation entry to set its " +
+                                 "base height");
+                if ((entry.Role == RoleDoor || entry.Role == RoleInsert || entry.Mount) &&
+                    string.IsNullOrEmpty(entry.Parent))
+                    problems.Add($"{id} needs a Parent (Role {entry.Role}{(entry.Mount ? ", Mount" : string.Empty)})");
+                if (string.IsNullOrEmpty(entry.Parent))
+                    continue;
+                LayoutEntry parent;
+                if (!byId.TryGetValue(entry.Parent, out parent) || parent == entry)
+                {
+                    problems.Add($"{id} names Parent {entry.Parent}, which is not another layout entry");
+                    continue;
+                }
+                if (LayerOf(parent) > LayerOf(entry) ||
+                    (LayerOf(parent) == LayerOf(entry) &&
+                     layout.Entries.IndexOf(parent) > layout.Entries.IndexOf(entry)))
+                    problems.Add($"{id} has Parent {entry.Parent}, which is placed after it (Layer {LayerOf(parent)} " +
+                                 $"against its own {LayerOf(entry)}, or later in the same layer)");
+                if (!string.IsNullOrEmpty(entry.Building) && !string.IsNullOrEmpty(parent.Building) &&
+                    entry.Building != parent.Building)
+                    problems.Add($"{id} is in Building {entry.Building} but its Parent {parent.Id} is in " +
+                                 parent.Building);
+                if (entry.Role != RoleDoor && entry.Role != RoleInsert)
+                    continue;
+                if (!IsBlockRole(parent.Role))
+                {
+                    problems.Add($"{id} is a {entry.Role} whose Parent {parent.Id} is not a building block entry");
+                    continue;
+                }
+                string name = PrefabName(entry.Prefab);
+                if (name.StartsWith("floor.triangle.ladder.hatch"))
+                {
+                    problems.Add($"{id} is a {name}, which the plugin cannot place (it has no recipe for the hatch " +
+                                 "spots of a floor.triangle.frame); use a floor.ladder.hatch in a floor.frame");
+                    continue;
+                }
+                float turnStep;
+                string opening = InsertOpening(entry.Prefab, out turnStep);
+                if (opening != null && PrefabName(parent.Prefab) != opening)
+                {
+                    problems.Add($"{id} is a {name}, which fits a {opening}, but its Parent {parent.Id} is a " +
+                                 PrefabName(parent.Prefab));
+                    continue;
+                }
+                float turn = Mathf.DeltaAngle(parent.Yaw, entry.Yaw);
+                if (Mathf.Abs(turn - Mathf.Round(turn / turnStep) * turnStep) > 1f)
+                    problems.Add($"{id} turns {turn:0.#} degrees from its Parent {parent.Id}; a {name} takes " +
+                                 (turnStep < 180f ? "a multiple of 90" : "0 or 180") + " degrees there");
+                Vector3 offset;
+                if (!InsertOffset(entry.Prefab, out offset) || BuildingOf(entry, byId) != BuildingOf(parent, byId))
+                    continue;
+                Vector3 recipe = LayoutPoint(parent) + Quaternion.Euler(0f, parent.Yaw, 0f) * offset;
+                float off = (LayoutPoint(entry) - recipe).magnitude;
+                if (off > 0.1f)
+                    problems.Add($"{id} lies {off:0.00} m from where {parent.Id}'s opening puts a {name}; check its " +
+                                 "Parent and pose");
+            }
         }
 
         #endregion
@@ -720,6 +1451,9 @@ namespace Oxide.Plugins
             public List<ulong> CapExempt = new List<ulong>();
             public Dictionary<string, int> Collected = new Dictionary<string, int>();
             public List<EventRecord> Events = new List<EventRecord>();
+            // Base height T of each layout Building as a placement last worked it out; reused only while a block of the
+            // building stands.
+            public Dictionary<string, float> Buildings = new Dictionary<string, float>();
         }
 
         private class StructureRecord
@@ -734,6 +1468,18 @@ namespace Oxide.Plugins
             public float Yaw;
             public string Failure;
             public bool Missing;
+            // The grade and skin the farm gave this block, restored on every pass; null for other entities and for
+            // the stone foundations of entries without a Building, which nothing restores.
+            public string Grade;
+            public ulong? Skin;
+            // farm.repair or farm.upgrade tried the entry and it waited for its support or for a player or animal in
+            // its spot; auto-repair retries it until it stands.
+            [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public bool Pending;
+            // farm.upgrade retired the entry but could not empty it or hand its chickens over; it stays protected,
+            // takes no new items but food and water for chickens it still holds, and the next farm.upgrade confirm
+            // tries again.
+            public bool Retired;
             // Why the last try deferred the spawn (a player or animal in the spot); not saved.
             [JsonIgnore]
             public string Waiting;
@@ -776,8 +1522,9 @@ namespace Oxide.Plugins
             public float PlacedAt = float.MinValue;
             public float LostAt = float.MinValue;
             public bool LossSeen;
-            // A player or animal stood in the spot on the last try.
+            // A player or animal stood in the spot on the last try, or something it rests on was not in place.
             public bool Waiting;
+            public string WaitingFor;
         }
 
         // Soil under the dry threshold since Since, starting at Start ml; Last is the level at the previous pass.
@@ -847,6 +1594,7 @@ namespace Oxide.Plugins
             data.Collected = data.Collected ?? new Dictionary<string, int>();
             data.Events = data.Events?.Where(e => e != null).ToList() ?? new List<EventRecord>();
             data.CapExempt = data.CapExempt ?? new List<ulong>();
+            data.Buildings = data.Buildings ?? new Dictionary<string, float>();
             return before - data.Structures.Count;
         }
 
@@ -889,6 +1637,7 @@ namespace Oxide.Plugins
             }
             var missing = new List<string>();
             var back = new List<string>();
+            var off = new List<string>();
             int fences = 0;
             int fencesGone = 0;
             bool cupboard = false;
@@ -899,7 +1648,8 @@ namespace Oxide.Plugins
                 bool fence = rec.Role == RoleFence || rec.Role == RoleGate;
                 if (fence)
                     fences++;
-                if (ResolveStructure(rec) == null)
+                BaseEntity standing = ResolveStructure(rec);
+                if (standing == null)
                 {
                     if (fence)
                         fencesGone++;
@@ -908,6 +1658,9 @@ namespace Oxide.Plugins
                     MarkLost(rec);
                     continue;
                 }
+                float drift = Vector3.Distance(standing.transform.position, new Vector3(rec.X, rec.Y, rec.Z));
+                if (drift > RecordDrift)
+                    off.Add($"{rec.Id} {drift:0.0} m");
                 if (rec.Missing)
                     back.Add(rec.Id);
                 rec.Missing = false;
@@ -934,7 +1687,13 @@ namespace Oxide.Plugins
                 if (pair.Value != null)
                     _pregnantLastPass[pair.Key] = new HashSet<ulong>(pair.Value);
             _data.Released.RemoveAll(released => !(FindEntity(released) is LivestockAnimal));
-            _recordChecked = true;
+            _recordChecked = off.Count == 0;
+            if (off.Count > 0)
+                Failure("record", $"load: {off.Count} structures stand away from where the record has them, so " +
+                                  "the record is ahead of the world (a world restored from an older save, or a crash " +
+                                  "after a farm command and before the next save); auto-repair stays off until " +
+                                  "farm.repair or farm.build vouches for it, and farm.remove confirm then farm.build " +
+                                  $"starts afresh: {string.Join(", ", off)}", "failure", 0f);
             if (missing.Count > 0)
                 PrintWarning($"load: {missing.Count} structures do not resolve to their prefab and owner (destroyed, " +
                              $"or their ids reissued), and {RepairHint(true)}: {string.Join(", ", missing)}");
@@ -1185,6 +1944,12 @@ namespace Oxide.Plugins
                 rec.Missing = true;
                 MarkLost(rec);
                 Failure($"gone:{rec.Id}", $"structure {rec.Id} ({rec.Role}) was destroyed, and {RepairHintFor(rec)}");
+                string parentId = rec.Id;
+                NextTick(() =>
+                {
+                    if (!_unloaded && _data != null && _data.Built)
+                        Guard("structures", $"children of {parentId}", () => RemoveOrphans(parentId));
+                });
             }
             // The coop's chickens (its children) and hatching eggs go with it.
             var coop = entity as ChickenCoop;
@@ -1231,7 +1996,7 @@ namespace Oxide.Plugins
             BasePlayer attacker = info?.InitiatorPlayer;
             if (attacker != null && !attacker.IsNpc)
                 return null;
-            return true;
+            return True;
         }
 
         // Carbon's IOnNpcTarget calls this from Rust.Ai.Gen2.SenseComponent.CanTarget (non-null: false) and
@@ -1241,7 +2006,7 @@ namespace Oxide.Plugins
             ulong id = IdOf(target);
             if (id == 0 || !_animals.ContainsKey(id))
                 return null;
-            return true;
+            return True;
         }
 
         private object OnEntityGroundMissing(BaseEntity entity)
@@ -1249,7 +2014,7 @@ namespace Oxide.Plugins
             if (entity == null || !IsProtected(entity))
                 return null;
             Failure($"ground:{IdOf(entity)}", $"kept {NameOf(entity)} after its ground went missing");
-            return true;
+            return True;
         }
 
         private bool IsProtected(BaseEntity entity)
@@ -1261,6 +2026,126 @@ namespace Oxide.Plugins
                 return true;
             BaseEntity parent = entity.GetParentEntity();
             return parent != null && _structureIds.Contains(IdOf(parent));
+        }
+
+        private bool IsFarmStructure(BaseNetworkable entity) => entity != null && _structureIds.Contains(IdOf(entity));
+
+        // No player upgrades, reskins, demolishes, rotates, papers, or builds onto a guarded farm part; auto-repair
+        // would put a lost one back. BuildingSkins reskins without a hook, so QueueGradeCheck undoes it.
+        private object CanChangeGrade(BasePlayer player, BuildingBlock block, BuildingGrade.Enum grade, ulong skin) =>
+            IsGuarded(block) ? False : null;
+
+        private object CanDemolish(BasePlayer player, DecayEntity entity) => IsGuarded(entity) ? False : null;
+
+        // Carbon passes Oxide's third argument (immediate) as null, so the two-parameter form binds.
+        private object OnStructureDemolish(DecayEntity entity, BasePlayer player) => IsGuarded(entity) ? True : null;
+
+        private object OnStructureRotate(BuildingBlock block, BasePlayer player) => IsGuarded(block) ? True : null;
+
+        private object OnWallpaperSet(BuildingBlock block, ulong id, int side, float rotation) =>
+            IsGuarded(block) ? True : null;
+
+        private object OnWallpaperRemove(BuildingBlock block, int side) => IsGuarded(block) ? True : null;
+
+        // Building pieces and wallpaper only: deployables still go onto farm blocks (the owner furnishes the barn and
+        // the house), and seeds and clones into farm planters. Locks and door closers never come here.
+        private object CanBuild(Planner planner, Construction construction, Construction.Target target) =>
+            target.entity is BuildingBlock && (construction?.deployable == null || planner is WallpaperPlanner) &&
+            IsGuarded(target.entity)
+                ? True
+                : null;
+
+        // Locks and door closers deploy through Deployer.DoDeploy_Slot, which asks only for building privilege, and
+        // most farm buildings have no cupboard to withhold it: only the owner may put one on a farm part.
+        private object CanDeployItem(BasePlayer player, Deployer deployer, NetworkableId entityId)
+        {
+            if (player == null || !_structureIds.Contains(entityId.Value) || player.userID.Get() == FarmOwner())
+                return null;
+            player.ShowToast(GameTip.Styles.Error, ConstructionErrors.NoPermission, false);
+            return False;
+        }
+
+        // SprayCan.ChangeItemSkin kills an entity whose new skin is another prefab's (a component box for a large box,
+        // a retro cupboard, a railroad planter) and spawns that prefab with its contents, untracked; auto-repair would
+        // then place a second one. Every farm part keeps its prefab and skin.
+        private object OnEntityReskin(BaseEntity entity, ulong skin, BasePlayer player) =>
+            IsFarmStructure(entity) ? True : null;
+
+        // Blocks the farm grades (TargetGrade), entries with a Parent, and roles outside V1Roles. A layout without
+        // buildings leaves its foundation, platform, and deployables as open to players as they always were.
+        private bool IsGuarded(BaseNetworkable entity)
+        {
+            if (!IsFarmStructure(entity) || _data == null)
+                return false;
+            ulong id = IdOf(entity);
+            StructureRecord rec = _data.Structures.FirstOrDefault(r => r.NetId == id);
+            LayoutEntry entry = rec == null ? null : _config.Layout.Entries.FirstOrDefault(e => e.Id == rec.Id);
+            if (entry == null)
+                return false;
+            BuildingGrade.Enum grade;
+            ulong skin;
+            return TargetGrade(entry, out grade, out skin) || !string.IsNullOrEmpty(entry.Parent) ||
+                   !V1Roles.Contains(entry.Role);
+        }
+
+        // The farm paints and owns its signs: nobody repaints, locks, or unlocks them, admins included.
+        private object CanUpdateSign(BasePlayer player, BaseEntity sign) => IsFarmStructure(sign) ? False : null;
+
+        // A public bed is anyone's to claim (SleepingBag.RPC_MakeBed). The farm bed stays the owner's respawn point,
+        // and StructureStep assigns it back after a hand-over to a friend.
+        private object CanSetBedPublic(BasePlayer player, SleepingBag bag) => IsFarmStructure(bag) ? False : null;
+
+        // A farm block or insert that passed its first check keeps its stability and never collapses, so losing a wall
+        // costs only the wall and auto-repair re-places it under the roof that still stands.
+        private object OnEntityStabilityCheck(StabilityEntity entity) =>
+            entity != null && entity.cachedStability >= ConVar.Stability.collapse && IsFarmStructure(entity)
+                ? True
+                : null;
+
+        // BuildingSkins reskins in its own OnHammerHit, and in a NextTick from OnStructureUpgrade, which CanChangeGrade
+        // lets run on a graded farm block only once its layout entry is gone or no longer grades it. QueueGradeCheck's
+        // NextTick runs after both.
+        private void OnHammerHit(BasePlayer player, HitInfo info) => QueueGradeCheck(info?.HitEntity as BuildingBlock);
+
+        private void OnStructureUpgraded(BuildingBlock block, BasePlayer player, BuildingGrade.Enum grade,
+            ulong skin) => QueueGradeCheck(block);
+
+        // A split gives every part a new building id, and the cupboard follows the nearest block or drops to none.
+        private void OnBuildingSplit(BuildingManager.Building building, uint newId)
+        {
+            if (_reattachQueued || _data == null || !_data.Built || !_ready)
+                return;
+            _reattachQueued = true;
+            NextTick(() =>
+            {
+                _reattachQueued = false;
+                if (!_unloaded && _data != null && _data.Built)
+                    Guard("structures", "cupboard", ReattachCupboard);
+            });
+        }
+
+        private void QueueGradeCheck(BuildingBlock block)
+        {
+            if (!IsFarmStructure(block))
+                return;
+            NextTick(() =>
+            {
+                if (_unloaded || block == null || block.IsDestroyed)
+                    return;
+                Guard("structures", NameOf(block), () =>
+                {
+                    ulong id = IdOf(block);
+                    StructureRecord rec = _data.Structures.FirstOrDefault(r => r.NetId == id);
+                    string was = RestoreGrade(block, rec);
+                    if (was == null)
+                        return;
+                    string building = _config.Layout.Entries.FirstOrDefault(e => e.Id == rec.Id)?.Building ?? rec.Id;
+                    LogRestores(new Dictionary<string, List<string>>
+                    {
+                        [building] = new List<string> { $"{rec.Id} (was {was})" },
+                    });
+                });
+            });
         }
 
         #endregion
@@ -1299,10 +2184,12 @@ namespace Oxide.Plugins
             if (owner == 0)
             {
                 Failure("owner", "farm.build refused: no Owner SteamID in the config and no owner in cfg/users.cfg");
-                arg.ReplyWith("no owner: set Owner SteamID in the config or add an owner to cfg/users.cfg");
+                arg.ReplyWith(NoOwner);
                 return;
             }
-            arg.ReplyWith(Build(x, z, yaw, owner));
+            string reply = Build(x, z, yaw, owner);
+            SaveWorld("farm.build");
+            arg.ReplyWith(reply);
         }
 
         [ConsoleCommand("farm.status")]
@@ -1357,9 +2244,10 @@ namespace Oxide.Plugins
             ulong owner = FarmOwner();
             if (owner == 0)
             {
-                arg.ReplyWith("no owner: set Owner SteamID in the config or add an owner to cfg/users.cfg");
+                arg.ReplyWith(NoOwner);
                 return;
             }
+            _recordChecked = true;
             arg.ReplyWith(Repair(owner));
         }
 
@@ -1374,8 +2262,15 @@ namespace Oxide.Plugins
                               "animals included, and clears the record");
                 return;
             }
-            arg.ReplyWith(Remove());
+            string reply = Remove();
+            SaveWorld("farm.remove");
+            arg.ReplyWith(reply);
         }
+
+        // OnServerSave writes the record with the world, so a crash before the next autosave cannot leave a record
+        // that a farm command changed ahead of the world.
+        private void SaveWorld(string after) =>
+            Guard("save", after, () => ConsoleSystem.Run(ConsoleSystem.Option.Server.Quiet(), "server.save"));
 
         private static bool Authorized(ConsoleSystem.Arg arg)
         {
@@ -1398,12 +2293,24 @@ namespace Oxide.Plugins
             return true;
         }
 
+        private const string NoOwner = "no owner: set Owner SteamID in the config or add an owner to cfg/users.cfg";
+
         private const string NotReady =
             "the farm record is not checked yet; try again after the server finishes loading";
 
-        // Hammer pickup, and Remover Tool's refund, would hand out the item while auto-repair spawns a new one.
-        private object CanPickupEntity(BasePlayer player, BaseCombatEntity entity) =>
-            entity != null && _structureIds.Contains(IdOf(entity)) ? (object)false : null;
+        // Hammer pickup, and Remover Tool's refund, would hand out the item while auto-repair spawns a new one. A
+        // refusal without pickupErrorToFormat logs a warning in RPC_PickupStart; the toast it sends carries phrase
+        // tokens only, so it gives a vanilla reason, and the chat line the real one.
+        private object CanPickupEntity(BasePlayer player, BaseCombatEntity entity)
+        {
+            if (entity == null || !_structureIds.Contains(IdOf(entity)))
+                return null;
+            if (entity.pickup.itemTarget != null)
+                entity.pickupErrorToFormat = (BaseCombatEntity.PickupErrors.ItemIsBeingUsed,
+                    entity.pickup.itemTarget.displayName);
+            player?.ChatMessage($"{NameOf(entity)} is {FarmPartRefusal}");
+            return False;
+        }
 
         // Remover Tool (server/carbon/plugins/RemoverTool.cs) shows a returned string as the reason it refuses.
         private object canRemove(BasePlayer player, BaseEntity entity) => RemoveRefusal(entity);
@@ -1411,9 +2318,10 @@ namespace Oxide.Plugins
         private object CanAdminRemove(BasePlayer player, BaseEntity entity, string removeType) => RemoveRefusal(entity);
 
         private object RemoveRefusal(BaseEntity entity) =>
-            entity != null && _structureIds.Contains(IdOf(entity))
-                ? "part of the livestock farm: remove it from the farm layout in the config"
-                : null;
+            entity != null && _structureIds.Contains(IdOf(entity)) ? FarmPartRefusal : null;
+
+        private const string FarmPartRefusal =
+            "part of the livestock farm: remove it from the farm layout in the config";
 
         private static bool TryParse(string text, out float value) =>
             float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
@@ -1462,10 +2370,28 @@ namespace Oxide.Plugins
             public readonly List<string> DeferredIds = new List<string>();
             public readonly List<string> InPlaceIds = new List<string>();
             public readonly Dictionary<string, PlaceResult> Results = new Dictionary<string, PlaceResult>();
+            // Why each deferred entry waits: the player or animal in its spot, or what it rests on.
+            public readonly Dictionary<string, string> Waits = new Dictionary<string, string>();
 
-            public void Add(PlaceResult result, string id)
+            public string WaitReason(string id)
+            {
+                string why;
+                return Waits.TryGetValue(id, out why) ? why : null;
+            }
+
+            // The original wording while every wait is for an occupied spot; a support wait names the support.
+            public string WaitingText() =>
+                DeferredIds.All(id => !IsSupportWait(WaitReason(id)))
+                    ? $"waiting for the spot to clear ({string.Join(", ", DeferredIds)})"
+                    : "waiting (" + string.Join(", ", DeferredIds.Select(id => IsSupportWait(WaitReason(id))
+                        ? $"{id}: {WaitReason(id)}"
+                        : $"{id}: waiting for the spot to clear")) + ")";
+
+            public void Add(PlaceResult result, string id, string waiting = null)
             {
                 Results[id] = result;
+                if (waiting != null)
+                    Waits[id] = waiting;
                 if (result == PlaceResult.Placed || result == PlaceResult.Adopted)
                     InPlaceIds.Add(id);
                 switch (result)
@@ -1509,11 +2435,19 @@ namespace Oxide.Plugins
             _clearedVegetation.Clear();
             List<LayoutEntry> ordered = Ordered(_config.Layout.Entries);
             var tally = new PlaceTally();
+            PlaceContext context = NewPlaceContext();
             foreach (LayoutEntry entry in ordered)
             {
                 var rec = new StructureRecord { Id = entry.Id, Role = entry.Role, Prefab = entry.Prefab };
                 _data.Structures.Add(rec);
-                tally.Add(PlaceGuarded(entry, rec, owner), entry.Id);
+                context.Records[entry.Id] = rec;
+                string support = MissingSupport(entry, context);
+                PlaceResult result = support == null
+                    ? PlaceGuarded(entry, rec, owner)
+                    : PlacementFailed(rec, $"it rests on {support}, which is not in place");
+                tally.Add(result, entry.Id);
+                if (result == PlaceResult.Placed || result == PlaceResult.Adopted)
+                    context.Placed.Add(entry.Id);
             }
             int inPlace = tally.Placed + tally.Adopted;
             Event("build", $"farm at ({x:0.0}, {z:0.0}) yaw {yaw:0} for owner {OwnerLabel(owner)}: {inPlace} of " +
@@ -1546,7 +2480,11 @@ namespace Oxide.Plugins
             foreach (string id in tally.FailedIds)
                 BackOff(id, Time.realtimeSinceStartup);
             foreach (string id in tally.DeferredIds)
-                RepairOf(id).Waiting = true;
+            {
+                RepairState state = RepairOf(id);
+                state.Waiting = true;
+                state.WaitingFor = tally.WaitReason(id);
+            }
             Guard("repair", "wiring", () => WiringStep(BeginPass()));
             string text = todo.Count == 0
                 ? "every layout entry is in place"
@@ -1554,8 +2492,7 @@ namespace Oxide.Plugins
                   $"{tally.Adopted} adopted, {tally.Failed} failed" +
                   (tally.FailedIds.Count > 0 ? $" ({string.Join(", ", tally.FailedIds)})" : string.Empty) +
                   (tally.DeferredIds.Count > 0
-                      ? $", {tally.DeferredIds.Count} waiting for the spot to clear " +
-                        $"({string.Join(", ", tally.DeferredIds)})"
+                      ? $", {tally.DeferredIds.Count} {tally.WaitingText()}"
                       : string.Empty);
             Event("repair", text);
             return $"repair: {text}; wiring checked (farm.status shows it)";
@@ -1588,37 +2525,61 @@ namespace Oxide.Plugins
             return records;
         }
 
-        // No record, a record never attempted (an old placeholder), or an "On" entry whose block was never placed:
-        // only farm.repair places these, so auto-repair neither tries nor logs them.
+        // No record, a record never attempted (an old placeholder), or an "On" or "Parent" entry whose block was never
+        // placed: only farm.repair places these, so auto-repair neither tries nor logs them.
         private static bool NeverPlaced(LayoutEntry entry, Dictionary<string, StructureRecord> records)
         {
             StructureRecord rec;
             if (!records.TryGetValue(entry.Id, out rec) || Unplaced(rec))
                 return true;
             StructureRecord under;
-            return !string.IsNullOrEmpty(entry.On) && (!records.TryGetValue(entry.On, out under) || Unplaced(under));
+            if (!string.IsNullOrEmpty(entry.On) && (!records.TryGetValue(entry.On, out under) || Unplaced(under)))
+                return true;
+            return !string.IsNullOrEmpty(entry.Parent) &&
+                   (!records.TryGetValue(entry.Parent, out under) || Unplaced(under));
         }
 
-        private static bool Unplaced(StructureRecord rec) =>
-            rec.Role == RolePlaceholder || (rec.NetId == 0 && rec.Failure == null && !rec.Missing);
+        private static bool IsSupportWait(string why) => why != null && why.StartsWith("waits for");
 
-        // The farm.build placement path for the given entries, reusing their records.
+        // Never stood and never failed: a new entry not tried yet, or one that waits (Pending).
+        private static bool NotYetPlaced(StructureRecord rec) => rec.NetId == 0 && rec.Failure == null && !rec.Missing;
+
+        private static bool Unplaced(StructureRecord rec) =>
+            rec.Role == RolePlaceholder || (rec.NetId == 0 && rec.Failure == null && !rec.Missing && !rec.Pending);
+
+        // The farm.build placement path for the given entries, reusing their records. An entry whose support neither
+        // stands nor was placed earlier in this call waits, and so does everything resting on it.
         private PlaceTally PlaceMissing(List<LayoutEntry> entries, ulong owner, string kind)
         {
             _clearedVegetation.Clear();
             var tally = new PlaceTally();
+            PlaceContext context = NewPlaceContext();
             _deferOccupied = true;
             try
             {
                 foreach (LayoutEntry entry in entries)
                 {
-                    StructureRecord rec = _data.Structures.FirstOrDefault(r => r.Id == entry.Id);
-                    if (rec == null)
+                    StructureRecord rec;
+                    if (!context.Records.TryGetValue(entry.Id, out rec))
                     {
                         rec = new StructureRecord { Id = entry.Id };
                         _data.Structures.Add(rec);
+                        context.Records[entry.Id] = rec;
                     }
-                    tally.Add(PlaceGuarded(entry, rec, owner), entry.Id);
+                    string support = MissingSupport(entry, context);
+                    if (support != null)
+                    {
+                        rec.Pending = true;
+                        tally.Add(PlaceResult.Deferred, entry.Id, $"waits for {support}");
+                        continue;
+                    }
+                    PlaceResult result = PlaceGuarded(entry, rec, owner);
+                    string held = result == PlaceResult.Deferred ? $"its spot holds {rec.Waiting}" : null;
+                    if (result == PlaceResult.Deferred)
+                        rec.Pending = true;
+                    tally.Add(result, entry.Id, held);
+                    if (result == PlaceResult.Placed || result == PlaceResult.Adopted)
+                        context.Placed.Add(entry.Id);
                 }
             }
             finally
@@ -1631,11 +2592,70 @@ namespace Oxide.Plugins
             return tally;
         }
 
-        // Every upkeep pass re-places layout entries the farm placed before and lost, or failed to place (foundations
-        // first, then the cupboard, which is reattached), once VerifyRecord or farm.build vouched for the record.
+        // What one placement call knows: the layout, the records, what it placed so far, and each building's blocks.
+        private class PlaceContext
+        {
+            public Dictionary<string, LayoutEntry> Entries;
+            public Dictionary<string, StructureRecord> Records;
+            public readonly HashSet<string> Placed = new HashSet<string>();
+            public readonly Dictionary<string, List<LayoutEntry>> Blocks = new Dictionary<string, List<LayoutEntry>>();
+
+            public bool Standing(string id)
+            {
+                StructureRecord rec;
+                return Placed.Contains(id) ||
+                       (Records.TryGetValue(id, out rec) && rec.NetId != 0 && !rec.Missing);
+            }
+        }
+
+        private PlaceContext NewPlaceContext()
+        {
+            var context = new PlaceContext
+            {
+                Entries = EntriesById(_config.Layout.Entries),
+                Records = RecordsById(),
+            };
+            foreach (LayoutEntry entry in _config.Layout.Entries.Where(IsBuildingBlock))
+            {
+                List<LayoutEntry> blocks;
+                if (!context.Blocks.TryGetValue(entry.Building, out blocks))
+                    context.Blocks[entry.Building] = blocks = new List<LayoutEntry>();
+                blocks.Add(entry);
+            }
+            return context;
+        }
+
+        // The first support of the entry that neither stands nor was placed earlier in this call: its Parent, the
+        // building block it is On, and for a building block every lower-layer block of its building within
+        // SupportRadius across (an over-approximation of the pieces it rests on). An entry On a platform or
+        // foundation without a Building does not wait: Place adopts what stands on the spot and fails without it.
+        private static string MissingSupport(LayoutEntry entry, PlaceContext context)
+        {
+            if (!string.IsNullOrEmpty(entry.Parent) && !context.Standing(entry.Parent))
+                return entry.Parent;
+            LayoutEntry under;
+            if (!string.IsNullOrEmpty(entry.On) && context.Entries.TryGetValue(entry.On, out under) &&
+                IsBuildingBlock(under) && !context.Standing(entry.On))
+                return entry.On;
+            List<LayoutEntry> blocks;
+            if (!IsBuildingBlock(entry) || !context.Blocks.TryGetValue(entry.Building, out blocks))
+                return null;
+            int layer = LayerOf(entry);
+            foreach (LayoutEntry other in blocks)
+                if (other != entry && LayerOf(other) < layer && Across(other, entry) <= SupportRadius &&
+                    !context.Standing(other.Id))
+                    return other.Id;
+            return null;
+        }
+
+        private static float Across(LayoutEntry a, LayoutEntry b) => new Vector2(a.X - b.X, a.Z - b.Z).magnitude;
+
+        // Every upkeep pass re-places layout entries the farm placed before and lost, or failed to place (in layer
+        // order, supports first; the cupboard is reattached), once VerifyRecord or farm.build vouched for the record.
         // Entries the farm never placed wait for farm.repair. A failed placement waits 10 minutes, doubling up to 2
         // hours; a loss is weighed in WeighLoss; its lines log at most hourly. Fences and the gate never wait: a gap
-        // in the line lets the herd out. A spot with a player or animal in it is retried on the next pass.
+        // in the line lets the herd out. A spot with a player or animal in it, or an entry whose support is not in
+        // place, is retried on the next pass.
         private bool AutoRepair(ulong owner)
         {
             if (!_config.AutoRepair || !_recordChecked || owner == 0)
@@ -1666,6 +2686,7 @@ namespace Oxide.Plugins
                 PlaceResult result;
                 tally.Results.TryGetValue(entry.Id, out result);
                 state.Waiting = result == PlaceResult.Deferred;
+                state.WaitingFor = state.Waiting ? tally.WaitReason(entry.Id) : null;
                 if (state.Waiting)
                     continue;
                 if (result == PlaceResult.Placed || result == PlaceResult.Adopted)
@@ -1779,32 +2800,42 @@ namespace Oxide.Plugins
             if (!_config.AutoRepair || string.IsNullOrEmpty(id) || !_repairs.TryGetValue(id, out state))
                 return string.Empty;
             if (state.Waiting)
-                return ", waiting for the spot to clear";
+                return IsSupportWait(state.WaitingFor) ? $", {state.WaitingFor}" : ", waiting for the spot to clear";
             float left = state.NextAt - Time.realtimeSinceStartup;
             return left > 0f ? $", next auto-repair in {Duration(left)}" : string.Empty;
         }
 
-        // A respawned foundation starts a new building; the cupboard joins it so its privilege covers the block again.
+        // Building ids are fluid: a respawned foundation starts a new building, a split renumbers every part, and the
+        // cupboard follows the nearest block or none. It rejoins the block under it so its privilege covers the
+        // building again.
         private void ReattachCupboard()
         {
             BuildingPrivlidge cupboard = FarmCupboard();
-            var foundation = _data.Structures.Where(r => r.Role == RoleFoundation && r.NetId != 0 && !r.Missing)
-                .Select(r => ResolveStructure(r) as BuildingBlock)
-                .FirstOrDefault(b => b != null);
-            if (cupboard == null || foundation == null || cupboard.buildingID == foundation.buildingID)
+            BuildingBlock block = cupboard == null ? null : BlockUnder(cupboard.transform.position, true);
+            if (block == null || cupboard.buildingID == block.buildingID)
                 return;
-            cupboard.AttachToBuilding(foundation.buildingID);
-            Puts($"repair: attached {NameOf(cupboard)} to the building of {NameOf(foundation)}");
+            cupboard.AttachToBuilding(block.buildingID);
+            Puts($"repair: attached {NameOf(cupboard)} to the building of {NameOf(block)}");
         }
 
+        // Entries sort by (layer, index in the list); a layout without Layer values keeps its foundation, cupboard,
+        // fence, other order.
         private static List<LayoutEntry> Ordered(List<LayoutEntry> entries) =>
             entries.Select((entry, index) => new { entry, index })
-                .OrderBy(p => BuildOrder(p.entry.Role))
+                .OrderBy(p => LayerOf(p.entry))
                 .ThenBy(p => p.index)
                 .Select(p => p.entry)
                 .ToList();
 
-        private static int BuildOrder(string role)
+        private static int LayerOf(LayoutEntry entry) => entry.Layer ?? DefaultLayer(entry.Role);
+
+        private int LayerOfRecord(StructureRecord rec)
+        {
+            LayoutEntry entry = _config.Layout.Entries.FirstOrDefault(e => e.Id == rec.Id);
+            return entry != null ? LayerOf(entry) : DefaultLayer(rec.Role);
+        }
+
+        private static int DefaultLayer(string role)
         {
             switch (role)
             {
@@ -1817,7 +2848,7 @@ namespace Oxide.Plugins
                 case RoleGate:
                     return 2;
                 default:
-                    return 3;
+                    return 10;
             }
         }
 
@@ -1833,6 +2864,14 @@ namespace Oxide.Plugins
             catch (Exception e)
             {
                 PrintError(e.ToString());
+                // Spawned and tracked before the throw, so not set up: it goes, and auto-repair places it again.
+                BaseEntity spawned = rec.NetId != 0 ? ResolveStructure(rec) : null;
+                if (spawned != null)
+                {
+                    _structureIds.Remove(rec.NetId);
+                    spawned.Kill();
+                }
+                rec.NetId = 0;
                 return PlacementFailed(rec, $"exception {e.GetType().Name}: {e.Message}");
             }
             if (rec.Waiting != null)
@@ -1854,17 +2893,18 @@ namespace Oxide.Plugins
             return result;
         }
 
-        // research/farm/site/layout.md, "Conventions for the plugin".
+        // Inserts at their parent's opening, building blocks at T + Y, then the cupboard, entries On a block, entries
+        // in a building, and terrain entries Y above the ground. Locate and PlaceCheck are the rules farm.upgrade's
+        // plan runs too; an untracked match standing at the pose is adopted before the checks.
         private PlaceResult Place(LayoutEntry entry, StructureRecord rec, ulong owner)
         {
-            float yaw = _data.Yaw + entry.Yaw;
             rec.Role = entry.Role;
             rec.Prefab = entry.Prefab;
             rec.NetId = 0;
             rec.Failure = null;
             rec.Missing = false;
             rec.Waiting = null;
-            rec.Yaw = yaw;
+            rec.Yaw = _data.Yaw + entry.Yaw;
             if (entry.Role == RolePlaceholder)
             {
                 Puts($"build: {entry.Id} is a {RolePlaceholder} placeholder; skipped");
@@ -1872,65 +2912,211 @@ namespace Oxide.Plugins
             }
             if (string.IsNullOrEmpty(entry.Prefab))
                 return PlacementFailed(rec, "the layout entry has no prefab");
+            Vector3 position;
+            Quaternion rotation;
+            Rest rest;
+            string problem;
+            if (!Locate(entry, true, 0, out position, out rotation, out rest, out problem))
+                return PlacementFailed(rec, problem);
+            BaseEntity adopted = Adopt(rec, position, owner, AdoptWithin(entry));
+            if (adopted != null)
+            {
+                BuildingGrade.Enum grade;
+                ulong skin;
+                if (adopted is BuildingBlock && IsBlockRole(entry.Role) && TargetGrade(entry, out grade, out skin))
+                    ApplyGrade((BuildingBlock)adopted, rec, grade, skin, false);
+                Authorize(adopted as BuildingPrivlidge, owner);
+                return PlaceResult.Adopted;
+            }
+            problem = PlaceCheck(entry, true, position, rotation, rest, _retiring);
+            if (problem != null)
+                return PlacementFailed(rec, problem);
+            BaseEntity entity = SpawnStructure(rec, position, rotation, owner, e => Prepare(entry, e, owner, rest));
+            if (entity == null)
+                return PlaceResult.Failed;
+            AfterSpawn(entry, rec, entity, owner);
+            return PlaceResult.Placed;
+        }
+
+        // Blocks and inserts stand socket-exact, so only one within 0.1 m is theirs; anything else within 0.5 m across.
+        private static float AdoptWithin(LayoutEntry entry) =>
+            IsBuildingBlock(entry) || entry.Role == RoleDoor || entry.Role == RoleInsert ? AdoptBlockDistance : 0f;
+
+        // What an entry rests on, standing or, in a plan, at its layout pose: an insert's parent, a Parent entry's
+        // parent, or the block an On entry or the cupboard stands on.
+        private class Rest
+        {
+            public string Id;
+            public BaseEntity Entity;
+            public Vector3 Position;
+            public Quaternion Rotation;
+            public string Prefab;
+
+            public static Rest Of(string id, BaseEntity entity) => new Rest
+            {
+                Id = id,
+                Entity = entity,
+                Position = entity.transform.position,
+                Rotation = entity.transform.rotation,
+                Prefab = entity.PrefabName,
+            };
+        }
+
+        // Where an entry goes. live is Place: what it rests on must stand, and BuildingBase fixes a building's T. A
+        // plan (live false) takes a support that does not stand yet at its own layout pose and previews T. False only
+        // where no pose exists: a refused base height, or an insert whose parent is missing.
+        private bool Locate(LayoutEntry entry, bool live, int depth, out Vector3 position, out Quaternion rotation,
+            out Rest rest, out string problem)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            rest = null;
+            problem = null;
+            if (depth > 8)
+            {
+                problem = "its supports nest more than 8 deep";
+                return false;
+            }
+            if (entry.Role == RolePlaceholder || string.IsNullOrEmpty(entry.Prefab))
+            {
+                problem = "it has no prefab";
+                return false;
+            }
+            float yaw = _data.Yaw + entry.Yaw;
             Vector3 ground = FarmPoint(entry.X, entry.Z);
-            if (!string.IsNullOrEmpty(entry.On))
-                return PlaceOn(entry, rec, ground, yaw, owner);
+            string building = BuildingOf(entry);
+            float t;
+            if (entry.Role == RoleDoor || entry.Role == RoleInsert)
+            {
+                LayoutEntry parentEntry = EntryById(entry.Parent);
+                if (parentEntry == null)
+                {
+                    problem = $"its parent {entry.Parent} is not in place";
+                    return false;
+                }
+                if (!Support(parentEntry, ParentEntity(entry), live, depth, out rest, out problem))
+                {
+                    problem = live
+                        ? $"its parent {entry.Parent} is not in place"
+                        : $"its parent {parentEntry.Id}: {problem}";
+                    return false;
+                }
+                float turn = Mathf.Round(Mathf.DeltaAngle(parentEntry.Yaw, entry.Yaw) / 90f) * 90f;
+                Vector3 offset;
+                if (!InsertOffset(entry.Prefab, out offset))
+                    offset = Quaternion.Inverse(Quaternion.Euler(0f, parentEntry.Yaw, 0f)) *
+                             (LayoutPoint(entry) - LayoutPoint(parentEntry));
+                position = rest.Position + rest.Rotation * offset;
+                rotation = rest.Rotation * Quaternion.Euler(0f, turn, 0f);
+                return true;
+            }
+            if (IsBuildingBlock(entry) ||
+                (building != null && string.IsNullOrEmpty(entry.On) && entry.Role != RoleCupboard))
+            {
+                if (!BaseOf(building, live, out t, out problem))
+                    return false;
+                position = ground.WithY(t + entry.Y);
+                rotation = EntryRotation(entry);
+                DecayEntity parent = ParentEntity(entry);
+                if (parent != null)
+                    rest = Rest.Of(entry.Parent, parent);
+                return true;
+            }
+            if (entry.Role == RoleCupboard || !string.IsNullOrEmpty(entry.On))
+            {
+                BuildingBlock block = string.IsNullOrEmpty(entry.On)
+                    ? BlockUnder(ground, false)
+                    : StandingBlock(entry.On);
+                LayoutEntry under = EntryById(entry.On);
+                if (block != null)
+                    rest = Rest.Of(entry.On, block);
+                else if (!live && under != null && !Support(under, null, false, depth, out rest, out problem))
+                {
+                    problem = $"{under.Id}, which it stands on: {problem}";
+                    return false;
+                }
+                float y = (rest != null ? rest.Position.y : ground.y) + entry.Y;
+                if (building != null)
+                {
+                    if (!BaseOf(building, live, out t, out problem))
+                        return false;
+                    y = t + entry.Y;
+                }
+                position = ground.WithY(y);
+                rotation = EntryRotation(entry);
+                return true;
+            }
             Vector3 normal = TerrainMeta.HeightMap.GetNormal(ground);
+            ground.y += entry.Y;
             switch (entry.Role)
             {
                 case RoleFoundation:
                 case RolePlatform:
-                    return PlaceFoundation(rec, ground, yaw, owner);
-                case RoleCupboard:
-                    return PlaceCupboard(rec, ground, yaw, owner);
+                {
+                    rotation = Quaternion.Euler(0f, yaw, 0f);
+                    float lowest;
+                    position = ground.WithY(TerrainSpan(ground, rotation, out lowest) + entry.Y);
+                    return true;
+                }
                 case RoleFence:
                 case RoleGate:
                 {
                     // Yaw is the heading of the length axis (local X); the rail rolls with the ground along it.
                     Vector3 forward = Quaternion.Euler(0f, yaw - 90f, 0f) * Vector3.forward;
-                    Quaternion rotation = Quaternion.LookRotation(forward, normal);
-                    Vector3 position = ground + rotation * new Vector3(0f, FenceLift, 0f);
-                    if (Adopt(rec, position, owner) != null)
-                        return PlaceResult.Adopted;
-                    BaseEntity fence = SpawnStructure(rec, position, rotation, owner, null);
-                    (fence as Door)?.SetOpen(false);
-                    return fence != null ? PlaceResult.Placed : PlaceResult.Failed;
+                    rotation = Quaternion.LookRotation(forward, normal);
+                    position = ground + rotation * new Vector3(0f, FenceLift, 0f);
+                    return true;
                 }
                 case RolePump:
-                {
-                    float water = TerrainMeta.WaterMap.GetHeight(ground);
-                    if (Adopt(rec, ground.WithY(Mathf.Max(water, ground.y)), owner) != null)
-                        return PlaceResult.Adopted;
-                    if (water <= ground.y)
-                        return PlacementFailed(rec, $"no water over the pump spot (water {water:0.00} m, ground " +
-                                                    $"{ground.y:0.00} m)");
-                    return SpawnStructure(rec, ground.WithY(water), Quaternion.Euler(0f, yaw, 0f), owner, null) != null
-                        ? PlaceResult.Placed
-                        : PlaceResult.Failed;
-                }
+                    rotation = Quaternion.Euler(0f, yaw, 0f);
+                    position = ground.WithY(Mathf.Max(TerrainMeta.WaterMap.GetHeight(ground), ground.y));
+                    return true;
                 default:
-                {
-                    if (Adopt(rec, ground, owner) != null)
-                        return PlaceResult.Adopted;
-                    Quaternion rotation = Quaternion.FromToRotation(Vector3.up, normal) * Quaternion.Euler(0f, yaw, 0f);
-                    if (_config.GroundCheckRoles.Contains(entry.Role))
-                    {
-                        string problem = CheckFootprint(entry.Prefab, ground, rotation);
-                        if (problem != null)
-                            return PlacementFailed(rec, problem);
-                    }
-                    return SpawnStructure(rec, ground, rotation, owner, null) != null
-                        ? PlaceResult.Placed
-                        : PlaceResult.Failed;
-                }
+                    rotation = entry.Pitch != 0f || entry.Roll != 0f
+                        ? EntryRotation(entry)
+                        : Quaternion.FromToRotation(Vector3.up, normal) * Quaternion.Euler(0f, yaw, 0f);
+                    position = ground;
+                    return true;
             }
         }
 
-        private PlaceResult PlaceFoundation(StructureRecord rec, Vector3 centre, float yaw, ulong owner)
+        // A support entry, standing (given), or in a plan at its own layout pose.
+        private bool Support(LayoutEntry entry, BaseEntity standing, bool live, int depth, out Rest rest,
+            out string problem)
         {
-            Quaternion rotation = Quaternion.Euler(0f, yaw, 0f);
+            rest = null;
+            problem = null;
+            if (standing != null)
+            {
+                rest = Rest.Of(entry.Id, standing);
+                return true;
+            }
+            if (live)
+                return false;
+            Vector3 position;
+            Quaternion rotation;
+            Rest ignored;
+            if (!Locate(entry, false, depth + 1, out position, out rotation, out ignored, out problem))
+                return false;
+            rest = new Rest { Id = entry.Id, Position = position, Rotation = rotation, Prefab = entry.Prefab };
+            return true;
+        }
+
+        private bool BaseOf(string building, bool live, out float t, out string problem)
+        {
+            if (live)
+                return BuildingBase(building, out t, out problem);
+            string how;
+            bool ok = PreviewBuildingBase(building, out t, out how);
+            problem = ok ? null : $"base height of building {building}: {how}";
+            return ok;
+        }
+
+        // The highest ground over a 3 x 3 m square (5 x 5 samples) and, out, the lowest.
+        private static float TerrainSpan(Vector3 centre, Quaternion rotation, out float lowest)
+        {
             float highest = float.MinValue;
-            float lowest = float.MaxValue;
+            lowest = float.MaxValue;
             foreach (Vector2 p in Grid(-FoundationHalfWidth, FoundationHalfWidth, -FoundationHalfWidth,
                          FoundationHalfWidth, 5, 5))
             {
@@ -1938,95 +3124,274 @@ namespace Oxide.Plugins
                 highest = Mathf.Max(highest, h);
                 lowest = Mathf.Min(lowest, h);
             }
-            if (Adopt(rec, centre.WithY(highest), owner) != null)
-                return PlaceResult.Adopted;
-            if (highest - lowest > FoundationMaxRise)
-                return PlacementFailed(rec, $"terrain falls {highest - lowest:0.00} m under the foundation, more " +
-                                            $"than {FoundationMaxRise} m");
-            string buried = BuriedUnder(centre.WithY(highest), rotation);
-            if (buried != null)
-                return PlacementFailed(rec, $"it would bury {buried}; farm.remove confirm and farm.build apply a " +
-                                            "layout that puts a foundation under standing structures");
-            var foundation = SpawnStructure(rec, centre.WithY(highest), rotation, owner, e =>
-            {
-                var block = e as BuildingBlock;
-                if (block == null)
-                    return "prefab is not a BuildingBlock";
-                block.AttachToBuilding((DecayEntity)null);
-                return null;
-            }) as BuildingBlock;
-            if (foundation == null)
-                return PlaceResult.Failed;
-            foundation.ChangeGrade(BuildingGrade.Enum.Stone);
-            foundation.SetHealthToMax();
-            foundation.SendNetworkUpdate();
-            return PlaceResult.Placed;
+            return highest;
         }
 
-        // Deployables and building blocks whose pivot lies inside the footprint below the top, such as a fridge a farm
-        // placed on terrain before its layout gained a platform; ones standing on the top (the cupboard) do not count.
-        private string BuriedUnder(Vector3 top, Quaternion rotation)
+        // What Place refuses at a pose, after trying to adopt what stands there: a Parent or support that is not in
+        // place, a spot off its block, a foundation over terrain it cannot span or over parts it would bury (aside
+        // lists the parts a confirm lifts, moves, or retires), a pump with no water, or a failed ground check.
+        private string PlaceCheck(LayoutEntry entry, bool live, Vector3 position, Quaternion rotation, Rest rest,
+            ICollection<ulong> aside)
         {
-            var box = new OBB(top, rotation, new Bounds(new Vector3(0f, -1.5f, 0f),
-                new Vector3(2f * FoundationHalfWidth, 2.8f, 2f * FoundationHalfWidth)));
+            if (entry.Role == RoleDoor || entry.Role == RoleInsert)
+                return null;
+            string building = BuildingOf(entry);
+            if (IsBuildingBlock(entry) ||
+                (building != null && string.IsNullOrEmpty(entry.On) && entry.Role != RoleCupboard))
+            {
+                if (live && !IsBuildingBlock(entry) && !string.IsNullOrEmpty(entry.Parent) && rest == null)
+                    return $"its parent {entry.Parent} is not in place";
+                if (!IsFoundationPrefab(entry.Prefab))
+                    return null;
+                float top = position.y;
+                float rise = top - GroundUnder(entry, false);
+                if (rise >= FoundationMaxRise)
+                    return $"it would stand {rise:0.00} m over the lowest ground at its corners, " +
+                           $"{FoundationMaxRise} m or more";
+                float above = GroundUnder(entry, true) - top;
+                if (above > OnTolerance)
+                    return $"the ground under it rises {above:0.00} m above its top";
+                string buried = BuriedUnder(position, rotation, IsTrianglePrefab(entry.Prefab), aside);
+                return buried == null ? null : $"it would bury {buried}; move them or the building in the layout";
+            }
+            if (entry.Role == RoleCupboard || !string.IsNullOrEmpty(entry.On))
+            {
+                if (rest == null)
+                    return string.IsNullOrEmpty(entry.On)
+                        ? "no placed foundation under the cupboard position"
+                        : $"{entry.On}, which it stands on, is not in place";
+                if (entry.Role == RoleCupboard)
+                    return null;
+                Vector3 local = Quaternion.Inverse(rest.Rotation) * (position - rest.Position);
+                LayoutEntry under = EntryById(entry.On);
+                if (under != null && !IsBuildingBlock(under) && IsBlockRole(under.Role))
+                {
+                    float off = Mathf.Max(Mathf.Abs(local.x), Mathf.Abs(local.z));
+                    if (off > FoundationHalfWidth)
+                        return $"its spot lies {off:0.00} m from the centre of {entry.On}, past its " +
+                               $"{FoundationHalfWidth:0.0} m half width";
+                }
+                else if (!OnFootprint(local, IsTrianglePrefab(rest.Prefab)))
+                    return $"its spot lies {new Vector2(local.x, local.z).magnitude:0.00} m from the pivot of " +
+                           $"{entry.On}, outside its top";
+                if (local.y < -OnTolerance || local.y > OnMaxRise)
+                    return $"it would stand {local.y:0.00} m from the top of {entry.On}; Y counts " +
+                           (building != null ? $"from the base height of {building}" : "from that top");
+                return null;
+            }
+            switch (entry.Role)
+            {
+                case RoleFoundation:
+                case RolePlatform:
+                {
+                    float lowest;
+                    TerrainSpan(position, rotation, out lowest);
+                    if (position.y - lowest > FoundationMaxRise)
+                        return $"terrain falls {position.y - lowest:0.00} m under the foundation, more than " +
+                               $"{FoundationMaxRise} m";
+                    string buried = BuriedUnder(position, rotation, false, aside);
+                    return buried == null
+                        ? null
+                        : $"it would bury {buried}; farm.remove confirm and farm.build apply a layout that puts a " +
+                          "foundation under standing structures";
+                }
+                case RoleFence:
+                case RoleGate:
+                    return null;
+                case RolePump:
+                {
+                    Vector3 ground = FarmPoint(entry.X, entry.Z);
+                    float water = TerrainMeta.WaterMap.GetHeight(ground);
+                    return water > ground.y + entry.Y
+                        ? null
+                        : $"no water over the pump spot (water {water:0.00} m, ground {ground.y + entry.Y:0.00} m)";
+                }
+                default:
+                    return _config.GroundCheckRoles.Contains(entry.Role)
+                        ? CheckFootprint(entry.Prefab, position, rotation)
+                        : null;
+            }
+        }
+
+        // Role setup before Spawn, after the occupant check: the building the entity joins (a block's standing
+        // neighbour, a new building of its own for a foundation without a Building, an insert's or a cupboard's
+        // block, an On entry's block, or a building entry's parent or nearest block within 1.5 m), and a bed's
+        // respawn owner.
+        private string Prepare(LayoutEntry entry, BaseEntity entity, ulong owner, Rest rest)
+        {
+            var decay = entity as DecayEntity;
+            if (IsBlockRole(entry.Role))
+            {
+                var block = entity as BuildingBlock;
+                if (block == null)
+                    return "prefab is not a BuildingBlock";
+                block.AttachToBuilding(IsBuildingBlock(entry) ? StandingBlockOf(entry.Building) : null);
+                return null;
+            }
+            if (entry.Role == RoleDoor || entry.Role == RoleInsert)
+            {
+                if (decay == null)
+                    return "prefab is not a door or building insert";
+                decay.AttachToBuilding(((DecayEntity)rest.Entity).buildingID);
+                return null;
+            }
+            if (entry.Role == RoleCupboard)
+            {
+                if (!(entity is BuildingPrivlidge))
+                    return "prefab is not a BuildingPrivlidge";
+                decay.AttachToBuilding(((DecayEntity)rest.Entity).buildingID);
+                return null;
+            }
+            string why = PrepareSpawn(entry, entity, owner);
+            if (why != null || decay == null)
+                return why;
+            string building = BuildingOf(entry);
+            if (!string.IsNullOrEmpty(entry.On))
+            {
+                LayoutEntry under = EntryById(entry.On);
+                if (building != null || (under != null && IsBuildingBlock(under)))
+                    decay.AttachToBuilding(((DecayEntity)rest.Entity).buildingID);
+            }
+            else if (building != null)
+                decay.AttachToBuilding(rest?.Entity as DecayEntity);
+            return null;
+        }
+        // World rotation = Euler(Pitch, farm Yaw + Yaw, Roll).
+        private Quaternion EntryRotation(LayoutEntry entry) =>
+            Quaternion.Euler(entry.Pitch, _data.Yaw + entry.Yaw, entry.Roll);
+
+        // The first standing block of the building in layer order; BuildingBlock.AttachToBuilding(null) starts a new
+        // building id, and a later block joining any piece of a split building merges the parts it links to.
+        private BuildingBlock StandingBlockOf(string building)
+        {
+            BuildingBlock best = null;
+            int bestLayer = 0;
+            foreach (LayoutEntry entry in _config.Layout.Entries)
+            {
+                if (entry.Building != building || !IsBuildingBlock(entry))
+                    continue;
+                int layer = LayerOf(entry);
+                if (best != null && layer >= bestLayer)
+                    continue;
+                StructureRecord rec = RecordById(entry.Id);
+                if (rec == null || rec.NetId == 0 || rec.Missing)
+                    continue;
+                var block = ResolveStructure(rec) as BuildingBlock;
+                if (block == null)
+                    continue;
+                best = block;
+                bestLayer = layer;
+            }
+            return best;
+        }
+
+        // The first record with the Id, the one RecordsById keeps.
+        private StructureRecord RecordById(string id) =>
+            id == null ? null : _data.Structures.FirstOrDefault(r => r.Id == id);
+
+        private DecayEntity ParentEntity(LayoutEntry entry)
+        {
+            if (string.IsNullOrEmpty(entry.Parent))
+                return null;
+            StructureRecord rec = _data.Structures.FirstOrDefault(r => r.Id == entry.Parent);
+            return rec == null || rec.NetId == 0 || rec.Missing ? null : ResolveStructure(rec) as DecayEntity;
+        }
+
+        // Role setup before Spawn: a bed's respawn owner (SleepingBag.deployerUserID), which the planner's OnDeployed
+        // sets and a plugin spawn skips.
+        private static string PrepareSpawn(LayoutEntry entry, BaseEntity entity, ulong owner)
+        {
+            if (entry.Role != RoleBed)
+                return null;
+            var bag = entity as SleepingBag;
+            if (bag == null)
+                return "a bed entry's prefab is not a SleepingBag";
+            bag.deployerUserID = owner;
+            return null;
+        }
+
+        // Role setup after Spawn: a block's grade, skin, and full health (blocks spawn at 0 health), stone for a
+        // foundation without a Building, the cupboard's owner, doors closed, Mount entries made children of their
+        // parent (the planner does so for wall signs and picture frames), and signs painted.
+        private void AfterSpawn(LayoutEntry entry, StructureRecord rec, BaseEntity entity, ulong owner)
+        {
+            BuildingBlock block = IsBlockRole(entry.Role) ? entity as BuildingBlock : null;
+            BuildingGrade.Enum grade;
+            ulong skin;
+            if (block != null && TargetGrade(entry, out grade, out skin))
+                ApplyGrade(block, rec, grade, skin, true);
+            else if (block != null)
+            {
+                block.ChangeGrade(BuildingGrade.Enum.Stone);
+                block.SetHealthToMax();
+                block.SendNetworkUpdate();
+            }
+            Authorize(entity as BuildingPrivlidge, owner);
+            (entity as Door)?.SetOpen(false);
+            if (entry.Mount)
+            {
+                DecayEntity parent = ParentEntity(entry);
+                if (parent != null)
+                    entity.SetParent(parent, true);
+                else
+                    Failure($"mount:{entry.Id}", $"{entry.Id} could not be mounted: its parent {entry.Parent} is gone");
+            }
+            var sign = entity as Signage;
+            if (sign != null && !string.IsNullOrEmpty(entry.Image))
+                Guard("signs", entry.Id, () => PaintFarmSign(entry, sign, owner));
+        }
+        // Deployables and building blocks whose pivot lies inside the footprint below the top, such as a fridge a farm
+        // placed on terrain before its layout gained a platform; ones standing on the top (the cupboard) do not count,
+        // nor the parts in aside (what a farm.upgrade confirm lifts, moves, or retires) and what is parented to them.
+        private string BuriedUnder(Vector3 top, Quaternion rotation, bool triangle, ICollection<ulong> aside)
+        {
+            float centreZ = triangle ? TriangleDepth / 2f : 0f;
+            float depth = triangle ? TriangleDepth : 2f * FoundationHalfWidth;
+            var box = new OBB(top, rotation, new Bounds(new Vector3(0f, -1.5f, centreZ),
+                new Vector3(2f * FoundationHalfWidth, 2.8f, depth)));
             var found = new List<BaseEntity>();
             Vis.Entities(box, found, Rust.Layers.Mask.Deployed | Rust.Layers.Mask.Construction);
             var buried = new List<string>();
-            foreach (BaseEntity entity in found.Distinct())
+            foreach (BaseEntity entity in found)
             {
                 // Item bags and loose items (farm.remove leaves them where containers stood) are not structures.
-                if (entity == null || entity.IsDestroyed || !(entity is DecayEntity))
+                if (entity == null || entity.IsDestroyed || !(entity is DecayEntity) || aside.Contains(IdOf(entity)))
+                    continue;
+                BaseEntity parent = entity.GetParentEntity();
+                if (parent != null && aside.Contains(IdOf(parent)))
                     continue;
                 Vector3 local = Quaternion.Inverse(rotation) * (entity.transform.position - top);
-                if (Mathf.Abs(local.x) <= FoundationHalfWidth && Mathf.Abs(local.z) <= FoundationHalfWidth &&
-                    local.y < -0.1f)
+                if (OnFootprint(local, triangle) && local.y < -0.1f)
                     buried.Add(NameOf(entity));
             }
             return buried.Count > 0 ? string.Join(", ", buried) : null;
         }
-
-        private PlaceResult PlaceCupboard(StructureRecord rec, Vector3 point, float yaw, ulong owner)
+        // Whether a block-local point lies over a square foundation or floor (pivot at the centre) or a triangle one
+        // (pivot at the base edge's midpoint, apex along +Z).
+        private static bool OnFootprint(Vector3 local, bool triangle)
         {
-            BuildingBlock foundation = FoundationUnder(point);
-            Vector3 position = point.WithY(foundation != null ? foundation.transform.position.y : point.y);
-            BaseEntity adopted = Adopt(rec, position, owner);
-            if (adopted != null)
-            {
-                Authorize(adopted as BuildingPrivlidge, owner);
-                return PlaceResult.Adopted;
-            }
-            if (foundation == null)
-                return PlacementFailed(rec, "no placed foundation under the cupboard position");
-            uint building = foundation.buildingID;
-            var cupboard = SpawnStructure(rec, position, Quaternion.Euler(0f, yaw, 0f), owner, e =>
-            {
-                var privilege = e as BuildingPrivlidge;
-                if (privilege == null)
-                    return "prefab is not a BuildingPrivlidge";
-                privilege.AttachToBuilding(building);
-                return null;
-            }) as BuildingPrivlidge;
-            if (cupboard == null)
-                return PlaceResult.Failed;
-            Authorize(cupboard, owner);
-            return PlaceResult.Placed;
+            const float slack = 0.01f;
+            if (!triangle)
+                return Mathf.Abs(local.x) <= FoundationHalfWidth + slack &&
+                       Mathf.Abs(local.z) <= FoundationHalfWidth + slack;
+            return local.z >= -slack && local.z <= TriangleDepth + slack &&
+                   Mathf.Abs(local.x) <= FoundationHalfWidth * (1f - local.z / TriangleDepth) + slack;
         }
 
-        private BuildingBlock FoundationUnder(Vector3 point)
+        // The standing farm foundation or floor whose footprint holds the point: the one nearest across, or with
+        // byHeight the one whose top is nearest the point's height (a loft floor over a foundation).
+        private BuildingBlock BlockUnder(Vector3 point, bool byHeight) => BlockUnder(point, byHeight, Surfaces());
+
+        private static BuildingBlock BlockUnder(Vector3 point, bool byHeight, List<Surface> surfaces)
         {
             BuildingBlock best = null;
             float bestDistance = float.MaxValue;
-            foreach (StructureRecord other in _data.Structures)
+            foreach (Surface surface in surfaces)
             {
-                if (other.Role != RoleFoundation || other.NetId == 0 || other.Missing)
-                    continue;
-                var block = ResolveStructure(other) as BuildingBlock;
-                if (block == null)
-                    continue;
+                BuildingBlock block = surface.Block;
                 Vector3 local = Quaternion.Inverse(block.transform.rotation) * (point - block.transform.position);
-                float distance = new Vector2(local.x, local.z).magnitude;
-                if (Mathf.Abs(local.x) <= FoundationHalfWidth && Mathf.Abs(local.z) <= FoundationHalfWidth &&
-                    distance < bestDistance)
+                float distance = byHeight ? Mathf.Abs(local.y) : new Vector2(local.x, local.z).magnitude;
+                if (OnFootprint(local, surface.Triangle) && distance < bestDistance)
                 {
                     bestDistance = distance;
                     best = block;
@@ -2035,27 +3400,32 @@ namespace Oxide.Plugins
             return best;
         }
 
-        // An entry with "On" stands upright at the top of its platform or foundation, which must already be in place
-        // (BuildOrder places both before it); its spot must lie on that block. A matching entity standing at the
-        // spot, on the block or on the terrain where an older layout put it, is adopted first.
-        private PlaceResult PlaceOn(LayoutEntry entry, StructureRecord rec, Vector3 ground, float yaw, ulong owner)
+        // A standing farm foundation or floor, resolved once for any number of BlockUnder lookups.
+        private class Surface
         {
-            StructureRecord under = _data.Structures
-                .FirstOrDefault(r => r.Id == entry.On && r.NetId != 0 && !r.Missing);
-            var block = under == null ? null : ResolveStructure(under) as BuildingBlock;
-            Vector3 spot = block != null ? ground.WithY(block.transform.position.y) : ground;
-            if (Adopt(rec, spot, owner) != null)
-                return PlaceResult.Adopted;
-            if (block == null)
-                return PlacementFailed(rec, $"{entry.On}, which it stands on, is not in place");
-            Vector3 local = Quaternion.Inverse(block.transform.rotation) * (spot - block.transform.position);
-            float off = Mathf.Max(Mathf.Abs(local.x), Mathf.Abs(local.z));
-            if (off > FoundationHalfWidth)
-                return PlacementFailed(rec, $"its spot lies {off:0.00} m from the centre of {entry.On}, past its " +
-                                            $"{FoundationHalfWidth:0.0} m half width");
-            return SpawnStructure(rec, spot, Quaternion.Euler(0f, yaw, 0f), owner, null) != null
-                ? PlaceResult.Placed
-                : PlaceResult.Failed;
+            public BuildingBlock Block;
+            public bool Triangle;
+        }
+
+        // In record order: BlockUnder keeps the first of two blocks at the same distance.
+        private List<Surface> Surfaces()
+        {
+            var surfaces = new List<Surface>();
+            foreach (StructureRecord rec in _data.Structures)
+            {
+                if (rec.NetId == 0 || rec.Missing || !IsSurfacePrefab(rec.Prefab))
+                    continue;
+                var block = ResolveStructure(rec) as BuildingBlock;
+                if (block != null)
+                    surfaces.Add(new Surface { Block = block, Triangle = IsTrianglePrefab(rec.Prefab) });
+            }
+            return surfaces;
+        }
+
+        private BuildingBlock StandingBlock(string id)
+        {
+            StructureRecord rec = _data.Structures.FirstOrDefault(r => r.Id == id && r.NetId != 0 && !r.Missing);
+            return rec == null ? null : ResolveStructure(rec) as BuildingBlock;
         }
 
         private static void Authorize(BuildingPrivlidge cupboard, ulong owner)
@@ -2114,6 +3484,7 @@ namespace Oxide.Plugins
         {
             Vector3 position = entity.transform.position;
             rec.NetId = IdOf(entity);
+            rec.Pending = false;
             rec.X = position.x;
             rec.Y = position.y;
             rec.Z = position.z;
@@ -2125,27 +3496,11 @@ namespace Oxide.Plugins
         // An entity at an entry's spot (same prefab, within 0.5 m across and 2 m up or down, owned by the farm owner
         // or by nobody) is taken over instead of spawning a duplicate, as over a standing farm after a lost record.
         // A physics query around the spot finds it, so auto-repair never walks every server entity.
-        private BaseEntity Adopt(StructureRecord rec, Vector3 spot, ulong owner)
+        // within > 0 asks for that distance in 3D instead: blocks and inserts stand socket-exact.
+        private BaseEntity Adopt(StructureRecord rec, Vector3 spot, ulong owner, float within = 0f)
         {
-            if (rec.Prefab == null)
-                return null;
-            var found = new List<BaseEntity>();
-            Vis.Entities(spot, AdoptSearchRadius, found);
-            BaseEntity best = null;
-            float bestDistance = AdoptDistance;
-            foreach (BaseEntity entity in found.Distinct())
-            {
-                if (entity == null || entity.IsDestroyed || !SamePrefab(entity, rec.Prefab) ||
-                    _structureIds.Contains(IdOf(entity)) || (entity.OwnerID != 0 && !OwnerOk(entity.OwnerID)))
-                    continue;
-                Vector3 offset = entity.transform.position - spot;
-                float across = new Vector2(offset.x, offset.z).magnitude;
-                if (across <= bestDistance && Mathf.Abs(offset.y) <= AdoptHeight)
-                {
-                    best = entity;
-                    bestDistance = across;
-                }
-            }
+            float bestDistance;
+            BaseEntity best = FindAdoptable(rec.Prefab, spot, within, out bestDistance);
             if (best == null)
                 return null;
             if (best.OwnerID == 0)
@@ -2159,15 +3514,39 @@ namespace Oxide.Plugins
             return best;
         }
 
+        private BaseEntity FindAdoptable(string prefab, Vector3 spot, float within, out float bestDistance)
+        {
+            bestDistance = within > 0f ? within : AdoptDistance;
+            if (prefab == null)
+                return null;
+            var found = new List<BaseEntity>();
+            Vis.Entities(spot, AdoptSearchRadius, found);
+            BaseEntity best = null;
+            foreach (BaseEntity entity in found)
+            {
+                if (entity == null || entity.IsDestroyed || !SamePrefab(entity, prefab) ||
+                    _structureIds.Contains(IdOf(entity)) || (entity.OwnerID != 0 && !OwnerOk(entity.OwnerID)))
+                    continue;
+                Vector3 offset = entity.transform.position - spot;
+                float distance = within > 0f ? offset.magnitude : new Vector2(offset.x, offset.z).magnitude;
+                if (distance <= bestDistance && (within > 0f || Mathf.Abs(offset.y) <= AdoptHeight))
+                {
+                    best = entity;
+                    bestDistance = distance;
+                }
+            }
+            return best;
+        }
+
         // Kills trees, bushes, and resource piles (dead logs, ore) whose colliders reach into the entity's base plus
-        // 0.5 m, as layout.md asks; trees elsewhere in the pen stay.
+        // 0.5 m; trees elsewhere in the pen stay.
         private void ClearVegetation(BaseEntity entity)
         {
             OBB box = Footprint(entity);
             var found = new List<BaseEntity>();
             Vis.Entities(box, found, Rust.Layers.Mask.Tree | Rust.Layers.Mask.Bush | Rust.Layers.Mask.World |
                                      Rust.Layers.Mask.Default | Rust.Layers.Mask.Harvestable);
-            foreach (BaseEntity other in found.Distinct().ToList())
+            foreach (BaseEntity other in found)
             {
                 if (other == null || other.IsDestroyed || other == entity || IsProtected(other) ||
                     !(other is TreeEntity || other is BushEntity || other is ResourceEntity))
@@ -2178,16 +3557,30 @@ namespace Oxide.Plugins
         }
 
         // The entity's base (ClearingAreas, or its own bounds) plus 0.5 m, from just under the ground to 3 m up.
-        private static OBB Footprint(BaseEntity entity)
+        private static OBB Footprint(BaseEntity entity) =>
+            FootprintAt(entity.ShortPrefabName, entity.bounds, entity.transform.position, entity.transform.rotation);
+
+        // Footprint for a prefab at a pose before it spawns, the box farm.upgrade's plan checks for occupants.
+        private static OBB FootprintAt(string prefab, Vector3 position, Quaternion rotation)
+        {
+            GameObject go = string.IsNullOrEmpty(prefab) ? null : GameManager.server.FindPrefab(prefab);
+            BaseEntity entity = go == null ? null : go.GetComponent<BaseEntity>();
+            Bounds bounds = entity != null && entity.bounds.size.sqrMagnitude > 0f
+                ? entity.bounds
+                : new Bounds(new Vector3(0f, 0.5f, 0f), Vector3.one);
+            return FootprintAt(PrefabName(prefab), bounds, position, rotation);
+        }
+
+        private static OBB FootprintAt(string shortName, Bounds bounds, Vector3 position, Quaternion rotation)
         {
             Vector4 area;
             Bounds local;
-            if (ClearingAreas.TryGetValue(entity.ShortPrefabName, out area))
+            if (ClearingAreas.TryGetValue(shortName, out area))
                 local = new Bounds(new Vector3(area.x, 1.25f, area.y),
                     new Vector3(2f * (area.z + VegetationMargin), 3.5f, 2f * (area.w + VegetationMargin)));
             else
-                local = new Bounds(entity.bounds.center, entity.bounds.size + Vector3.one * (2f * VegetationMargin));
-            return new OBB(entity.transform.position, entity.transform.rotation, local);
+                local = new Bounds(bounds.center, bounds.size + Vector3.one * (2f * VegetationMargin));
+            return new OBB(position, rotation, local);
         }
 
         // A player (awake or asleep) or any livestock standing in the box would be pushed or trapped by a spawn.
@@ -2244,13 +3637,15 @@ namespace Oxide.Plugins
 
         // One clone per planned slot plus a reserve of the same size, all with the configured genes; clones already
         // in the box (an adopted farm) count toward it.
-        private void StockStarterClones(UpkeepPass pass)
+        // With planters (farm.upgrade's new ones), only their slots count and clones already stored do not: the
+        // planters the farm had keep their own stock.
+        private void StockStarterClones(UpkeepPass pass, ICollection<string> planters = null)
         {
             List<ItemContainer> boxes = pass.Containers(BoxClones);
-            foreach (KeyValuePair<string, int> crop in PlannedSlots())
+            foreach (KeyValuePair<string, int> crop in PlannedSlots(planters))
             {
                 int want = 2 * crop.Value;
-                int have = CountItems(boxes, crop.Key);
+                int have = planters == null ? CountItems(boxes, crop.Key) : 0;
                 int made = have >= want ? 0 : MakeClones(boxes, crop.Key, want - have);
                 if (made > 0)
                     Event("build", $"starter clones: {crop.Key} x{made} ({_config.CloneGenes}) in {BoxClones}" +
@@ -2272,10 +3667,12 @@ namespace Oxide.Plugins
             return GiveNew(boxes, def, amount, -1, item => GrowableGeneEncoding.EncodeGenesToItem(genes, item));
         }
 
-        private Dictionary<string, int> PlannedSlots()
+        private Dictionary<string, int> PlannedSlots(ICollection<string> planters = null)
         {
             var slots = new Dictionary<string, int>();
-            foreach (List<string> plan in _config.SlotPlan.Values.Where(p => p != null))
+            foreach (List<string> plan in _config.SlotPlan.Where(p => p.Value != null &&
+                                                                     (planters == null || planters.Contains(p.Key)))
+                         .Select(p => p.Value))
                 foreach (string clone in plan.Where(c => !string.IsNullOrEmpty(c)))
                 {
                     int have;
@@ -2315,7 +3712,7 @@ namespace Oxide.Plugins
                 }
                 List<StructureRecord> records = _data.Structures
                     .Where(r => r.NetId != 0)
-                    .OrderByDescending(r => BuildOrder(r.Role))
+                    .OrderByDescending(r => LayerOfRecord(r))
                     .ToList();
                 foreach (StructureRecord rec in records)
                 {
@@ -2391,6 +3788,461 @@ namespace Oxide.Plugins
             }
             container.DropItems(null);
             dropped.Add($"{id}: {contents}");
+        }
+
+        #endregion
+
+        #region Buildings
+
+        private const string GradeNames = "twigs, wood, stone, metal, toptier";
+
+        private static bool TryParseGrade(string name, out BuildingGrade.Enum grade)
+        {
+            switch (name?.ToLowerInvariant())
+            {
+                case "twigs":
+                    grade = BuildingGrade.Enum.Twigs;
+                    return true;
+                case "wood":
+                    grade = BuildingGrade.Enum.Wood;
+                    return true;
+                case "stone":
+                    grade = BuildingGrade.Enum.Stone;
+                    return true;
+                case "metal":
+                    grade = BuildingGrade.Enum.Metal;
+                    return true;
+                case "toptier":
+                    grade = BuildingGrade.Enum.TopTier;
+                    return true;
+                default:
+                    grade = BuildingGrade.Enum.None;
+                    return false;
+            }
+        }
+
+        // Lower case, as ShortPrefabName is, so the prefab predicates and ClearingAreas match a path in any casing.
+        private static string PrefabName(string prefab) =>
+            string.IsNullOrEmpty(prefab) ? string.Empty : Path.GetFileNameWithoutExtension(prefab).ToLowerInvariant();
+
+        private static bool IsFoundationPrefab(string prefab)
+        {
+            string name = PrefabName(prefab);
+            return name == "foundation" || name == "foundation.triangle";
+        }
+
+        // Blocks another entry may stand On: foundations and floors, frames included.
+        private static bool IsSurfacePrefab(string prefab)
+        {
+            string name = PrefabName(prefab);
+            return IsFoundationPrefab(prefab) || name == "floor" || name == "floor.triangle" || name == "floor.frame" ||
+                   name == "floor.triangle.frame";
+        }
+
+        private static bool IsTrianglePrefab(string prefab) => PrefabName(prefab).Contains("triangle");
+
+        private static bool IsBlockRole(string role) =>
+            role == RoleBlock || role == RoleFoundation || role == RolePlatform;
+
+        // A block placed at its building's base height; a foundation or platform without a Building is not one.
+        private static bool IsBuildingBlock(LayoutEntry entry) =>
+            entry != null && IsBlockRole(entry.Role) && !string.IsNullOrEmpty(entry.Building);
+
+        // Where an insert sits in its parent: doors, the garage door, and the hatch at the opening's pivot, shutters,
+        // bars, and glass 1 m up the window wall; false for a prefab with no recipe.
+        private static bool InsertOffset(string prefab, out Vector3 offset)
+        {
+            float turnStep;
+            string opening = InsertOpening(prefab, out turnStep);
+            offset = opening == "wall.window" ? new Vector3(0f, WindowInsertHeight, 0f) : Vector3.zero;
+            return opening != null;
+        }
+
+        // The block an insert with a recipe fits and the turns it takes there: a door a wall.doorway, a double or
+        // garage door a wall.frame, shutters, bars, and glass a wall.window, each at 0 or 180 degrees; the square hatch
+        // a floor.frame at any multiple of 90. Null for a prefab without a recipe, whose turn PlaceInsert snaps to 90.
+        private static string InsertOpening(string prefab, out float turnStep)
+        {
+            string name = PrefabName(prefab);
+            turnStep = 180f;
+            if (name.StartsWith("door.double.") || name == "wall.frame.garagedoor")
+                return "wall.frame";
+            if (name.StartsWith("door."))
+                return "wall.doorway";
+            if (name.StartsWith("shutter.") || name.StartsWith("wall.window."))
+                return "wall.window";
+            turnStep = 90f;
+            return name.StartsWith("floor.ladder.hatch") ? "floor.frame" : null;
+        }
+
+        // Farm-local layout point, Y as written (above T within one building).
+        private static Vector3 LayoutPoint(LayoutEntry entry) => new Vector3(entry.X, entry.Y, entry.Z);
+
+        private static Dictionary<string, LayoutEntry> EntriesById(List<LayoutEntry> entries)
+        {
+            var byId = new Dictionary<string, LayoutEntry>();
+            foreach (LayoutEntry entry in entries)
+                if (entry != null && !string.IsNullOrEmpty(entry.Id) && !byId.ContainsKey(entry.Id))
+                    byId[entry.Id] = entry;
+            return byId;
+        }
+
+        private Dictionary<string, LayoutEntry> EntriesById() => EntriesById(_config.Layout.Entries);
+
+        // An entry's Building, or its parent's when it has none (a door in a doorway is in the doorway's building).
+        private static string BuildingOf(LayoutEntry entry, Dictionary<string, LayoutEntry> byId)
+        {
+            for (int depth = 0; entry != null && depth < 16; depth++)
+            {
+                if (!string.IsNullOrEmpty(entry.Building))
+                    return entry.Building;
+                LayoutEntry parent;
+                if (string.IsNullOrEmpty(entry.Parent) || !byId.TryGetValue(entry.Parent, out parent))
+                    return null;
+                entry = parent;
+            }
+            return null;
+        }
+
+        private string BuildingOf(LayoutEntry entry) =>
+            string.IsNullOrEmpty(entry.Building) && string.IsNullOrEmpty(entry.Parent)
+                ? null
+                : BuildingOf(entry, EntriesById());
+
+        // T of a building, stored in the record when a piece of it is placed, and kept while one stands.
+        private bool BuildingBase(string building, out float t, out string problem)
+        {
+            string how;
+            if (!WorkOutBuildingBase(building, out t, out how))
+            {
+                problem = $"base height of building {building}: {how}";
+                return false;
+            }
+            problem = null;
+            float stored;
+            if (!_data.Buildings.TryGetValue(building, out stored) || stored != t)
+            {
+                _data.Buildings[building] = t;
+                Puts($"build: building {building} has base height {t:0.00} m ({how})");
+            }
+            return true;
+        }
+
+        private class BaseHeight
+        {
+            public bool Found;
+            public float T;
+            public string How;
+        }
+
+        // WorkOutBuildingBase, once per building while PlanUpgrade runs (_planBases).
+        private bool PreviewBuildingBase(string building, out float t, out string how)
+        {
+            BaseHeight known;
+            if (_planBases != null && _planBases.TryGetValue(building, out known))
+            {
+                t = known.T;
+                how = known.How;
+                return known.Found;
+            }
+            bool found = WorkOutBuildingBase(building, out t, out how);
+            if (_planBases != null)
+                _planBases[building] = new BaseHeight { Found = found, T = t, How = how };
+            return found;
+        }
+
+        // A building's base height T: the stored value while a block of the building stands (with none, as
+        // after a first foundation that failed or a building moved in the layout, T is worked out again); else the
+        // pivot of a standing foundation of the building less its Y (one the record holds, or an untracked one at its
+        // spot that farm.build would adopt); else the highest ground under any of its foundations less that
+        // foundation's Y, refused when a foundation would stand 2.6 m or more over the lowest ground at its corners, as
+        // the planner refuses it.
+        private bool WorkOutBuildingBase(string building, out float t, out string how)
+        {
+            if (_data.Buildings.TryGetValue(building, out t) && StandingBlockOf(building) != null)
+            {
+                how = "stored";
+                return true;
+            }
+            List<LayoutEntry> foundations = _config.Layout.Entries
+                .Where(e => e.Building == building && IsFoundationPrefab(e.Prefab))
+                .ToList();
+            if (foundations.Count == 0)
+            {
+                how = "the layout has no foundation entry for it";
+                return false;
+            }
+            foreach (LayoutEntry f in foundations)
+            {
+                BuildingBlock standing = StandingBlock(f.Id);
+                if (standing == null)
+                    continue;
+                t = standing.transform.position.y - f.Y;
+                how = $"{f.Id} stands";
+                return true;
+            }
+            float highest = foundations.Max(f => GroundUnder(f, true) - f.Y);
+            foreach (LayoutEntry f in foundations)
+            {
+                float distance;
+                BaseEntity found = FindAdoptable(f.Prefab, FarmPoint(f.X, f.Z).WithY(highest + f.Y), 0f, out distance);
+                // Place adopts a block only within AdoptBlockDistance; one farther off would not be adopted.
+                if (found == null || distance > AdoptBlockDistance)
+                    continue;
+                t = found.transform.position.y - f.Y;
+                how = $"an untracked {found.ShortPrefabName} stands at {f.Id}'s spot";
+                return true;
+            }
+            t = highest;
+            foreach (LayoutEntry f in foundations)
+            {
+                float rise = highest + f.Y - GroundUnder(f, false);
+                if (rise < FoundationMaxRise)
+                    continue;
+                how = $"{f.Id} would stand {rise:0.00} m over the lowest ground at its corners, " +
+                      $"{FoundationMaxRise} m or more";
+                return false;
+            }
+            how = "terrain";
+            return true;
+        }
+
+        // The highest ground under a foundation entry (5 x 5 over a square, the corners and centroid of a triangle),
+        // or with highest false the lowest ground at its corners.
+        private float GroundUnder(LayoutEntry foundation, bool highest)
+        {
+            Vector3 centre = FarmPoint(foundation.X, foundation.Z);
+            Quaternion rotation = Quaternion.Euler(0f, _data.Yaw + foundation.Yaw, 0f);
+            const float h = FoundationHalfWidth;
+            Vector2[] points = IsTrianglePrefab(foundation.Prefab)
+                ? highest
+                    ? new[] { new Vector2(-h, 0f), new Vector2(h, 0f), new Vector2(0f, TriangleDepth),
+                        new Vector2(0f, TriangleDepth / 3f) }
+                    : new[] { new Vector2(-h, 0f), new Vector2(h, 0f), new Vector2(0f, TriangleDepth) }
+                : highest
+                    ? Grid(-h, h, -h, h, 5, 5)
+                    : new[] { new Vector2(-h, -h), new Vector2(-h, h), new Vector2(h, -h), new Vector2(h, h) };
+            float result = highest ? float.MinValue : float.MaxValue;
+            foreach (Vector2 p in points)
+            {
+                float ground = TerrainMeta.HeightMap.GetHeight(centre + rotation * new Vector3(p.x, 0f, p.y));
+                result = highest ? Mathf.Max(result, ground) : Mathf.Min(result, ground);
+            }
+            return result;
+        }
+
+        // The grade and skin the farm keeps a block at: the entry's Grade and Skin, else the config's Building grade
+        // and, with that grade, its Building skin. Role block and every entry with a Building are graded; a
+        // foundation or platform without a Building only when it sets Grade or Skin, and stays stone otherwise.
+        private bool TargetGrade(LayoutEntry entry, out BuildingGrade.Enum grade, out ulong skin)
+        {
+            grade = BuildingGrade.Enum.Stone;
+            skin = 0;
+            if (entry.Role != RoleBlock && string.IsNullOrEmpty(entry.Building) && entry.Grade == null &&
+                !entry.Skin.HasValue)
+                return false;
+            BuildingGrade.Enum fallback;
+            if (!TryParseGrade(_config.BuildingGrade, out fallback))
+                fallback = BuildingGrade.Enum.Wood;
+            if (entry.Grade == null || !TryParseGrade(entry.Grade, out grade))
+                grade = fallback;
+            skin = entry.Skin ?? (grade == fallback ? _config.BuildingSkin : 0UL);
+            return true;
+        }
+
+        // ChangeGradeAndSkin after Spawn, then SetHealthToMax after a spawn (blocks start at 0 health) or a grade
+        // change. A grade the prefab lacks in that skin would fall back to twigs, so it gets
+        // skin 0 instead.
+        private void ApplyGrade(BuildingBlock block, StructureRecord rec, BuildingGrade.Enum grade, ulong skin,
+            bool fresh)
+        {
+            if (skin != 0 && !HasGradeSkin(block, grade, skin))
+            {
+                if (_plainSkins.Count == 0)
+                    NextTick(LogPlainSkins);
+                string lacks = $"plain {grade}: {block.ShortPrefabName} has no {grade} grade in skin {skin}";
+                List<string> ids;
+                if (!_plainSkins.TryGetValue(lacks, out ids))
+                    _plainSkins[lacks] = ids = new List<string>();
+                if (!ids.Contains(rec.Id))
+                    ids.Add(rec.Id);
+                skin = 0;
+            }
+            rec.Grade = grade.ToString();
+            rec.Skin = skin;
+            bool regrade = block.grade != grade;
+            if (regrade || block.skinID != skin)
+                block.ChangeGradeAndSkin(grade, skin);
+            if (fresh || regrade)
+                block.SetHealthToMax();
+            block.SendNetworkUpdate();
+        }
+
+        private static bool HasGradeSkin(BuildingBlock block, BuildingGrade.Enum grade, ulong skin) =>
+            block.blockDefinition?.grades != null &&
+            block.blockDefinition.grades.Any(g => g.gradeBase.type == grade && g.gradeBase.skin == skin);
+
+        // One line per missing skin after the call that graded the blocks, naming each; the same blocks again within
+        // the failure repeat interval log nothing.
+        private void LogPlainSkins()
+        {
+            foreach (KeyValuePair<string, List<string>> pair in _plainSkins)
+            {
+                string ids = string.Join(", ", pair.Value);
+                Failure($"skin:{ids}:{pair.Key}", $"{ids} got {pair.Key}");
+            }
+            _plainSkins.Clear();
+        }
+
+        // Puts back the grade and skin the farm gave a block, which BuildingSkins and admin commands change with no
+        // hook to veto. Returns what it was, or null when nothing changed.
+        private string RestoreGrade(BuildingBlock block, StructureRecord rec = null)
+        {
+            ulong id = IdOf(block);
+            rec = rec ?? _data.Structures.FirstOrDefault(r => r.NetId == id);
+            BuildingGrade.Enum grade;
+            if (rec == null || rec.Grade == null || !Enum.TryParse(rec.Grade, out grade))
+                return null;
+            ulong skin = rec.Skin ?? 0UL;
+            if (block.grade == grade && block.skinID == skin)
+                return null;
+            string was = $"{block.grade} {block.skinID}";
+            bool regrade = block.grade != grade;
+            block.ChangeGradeAndSkin(grade, skin);
+            if (regrade)
+                block.SetHealthToMax();
+            block.SendNetworkUpdate();
+            return was;
+        }
+
+        private void LogRestores(Dictionary<string, List<string>> restored)
+        {
+            foreach (KeyValuePair<string, List<string>> pair in restored)
+                Failure($"regrade:{pair.Key}", $"restored the grade and skin of {pair.Value.Count} blocks of " +
+                                               $"{pair.Key}: {string.Join(", ", pair.Value)}; later restores of " +
+                                               "this building log at most hourly", "repair", 60f);
+        }
+
+        // An entry with a Parent goes with it: a door the stability guard keeps, or a panel the ground veto
+        // keeps, in place of a lost parent is removed, and auto-repair brings it back after the parent. A container
+        // with items stays, so nothing is destroyed.
+        private void RemoveOrphans(string parentId)
+        {
+            StructureRecord parent = _data.Structures.FirstOrDefault(r => r.Id == parentId);
+            if (parent != null && parent.NetId != 0 && !parent.Missing)
+                return;
+            foreach (LayoutEntry child in _config.Layout.Entries.Where(e => e.Parent == parentId))
+            {
+                StructureRecord rec = _data.Structures.FirstOrDefault(r => r.Id == child.Id && r.NetId != 0 &&
+                                                                           !r.Missing);
+                BaseEntity entity = rec == null ? null : ResolveStructure(rec);
+                if (entity == null || entity.IsDestroyed)
+                    continue;
+                ItemContainer inventory = InventoryOf(entity);
+                int plants = PlantCount(entity);
+                int animals = (entity as ChickenCoop)?.Animals.Count ?? 0;
+                string holds = inventory != null && inventory.itemList.Count > 0 ? Contents(inventory)
+                    : plants > 0 ? $"{plants} plants"
+                    : animals > 0 ? $"{animals} chickens or hatching eggs"
+                    : null;
+                if (holds != null)
+                {
+                    Failure($"orphan:{child.Id}", $"{child.Id} stays although its parent {parentId} is gone: it " +
+                                                  $"holds {holds}");
+                    continue;
+                }
+                // Missing and untracked before the kill, so OnEntityKill counts no loss and auto-repair no churn; its
+                // own children go first, while they still stand.
+                rec.Missing = true;
+                _structureIds.Remove(rec.NetId);
+                RemoveOrphans(child.Id);
+                try
+                {
+                    entity.Kill();
+                }
+                catch (Exception)
+                {
+                    if (!entity.IsDestroyed)
+                    {
+                        rec.Missing = false;
+                        _structureIds.Add(rec.NetId);
+                    }
+                    throw;
+                }
+                Puts($"structures: removed {child.Id} with its parent {parentId}; it comes back after its parent");
+            }
+        }
+
+        private void PaintFarmSign(LayoutEntry entry, Signage sign, ulong owner)
+        {
+            byte[] png = SignPng(entry.Image);
+            string problem = png == null ? $"the plugin carries no image {entry.Image}" : PaintSign(sign, png, owner);
+            if (problem != null)
+                Failure($"sign:{entry.Id}", $"{entry.Id} ({PrefabName(entry.Prefab)}) was not painted with " +
+                                            $"{entry.Image}: {problem}");
+        }
+
+        private LayoutEntry EntryById(string id) =>
+            id == null ? null : _config.Layout.Entries.FirstOrDefault(e => e.Id == id);
+
+        // Where Place would put the entry now, without spawning or adopting, for farm.upgrade's plan and moves:
+        // Locate and PlaceCheck as Place runs them, with a support that does not stand yet taken at its own layout
+        // pose and the parts in aside (lifted, moved, or retired by the confirm) left out of the burial check. With
+        // adopt, an untracked match standing at the pose passes, since Place adopts it; a moving part does not.
+        private bool EntryPose(LayoutEntry entry, ICollection<ulong> aside, bool adopt, out Vector3 position,
+            out Quaternion rotation, out string problem)
+        {
+            Rest rest;
+            if (!Locate(entry, false, 0, out position, out rotation, out rest, out problem))
+                return false;
+            float distance;
+            if (adopt && FindAdoptable(entry.Prefab, position, AdoptWithin(entry), out distance) != null)
+                return true;
+            problem = PlaceCheck(entry, false, position, rotation, rest, aside);
+            return problem == null;
+        }
+
+        // The box an entry's prefab fills at a pose: its BaseEntity bounds (a foundation's reach 2.8 m down from its
+        // top), or a 1 m cube on the pivot for a prefab without them.
+        private static OBB EntryBox(LayoutEntry entry, Vector3 position, Quaternion rotation)
+        {
+            GameObject prefab = string.IsNullOrEmpty(entry.Prefab) ? null : GameManager.server.FindPrefab(entry.Prefab);
+            BaseEntity entity = prefab == null ? null : prefab.GetComponent<BaseEntity>();
+            Bounds bounds = entity != null && entity.bounds.size.sqrMagnitude > 0f
+                ? entity.bounds
+                : new Bounds(new Vector3(0f, 0.5f, 0f), Vector3.one);
+            return new OBB(position, rotation, bounds);
+        }
+
+        // Moves a standing farm entity to a pose with what is parented to it (coop chickens, planted crops, a trough's
+        // water end), joins a deployable to the building of the block within 1.5 m of its new pivot (none: id 0) as
+        // DecayEntity.AttachToBuilding(null) does, queues navmesh rebuilds where it stood and where it stands, and
+        // sends network updates. The caller runs Physics.SyncTransforms() once per batch of moves.
+        private static void MoveEntity(BaseEntity entity, Vector3 position, Quaternion rotation)
+        {
+            Bounds before = entity.WorldSpaceBounds().ToBounds();
+            entity.transform.SetPositionAndRotation(position, rotation);
+            var decay = entity as DecayEntity;
+            if (decay != null && !(decay is BuildingBlock))
+            {
+                BuildingBlock block = decay.GetNearbyBuildingBlock();
+                decay.AttachToBuilding(block != null ? block.buildingID : 0u);
+            }
+            if (decay != null && !ConVar.AI.useUnityNavmesh)
+            {
+                Rust.Ai.Gen2.Nav.RustNavigation.Instance.RebuildTilesInBounds(before);
+                Rust.Ai.Gen2.Nav.RustNavigation.Instance.RebuildTilesInBounds(entity.WorldSpaceBounds().ToBounds());
+            }
+            SendMoved(entity);
+        }
+
+        private static void SendMoved(BaseEntity entity)
+        {
+            entity.UpdateNetworkGroup();
+            entity.SendNetworkUpdateImmediate();
+            foreach (BaseEntity child in entity.children.ToList())
+                if (child != null && !child.IsDestroyed)
+                    SendMoved(child);
         }
 
         #endregion
@@ -2830,24 +4682,49 @@ namespace Oxide.Plugins
                 animal.SendNetworkUpdate();
         }
 
-        // Convex hull of the recorded fence and gate rail ends in world x/z.
+        // Convex hull of the recorded fence and gate rail ends in world x/z, over the fence line that encloses the
+        // herd point: a garden or chicken run fenced off on its own (rail ends not meeting the pen's) stays out of
+        // it. A layout with one fence line has only the pen's.
         private List<Vector2> PenHull()
         {
             if (_penHull != null)
                 return _penHull;
-            var points = new List<Vector2>();
+            var lines = new List<List<Vector2>>();
             foreach (StructureRecord rec in _data.Structures)
             {
-                if ((rec.Role != RoleFence && rec.Role != RoleGate) || rec.NetId == 0)
+                if (rec.Role != RoleFence && rec.Role != RoleGate)
                     continue;
-                float yaw = rec.Yaw * Mathf.Deg2Rad;
+                // A rail never placed counts at its layout pose, so its gap does not split the line into smaller pens.
+                LayoutEntry planned = rec.NetId == 0 ? EntryById(rec.Id) : null;
+                if (rec.NetId == 0 && planned == null)
+                    continue;
+                float yaw = (planned != null ? _data.Yaw + planned.Yaw : rec.Yaw) * Mathf.Deg2Rad;
                 Vector2 along = new Vector2(Mathf.Sin(yaw), Mathf.Cos(yaw)) * RailHalfLength;
-                var centre = new Vector2(rec.X, rec.Z);
-                points.Add(centre + along);
-                points.Add(centre - along);
+                Vector3 at = planned != null ? FarmPoint(planned.X, planned.Z) : new Vector3(rec.X, 0f, rec.Z);
+                var centre = new Vector2(at.x, at.z);
+                var rail = new List<Vector2> { centre + along, centre - along };
+                List<List<Vector2>> joined = lines.Where(line => line.Any(p => rail.Any(q =>
+                    (p - q).sqrMagnitude < RailJoin * RailJoin))).ToList();
+                foreach (List<Vector2> line in joined)
+                {
+                    rail.AddRange(line);
+                    lines.Remove(line);
+                }
+                lines.Add(rail);
             }
-            _penHull = ConvexHull(points);
+            Vector3 herd = FarmPoint(_config.HerdPoint.X, _config.HerdPoint.Z);
+            List<List<Vector2>> hulls = lines.Select(ConvexHull).ToList();
+            List<Vector2> pen = hulls.Where(h => InsidePen(herd, h)).OrderBy(HullArea).FirstOrDefault();
+            _penHull = pen ?? ConvexHull(lines.SelectMany(line => line).ToList());
             return _penHull;
+        }
+
+        private static float HullArea(List<Vector2> hull)
+        {
+            float area = 0f;
+            for (int i = 0; i < hull.Count; i++)
+                area += Cross(Vector2.zero, hull[i], hull[(i + 1) % hull.Count]);
+            return Mathf.Abs(area) / 2f;
         }
 
         // Andrew's monotone chain, counter-clockwise.
@@ -2904,6 +4781,9 @@ namespace Oxide.Plugins
             public readonly List<string> Needs = new List<string>();
             // PersonalSpace restores, logged at INFO: crowding drifts the need back down on its own.
             public readonly List<string> Crowding = new List<string>();
+            // Net ids of records farm.upgrade retired but could not empty; they take no new items (TendCoop still feeds
+            // the chickens a retired coop holds).
+            public readonly HashSet<ulong> Retired = new HashSet<ulong>();
 
             public List<BaseEntity> Role(string role)
             {
@@ -2912,7 +4792,7 @@ namespace Oxide.Plugins
             }
 
             public List<ItemContainer> Containers(string role) =>
-                Role(role).Select(InventoryOf).Where(c => c != null).ToList();
+                Role(role).Where(e => !Retired.Contains(IdOf(e))).Select(InventoryOf).Where(c => c != null).ToList();
 
             public BaseEntity ById(string id)
             {
@@ -2927,7 +4807,9 @@ namespace Oxide.Plugins
             }
         }
 
-        private UpkeepPass BeginPass()
+        // record false (farm.status, the farm.upgrade dry run) only reads: a vanished structure or animal is left out
+        // of the pass, and the next upkeep pass records and logs it.
+        private UpkeepPass BeginPass(bool record = true)
         {
             var pass = new UpkeepPass { Owner = FarmOwner() };
             float now = Time.realtimeSinceStartup;
@@ -2937,6 +4819,8 @@ namespace Oxide.Plugins
                 if (rec.NetId == 0 || rec.Missing)
                     continue;
                 BaseEntity entity = ResolveStructure(rec);
+                if (entity == null && !record)
+                    continue;
                 if (entity == null)
                 {
                     rec.Missing = true;
@@ -2953,19 +4837,35 @@ namespace Oxide.Plugins
                 pass.Names[rec.NetId] = rec.Id;
                 if (rec.Id != null && !pass.Ids.ContainsKey(rec.Id))
                     pass.Ids[rec.Id] = entity;
+                if (rec.Retired)
+                    pass.Retired.Add(rec.NetId);
             }
+            // Several containers of a role fill in layout order, the first with room first; records the layout no
+            // longer names come after.
+            var index = new Dictionary<string, int>();
+            for (int i = 0; i < _config.Layout.Entries.Count; i++)
+                if (_config.Layout.Entries[i].Id != null && !index.ContainsKey(_config.Layout.Entries[i].Id))
+                    index[_config.Layout.Entries[i].Id] = i;
+            foreach (string role in pass.Roles.Keys.ToList())
+                pass.Roles[role] = pass.Roles[role]
+                    .OrderBy(e =>
+                    {
+                        int at;
+                        return index.TryGetValue(pass.Name(e) ?? string.Empty, out at) ? at : int.MaxValue;
+                    })
+                    .ToList();
             pass.Cupboard = pass.Role(RoleCupboard).OfType<BuildingPrivlidge>().FirstOrDefault();
             var lost = new List<ulong>();
             foreach (KeyValuePair<ulong, string> pair in _animals.ToList())
             {
                 LivestockAnimal animal = ResolveAnimal(pair.Key, pair.Value);
-                if (animal == null)
+                if (animal == null && record)
                 {
                     _animals.Remove(pair.Key);
                     lost.Add(pair.Key);
-                    continue;
                 }
-                pass.Animals.Add(animal);
+                if (animal != null)
+                    pass.Animals.Add(animal);
             }
             if (lost.Count > 0)
             {
@@ -3069,6 +4969,92 @@ namespace Oxide.Plugins
                     gate.SetOpen(false);
                     Puts($"gate: closed {pass.Name(entity)}, no player within {_config.GateCloseDistance:0} m");
                 });
+            Dictionary<string, LayoutEntry> entries = EntriesById();
+            var restored = new Dictionary<string, List<string>>();
+            var orphaned = new HashSet<string>();
+            foreach (StructureRecord rec in _data.Structures)
+            {
+                BaseEntity entity = rec.NetId == 0 || rec.Missing ? null : pass.ById(rec.Id);
+                if (entity == null || IdOf(entity) != rec.NetId)
+                    continue;
+                LayoutEntry entry;
+                entries.TryGetValue(rec.Id, out entry);
+                var block = entity as BuildingBlock;
+                if (block != null && rec.Grade != null)
+                    Guard("structures", rec.Id, () =>
+                    {
+                        string was = RestoreGrade(block, rec);
+                        if (was == null)
+                            return;
+                        string building = entry?.Building ?? rec.Id;
+                        List<string> list;
+                        if (!restored.TryGetValue(building, out list))
+                            restored[building] = list = new List<string>();
+                        list.Add($"{rec.Id} (was {was})");
+                    });
+                var sign = entity as Signage;
+                if (sign != null && entry?.Image != null && SignCheckDue(rec.NetId))
+                    Guard("signs", rec.Id, () => KeepSignPainted(entry, sign, pass.Owner));
+                var bag = entity as SleepingBag;
+                if (bag != null && rec.Role == RoleBed && pass.Owner != 0 &&
+                    (bag.deployerUserID != pass.Owner || bag.IsPublic()))
+                    Guard("structures", rec.Id, () => KeepBedOwned(rec.Id, bag, pass.Owner));
+                if (!string.IsNullOrEmpty(entry?.Parent) && pass.ById(entry.Parent) == null)
+                    orphaned.Add(entry.Parent);
+            }
+            LogRestores(restored);
+            foreach (string parent in orphaned)
+                Guard("structures", $"children of {parent}", () => RemoveOrphans(parent));
+        }
+
+        // The farm bed respawns the owner: one made public, claimed, or handed to a friend is made private and assigned
+        // back.
+        private void KeepBedOwned(string id, SleepingBag bag, ulong owner)
+        {
+            var was = new List<string>();
+            if (bag.IsPublic())
+            {
+                was.Add("public");
+                bag.SetPublic(false);
+            }
+            if (bag.deployerUserID != owner)
+            {
+                was.Add(bag.deployerUserID == 0 ? "unassigned" : $"assigned to {OwnerLabel(bag.deployerUserID)}");
+                bag.AssignToUser(owner);
+            }
+            Puts($"bed: gave {id} back to owner {OwnerLabel(owner)}; it was {string.Join(" and ", was)}");
+        }
+
+        private bool SignCheckDue(ulong id)
+        {
+            float now = Time.realtimeSinceStartup;
+            float last;
+            if (_signCheckedAt.TryGetValue(id, out last) && now - last < SignCheckSeconds)
+                return false;
+            _signCheckedAt[id] = now;
+            return true;
+        }
+
+        // A farm sign whose image row is gone (lost from FileStorage, or cleared by a CRC clash at load, which also
+        // clears the lock) is painted and locked again; a lost lock alone is set again.
+        private void KeepSignPainted(LayoutEntry entry, Signage sign, ulong owner)
+        {
+            byte[] png = SignPng(entry.Image);
+            if (png == null || owner == 0)
+                return;
+            if (!SignPainted(sign, png))
+            {
+                string problem = PaintSign(sign, png, owner);
+                if (problem == null)
+                    Event("repair", $"repainted {entry.Id} with {entry.Image}: its image was gone");
+                else
+                    Failure($"sign:{entry.Id}", $"{entry.Id} could not be repainted with {entry.Image}: {problem}");
+                return;
+            }
+            if (SignLocked(sign, owner))
+                return;
+            LockSign(sign, owner);
+            Puts($"signs: locked {entry.Id} to the owner again");
         }
 
         private void CupboardMissing() =>
@@ -3076,9 +5062,17 @@ namespace Oxide.Plugins
                                 "home, and reseeding and the starter herd wait until it is back");
 
         // Builds every layout connection that is not in place, and re-makes one a player or decay removed.
+        // A link naming an entry the farm never placed (a layout switched in before farm.upgrade confirm or
+        // farm.repair places it) waits without a log line; a placed end that is lost or failed still logs.
         private void WiringStep(UpkeepPass pass)
         {
+            Dictionary<string, StructureRecord> records = RecordsById();
             foreach (LayoutConnection link in _config.Layout.Connections)
+            {
+                StructureRecord end;
+                if (!records.TryGetValue(link.From ?? string.Empty, out end) || NotYetPlaced(end) ||
+                    !records.TryGetValue(link.To ?? string.Empty, out end) || NotYetPlaced(end))
+                    continue;
                 Guard("wiring", link.ToString(), () =>
                 {
                     string problem = WireProblem(link, pass);
@@ -3089,13 +5083,14 @@ namespace Oxide.Plugins
                     else
                         Failure($"wire:{link}", $"wiring {link}: {problem}");
                 });
+            }
         }
 
         // Null when the link is already in place, empty when this call made it, otherwise why it cannot be made.
         private static string WireProblem(LayoutConnection link, UpkeepPass pass)
         {
-            var from = pass.ById(link.From) as IOEntity;
-            var to = pass.ById(link.To) as IOEntity;
+            IOEntity from = IoEnd(pass.ById(link.From));
+            IOEntity to = IoEnd(pass.ById(link.To));
             if (from == null || to == null)
                 return $"{(from == null ? link.From : link.To)} is missing or not an IO entity";
             if (link.FromSlot < 0 || link.FromSlot >= from.outputs.Length || link.ToSlot < 0 ||
@@ -3746,7 +5741,42 @@ namespace Oxide.Plugins
         {
             Dictionary<string, int> planned = PlannedSlots();
             foreach (BaseEntity entity in pass.Role(RolePlanter))
-                Guard("crops", pass.Name(entity), () => TendPlanter(entity, pass, planned));
+                Guard("crops", pass.Name(entity), () =>
+                {
+                    if (pass.Retired.Contains(IdOf(entity)))
+                        HarvestOnly(entity, pass);
+                    else
+                        TendPlanter(entity, pass, planned);
+                });
+            foreach (BaseEntity entity in pass.Role(RolePlanterStatic))
+                Guard("crops", pass.Name(entity), () => HarvestOnly(entity, pass));
+        }
+
+        // A respawning static planter (PlanterBoxStatic.CreateStaticPlants, every respawnCheckTimer seconds) fills its
+        // own soil water and plants a fertilized, god-quality crop with favourable genes in every free slot, so the
+        // farm only harvests it: ripe plants go to the feed box the way a planter's do, and a dying plant is cleared,
+        // which frees its slot for the next vanilla planting. A retired planter is emptied the same way.
+        private void HarvestOnly(BaseEntity entity, UpkeepPass pass)
+        {
+            string id = pass.Name(entity);
+            var planter = entity as PlanterBox;
+            if (planter == null)
+            {
+                Failure($"type:{id}", $"{id} is not a planter");
+                return;
+            }
+            List<GrowableEntity> plants = planter.children.OfType<GrowableEntity>()
+                .Where(p => p != null && !p.IsDestroyed && !p.IsDead())
+                .OrderBy(p => p.transform.localPosition.x)
+                .ThenBy(p => p.transform.localPosition.z)
+                .ToList();
+            for (int i = 0; i < plants.Count; i++)
+            {
+                if (plants[i].State == PlantProperties.State.Ripe)
+                    HarvestPlant(plants[i], id, i, pass);
+                else if (plants[i].State == PlantProperties.State.Dying)
+                    ClearDyingPlant(plants[i], id, i, pass);
+            }
         }
 
         private void TendPlanter(BaseEntity entity, UpkeepPass pass, Dictionary<string, int> planned)
@@ -3845,11 +5875,16 @@ namespace Oxide.Plugins
 
         private static bool IsWired(LayoutConnection link, UpkeepPass pass)
         {
-            var from = pass.ById(link.From) as IOEntity;
-            BaseEntity to = pass.ById(link.To);
+            IOEntity from = IoEnd(pass.ById(link.From));
+            IOEntity to = IoEnd(pass.ById(link.To));
             return from != null && to != null && link.FromSlot >= 0 && link.FromSlot < from.outputs.Length &&
                    from.outputs[link.FromSlot].connectedTo.Get() == to;
         }
+
+        // The IO entity a connection names: any entry's entity that is one, whatever its role, or a trough's water
+        // end, a LiquidContainer child where water connections land.
+        private static IOEntity IoEnd(BaseEntity entity) =>
+            entity as IOEntity ?? (entity as HitchTrough)?.WaterStorage;
 
         // One fertilizer per slot in the planter's own inventory: PlanterBox.FertilizeGrowables gives one to each
         // new plant when it is parented or when fertilizer arrives.
@@ -4073,6 +6108,8 @@ namespace Oxide.Plugins
                 if (MoveToContainers(made, dungBoxes) < amount)
                     Full(BoxDung, $"no room in {BoxDung} for the fertilizer {id} made; it stays in the composter");
             }
+            if (pass.Retired.Contains(IdOf(composter)))
+                return;
             int dung = CountItems(new List<ItemContainer> { composter.inventory }, DungShortname);
             List<Item> stock = dungBoxes.SelectMany(c => c.itemList)
                 .Where(i => i.amount > 0 && i.info.shortname == DungShortname).ToList();
@@ -4151,17 +6188,22 @@ namespace Oxide.Plugins
                                   "where a full output slot destroys new eggs");
             }
             DropStaleChickens(coop, label, pass);
-            StockFood(coop.inventory, ChickenCoop.FoodSlot, IsCoopFood, _config.CoopFeedTarget,
-                _config.CoopFeedMinimum, pass, $"{label} food slot", true);
-            StockWater(coop.inventory, ChickenCoop.WaterSlot, _config.CoopWaterTarget, _config.CoopWaterMinimum,
-                pass, $"{label} water slot");
+            bool retired = pass.Retired.Contains(IdOf(coop));
+            if (!retired || coop.Animals.Count > 0)
+            {
+                StockFood(coop.inventory, ChickenCoop.FoodSlot, IsCoopFood, _config.CoopFeedTarget,
+                    _config.CoopFeedMinimum, pass, $"{label} food slot", true);
+                StockWater(coop.inventory, ChickenCoop.WaterSlot, _config.CoopWaterTarget, _config.CoopWaterMinimum,
+                    pass, $"{label} water slot");
+            }
             foreach (ChickenCoop.AnimalStatus status in coop.Animals)
             {
                 FarmableAnimal chicken = status.SpawnedAnimal.Get(true);
                 if (chicken != null && !chicken.IsDead())
                     TendChicken(chicken, label, pass);
             }
-            RefillCoop(coop, pass, label);
+            if (!retired)
+                RefillCoop(coop, pass, label);
         }
 
         private static void DropStaleChickens(ChickenCoop coop, string label, UpkeepPass pass)
@@ -4246,6 +6288,8 @@ namespace Oxide.Plugins
                         Failure($"type:{label}", $"{label} is not a Hitch & Trough");
                         return;
                     }
+                    if (pass.Retired.Contains(IdOf(trough)))
+                        return;
                     StockFood(trough.inventory, -1, IsTroughFood, _config.TroughFeedTarget,
                         _config.TroughFeedMinimum, pass, label, false);
                     LiquidContainer water = trough.WaterStorage;
@@ -4262,8 +6306,10 @@ namespace Oxide.Plugins
         // spoiled.produce is chicken feed (chickenCoopFood) and compost (0.2 fertilizer); livestock skip it.
         private void SpoiledStep(UpkeepPass pass)
         {
-            List<ChickenCoop> coops = pass.Role(RoleCoop).OfType<ChickenCoop>().ToList();
-            List<Composter> composters = pass.Role(RoleComposter).OfType<Composter>().ToList();
+            List<ChickenCoop> coops = pass.Role(RoleCoop).OfType<ChickenCoop>()
+                .Where(c => !pass.Retired.Contains(IdOf(c))).ToList();
+            List<Composter> composters = pass.Role(RoleComposter).OfType<Composter>()
+                .Where(c => !pass.Retired.Contains(IdOf(c))).ToList();
             List<ItemContainer> dungBoxes = pass.Containers(BoxDung);
             var left = new Dictionary<string, int>();
             foreach (KeyValuePair<Item, string> pair in SpoiledItems(pass))
@@ -4302,7 +6348,8 @@ namespace Oxide.Plugins
             var items = new List<KeyValuePair<Item, string>>();
             foreach (KeyValuePair<string, List<BaseEntity>> role in pass.Roles)
             {
-                if (role.Key == RoleCoop || role.Key == RoleComposter || role.Key == RolePlanter)
+                if (role.Key == RoleCoop || role.Key == RoleComposter || role.Key == RolePlanter ||
+                    role.Key == RolePlanterStatic)
                     continue;
                 foreach (BaseEntity entity in role.Value)
                 {
@@ -4511,6 +6558,10 @@ namespace Oxide.Plugins
         private static int SlotRoom(ItemContainer container, Item item, int slot)
         {
             Item existing = slot >= 0 && slot < container.capacity ? container.GetSlot(slot) : null;
+            // A reserved slot (ChickenCoop's laying slot) holds only what the entity puts there; a hen's next egg is
+            // destroyed when that slot is full.
+            if (container.slotIsReserved != null && container.slotIsReserved(item, slot))
+                return 0;
             if (existing == null)
                 return container.itemList.Count >= container.capacity ? 0 : EmptySlotRoom(container, item, slot);
             if (existing == item || !existing.CanStack(item) || !item.CanMoveTo(null, container, slot))
@@ -4916,6 +6967,7 @@ namespace Oxide.Plugins
             _withinRadius.Clear();
             _needLoggedAt.Clear();
             _growingNames.Clear();
+            _signCheckedAt.Clear();
             _cullBlocked.Clear();
             _cullWaiting.Clear();
             _breedHeld.Clear();
@@ -5061,12 +7113,2506 @@ namespace Oxide.Plugins
 
         #endregion
 
+        #region Upgrade
+
+        private const string MilkShortname = "milk";
+        // A kept entry standing farther than this across from its layout spot is reported as kept where it stands.
+        private const float KeptDistance = 1f;
+        // How far over a block's top (pivot plane) the pivot of something standing on it sits.
+        private const float StandsOnHeight = 0.3f;
+        // Old parts in a new entry's way rise this far while the new entries are placed, all in one call.
+        private const float StashHeight = 300f;
+        // A kept part is in a new entry's footprint only when it reaches this far into the entry's box, so parts that
+        // merely touch it (fence rails end to end) are not.
+        private const float KeptSlack = 0.2f;
+        // ChickenCoop.ServerInit's trace for IsOnTerrain: construction and terrain.
+        private const int CoopGroundMask = Rust.Layers.Mask.Construction | Rust.Layers.Mask.Terrain;
+
+        private static readonly HashSet<ulong> NoIds = new HashSet<ulong>();
+
+        // Corpse yield shortnames of the herd prefabs, read once from their corpse dispensers.
+        private HashSet<string> _cullYield;
+
+        // What farm.upgrade would do or did. A Live plan (confirm, after the placement and the moves) counts only
+        // standing targets.
+        private class UpgradePlan
+        {
+            public UpkeepPass Pass;
+            public bool Live;
+            public readonly List<LayoutEntry> Place = new List<LayoutEntry>();
+            // Entries step 1 places whose pose checks pass; moves may count on their room.
+            public readonly HashSet<string> Placing = new HashSet<string>();
+            public readonly List<string> PlaceLines = new List<string>();
+            // The box each entry step 1 places, or a part moves to, fills at its pose.
+            public readonly List<KeyValuePair<LayoutEntry, OBB>> Boxes = new List<KeyValuePair<LayoutEntry, OBB>>();
+            public readonly List<UpgradeShift> Shifts = new List<UpgradeShift>();
+            // Net ids of the old parts that move to the entries replacing them.
+            public readonly Dictionary<ulong, LayoutEntry> Shifting = new Dictionary<ulong, LayoutEntry>();
+            public readonly List<UpgradeStash> Stash = new List<UpgradeStash>();
+            public readonly List<UpgradeRetire> Retire = new List<UpgradeRetire>();
+            public readonly HashSet<ulong> Retiring = new HashSet<ulong>();
+            // Net ids the confirm lifts, moves, or retires: BuriedUnder leaves them out, as the confirm does.
+            public readonly HashSet<ulong> Aside = new HashSet<ulong>();
+            // The occupant box SpawnStructure checks, at each pose step 1 places or a part moves to.
+            public readonly List<KeyValuePair<LayoutEntry, OBB>> Footprints =
+                new List<KeyValuePair<LayoutEntry, OBB>>();
+            public readonly List<StructureRecord> Gone = new List<StructureRecord>();
+            // Retired records whose Id the layout names again.
+            public readonly List<StructureRecord> Unretire = new List<StructureRecord>();
+            public readonly List<string> Regrade = new List<string>();
+            public readonly List<LayoutConnection> Wire = new List<LayoutConnection>();
+            public readonly List<string> Drop = new List<string>();
+            public readonly List<string> Kept = new List<string>();
+            public readonly List<string> Problems = new List<string>();
+            public readonly Dictionary<string, List<UpgradeTarget>> Targets =
+                new Dictionary<string, List<UpgradeTarget>>();
+            public readonly Dictionary<string, UpgradeTarget> TargetsById = new Dictionary<string, UpgradeTarget>();
+            public List<CoopRoom> Coops;
+            public bool Blocked;
+            public long Items;
+            public long ItemsShort;
+            public long Water;
+            public long WaterShort;
+
+            public bool Empty => Place.Count == 0 && Shifts.Count == 0 && Retire.Count == 0 && Gone.Count == 0 &&
+                                 Unretire.Count == 0 && Regrade.Count == 0 && Wire.Count == 0 && Drop.Count == 0;
+
+            public void Problem(string text, bool blocking)
+            {
+                Problems.Add(blocking ? $"{text} (blocks farm.upgrade confirm)" : text);
+                Blocked |= blocking;
+            }
+        }
+
+        // A standing record whose Id left the layout. Carry is the entry replacing it with another prefab, which takes
+        // its items first; Stays says why it stays standing, retired; NoRoom holds what found no room.
+        private class UpgradeRetire
+        {
+            public StructureRecord Rec;
+            public BaseEntity Entity;
+            public LayoutEntry Carry;
+            public string Stays;
+            public bool Gone;
+            public readonly List<string> Chickens = new List<string>();
+            public readonly List<UpgradeMove> Moves = new List<UpgradeMove>();
+            public readonly List<UpgradeMove> NoRoom = new List<UpgradeMove>();
+            // Why each shortname in NoRoom found no room, for one problem line per record.
+            public readonly HashSet<string> NoRoomWhy = new HashSet<string>();
+            public readonly List<string> Links = new List<string>();
+            // A battery's charge handed to the battery replacing it, or lost.
+            public readonly List<string> Notes = new List<string>();
+            public string Threw;
+
+            public bool Bare => Stays == null && !Gone && Carry == null && Chickens.Count == 0 && Moves.Count == 0 &&
+                                NoRoom.Count == 0 && Notes.Count == 0;
+        }
+
+        // An old part moving to the entry that replaces it with the same prefab. Its record takes the entry's Id and
+        // keeps the net id, so its items, crops, chickens, eggs, and charge stay with it.
+        private class UpgradeShift
+        {
+            public StructureRecord Rec;
+            public BaseEntity Entity;
+            public LayoutEntry Entry;
+            public string OldId;
+            public Vector3 From;
+            public Quaternion FromRotation;
+            public Vector3 To;
+            public bool Posed;
+            public bool Done;
+        }
+
+        // An old part lifted out of the new entries' way while they are placed; InWay when it stands in a new entry's
+        // footprint (so it cannot go back there). Settled once it stands at its new pose or back where it stood, or
+        // is gone.
+        private class UpgradeStash
+        {
+            public StructureRecord Rec;
+            public BaseEntity Entity;
+            public string Id;
+            public string Why;
+            public bool InWay;
+            public Vector3 Position;
+            public Quaternion Rotation;
+            public bool Up;
+            public bool Settled;
+        }
+
+        // A standing part PlanOverlaps tests against every box, with its own box worked out once. Kept: the layout
+        // keeps its Id where it stands. Target: the entry it moves to, whose box it may fill.
+        private class OldPart
+        {
+            public string Id;
+            public BaseEntity Entity;
+            public OBB Bounds;
+            public bool Kept;
+            public StructureRecord Rec;
+            public LayoutEntry Target;
+        }
+
+        private class UpgradeMove
+        {
+            public string To;
+            public string Shortname;
+            public long Amount;
+            public bool Water;
+
+            public override string ToString() =>
+                (Water ? $"{Shortname} {Amount} ml" : $"{Shortname} x{Amount}") +
+                (To != null ? $" to {To}" : string.Empty);
+        }
+
+        // A layout entry that takes moved items: its live inventory, or for an entry step 1 places the empty
+        // inventory its prefab starts with. One SimContainer per target serves every source of the plan.
+        private class UpgradeTarget
+        {
+            public string Id;
+            public ItemContainer Container;
+            public SimContainer Room;
+        }
+
+        // Free chicken places of a coop; Coop is null for a coop step 1 places.
+        private class CoopRoom
+        {
+            public string Id;
+            public ChickenCoop Coop;
+            public int Free;
+            public bool Hatching;
+        }
+
+        private class CoopPick
+        {
+            public CoopRoom Room;
+            public int Chickens;
+            public int Eggs;
+        }
+
+        [ConsoleCommand("farm.upgrade")]
+        private void UpgradeCommand(ConsoleSystem.Arg arg)
+        {
+            if (!Authorized(arg) || Refused(arg))
+                return;
+            if (!_data.Built)
+            {
+                arg.ReplyWith("no farm built");
+                return;
+            }
+            int count = arg.Args?.Length ?? 0;
+            bool confirm = count == 1 && arg.GetString(0) == "confirm";
+            if (count > 0 && !confirm)
+            {
+                arg.ReplyWith("usage: farm.upgrade [confirm]; without confirm it only prints the plan");
+                return;
+            }
+            ulong owner = FarmOwner();
+            if (owner == 0)
+            {
+                arg.ReplyWith(NoOwner);
+                return;
+            }
+            if (!confirm)
+            {
+                arg.ReplyWith(UpgradeReport(PlanUpgrade(BeginPass(false))));
+                return;
+            }
+            string reply = Upgrade(owner);
+            SaveWorld("farm.upgrade confirm");
+            arg.ReplyWith(reply);
+        }
+
+        // One farm.status line: what farm.upgrade confirm would do now.
+        private string UpgradeSummary(UpkeepPass pass)
+        {
+            UpgradePlan plan = PlanUpgrade(pass);
+            string problems = plan.Problems.Count == 0 ? "none" : $"{plan.Problems.Count} (farm.upgrade lists them)";
+            if (plan.Empty)
+                return "farm.upgrade: nothing to do" +
+                       (plan.Problems.Count > 0 ? $"; problems: {problems}" : string.Empty);
+            string moving = plan.Items + plan.Water == 0
+                ? "nothing to move"
+                : $"{Quantity(plan.Items, plan.Water)} to move, " + (plan.ItemsShort + plan.WaterShort == 0
+                    ? "all with room"
+                    : $"{Quantity(plan.ItemsShort, plan.WaterShort)} without room");
+            return $"farm.upgrade would place {plan.Place.Count} entries, move {plan.Shifts.Count} records, retire " +
+                   $"{plan.Retire.Count + plan.Gone.Count} records ({moving}), regrade {plan.Regrade.Count} blocks, " +
+                   $"rewire {plan.Wire.Count + plan.Drop.Count} links; problems: {problems}";
+        }
+
+        private static string Quantity(long items, long water) =>
+            water == 0
+                ? $"{items} items"
+                : items == 0
+                    ? $"{water} ml of water"
+                    : $"{items} items and {water} ml of water";
+
+        // Plans the change from the standing farm to the layout without changing anything (BeginPass may still mark
+        // a lost record missing). An old record whose Id leaves the layout moves to the entry that Replaces it with
+        // the same prefab, hands its items to one with another prefab, or retires. Every simulated item move shares
+        // the targets' room, so two sources never count the same space.
+        private UpgradePlan PlanUpgrade(UpkeepPass pass)
+        {
+            _planBases = new Dictionary<string, BaseHeight>();
+            try
+            {
+                return PlanChange(pass);
+            }
+            finally
+            {
+                _planBases = null;
+            }
+        }
+
+        private UpgradePlan PlanChange(UpkeepPass pass)
+        {
+            var plan = new UpgradePlan { Pass = pass };
+            Dictionary<string, LayoutEntry> byId = EntriesById();
+            var replacing = new Dictionary<string, LayoutEntry>();
+            foreach (LayoutEntry entry in _config.Layout.Entries.Where(e => !string.IsNullOrEmpty(e.Replaces)))
+                if (!replacing.ContainsKey(entry.Replaces))
+                    replacing[entry.Replaces] = entry;
+            List<LayoutEntry> missing = MissingEntries(true);
+            var missingIds = new HashSet<string>(missing.Select(e => e.Id));
+            var retiring = new List<UpgradeRetire>();
+            foreach (StructureRecord rec in _data.Structures)
+            {
+                if (rec.Id != null && byId.ContainsKey(rec.Id))
+                {
+                    if (rec.Retired)
+                        plan.Unretire.Add(rec);
+                    continue;
+                }
+                BaseEntity entity = rec.NetId == 0 || rec.Missing ? null : ResolveStructure(rec);
+                LayoutEntry by;
+                replacing.TryGetValue(rec.Id ?? string.Empty, out by);
+                // A mounted part (a sign on a wall) stays parented to its old block, so its replacement is placed new;
+                // so is a building block, which a move would leave in its old building with stale socket links.
+                if (entity == null)
+                    plan.Gone.Add(rec);
+                else if (by != null && missingIds.Contains(by.Id) && SamePrefab(entity, by.Prefab) &&
+                         entity.GetParentEntity() == null && !(entity is BuildingBlock))
+                    plan.Shifts.Add(new UpgradeShift
+                    {
+                        Rec = rec,
+                        Entity = entity,
+                        Entry = by,
+                        OldId = rec.Id,
+                        From = entity.transform.position,
+                        FromRotation = entity.transform.rotation,
+                    });
+                else
+                    retiring.Add(new UpgradeRetire { Rec = rec, Entity = entity, Carry = by });
+            }
+            plan.Shifts.Sort((a, b) => missing.IndexOf(a.Entry).CompareTo(missing.IndexOf(b.Entry)));
+            foreach (UpgradeShift shift in plan.Shifts)
+                plan.Shifting[IdOf(shift.Entity)] = shift.Entry;
+            plan.Place.AddRange(missing.Where(e => plan.Shifts.All(s => s.Entry != e)));
+            // A retiring record has no layout entry, so a block among them has the default layer of everything else:
+            // within a layer, blocks go last and later records (placed later, on top) first.
+            plan.Retire.AddRange(retiring
+                .Select((r, index) => new { r, index })
+                .OrderByDescending(p => LayerOfRecord(p.r.Rec))
+                .ThenBy(p => p.r.Entity is BuildingBlock ? 1 : 0)
+                .ThenByDescending(p => p.index)
+                .Select(p => p.r));
+            foreach (UpgradeRetire r in plan.Retire)
+                plan.Retiring.Add(IdOf(r.Entity));
+            plan.Aside.UnionWith(plan.Retiring);
+            plan.Aside.UnionWith(plan.Shifting.Keys);
+            PlanPlacement(plan, byId);
+            PlanShifts(plan);
+            PlanOverlaps(plan, byId);
+            PlanSupport(plan);
+            foreach (UpgradeRetire r in plan.Retire)
+            {
+                bool planned = false;
+                Guard("upgrade", $"plan {r.Rec.Id}", () =>
+                {
+                    PlanRetire(plan, r);
+                    planned = true;
+                });
+                if (!planned)
+                    plan.Problem($"planning the retirement of {r.Rec.Id} threw (the log has it)", true);
+            }
+            foreach (LayoutEntry entry in _config.Layout.Entries)
+            {
+                string line = RegradeStep(entry, pass, false);
+                if (line != null)
+                    plan.Regrade.Add(line);
+            }
+            plan.Wire.AddRange(_config.Layout.Connections.Where(link => !IsWired(link, pass)));
+            PlanKept(plan);
+            return plan;
+        }
+
+        // Step 1: the missing entries no old part moves into, grouped by building with the base height T each would
+        // use, then the rest by role. An entry whose pose fails (a refused base height, a spot off its block, no
+        // water, a ground check) would fail to place, so no move counts on it.
+        private void PlanPlacement(UpgradePlan plan, Dictionary<string, LayoutEntry> byId)
+        {
+            var refused = new HashSet<string>();
+            foreach (IGrouping<string, LayoutEntry> group in plan.Place
+                         .Where(e => BuildingOf(e, byId) != null)
+                         .GroupBy(e => BuildingOf(e, byId)))
+            {
+                float t;
+                string how;
+                string head = $"{group.Key}: {group.Count()} entries ({RoleCounts(group)})";
+                string ids = IdRanges(group.Select(e => e.Id));
+                if (PreviewBuildingBase(group.Key, out t, out how))
+                {
+                    plan.PlaceLines.Add($"{head}, base {t:0.00} m ({how}): {ids}");
+                    continue;
+                }
+                refused.Add(group.Key);
+                plan.PlaceLines.Add($"{head}, base refused ({how}): {ids}");
+                plan.Problem($"building {group.Key}: {how}; its {group.Count()} entries would fail to place", true);
+            }
+            foreach (IGrouping<string, LayoutEntry> group in plan.Place
+                         .Where(e => BuildingOf(e, byId) == null)
+                         .GroupBy(e => e.Role))
+                plan.PlaceLines.Add($"{group.Key} x{group.Count()}: {IdRanges(group.Select(e => e.Id))}");
+            foreach (LayoutEntry entry in plan.Place)
+            {
+                LayoutEntry on;
+                string building = BuildingOf(entry, byId);
+                if (building == null && entry.On != null && byId.TryGetValue(entry.On, out on))
+                    building = BuildingOf(on, byId);
+                if (building != null && refused.Contains(building))
+                    continue;
+                Vector3 position;
+                Quaternion rotation;
+                string problem;
+                if (!EntryPose(entry, plan.Aside, true, out position, out rotation, out problem))
+                {
+                    plan.Problem($"{entry.Id} would fail to place: {problem}", true);
+                    continue;
+                }
+                plan.Placing.Add(entry.Id);
+                plan.Boxes.Add(new KeyValuePair<LayoutEntry, OBB>(entry, EntryBox(entry, position, rotation)));
+                plan.Footprints.Add(new KeyValuePair<LayoutEntry, OBB>(entry,
+                    FootprintAt(entry.Prefab, position, rotation)));
+            }
+        }
+
+        private static string RoleCounts(IEnumerable<LayoutEntry> entries) =>
+            string.Join(", ", entries.GroupBy(e => e.Role).Select(g => $"{g.Key} x{g.Count()}"));
+
+        // Each moving part's new pose, checked as Place checks the entry; a failed check refuses confirm. Its wires and
+        // hoses go (their points would be stale) and WiringStep makes the layout's again.
+        private void PlanShifts(UpgradePlan plan)
+        {
+            foreach (UpgradeShift shift in plan.Shifts)
+            {
+                foreach (string link in IoLinks(shift.Entity).Where(l => !plan.Drop.Contains(l)))
+                    plan.Drop.Add(link);
+                Vector3 position;
+                Quaternion rotation;
+                string problem;
+                if (!EntryPose(shift.Entry, plan.Aside, false, out position, out rotation, out problem))
+                {
+                    plan.Problem($"{shift.OldId} cannot move to {shift.Entry.Id}: {problem}", true);
+                    continue;
+                }
+                shift.To = position;
+                shift.Posed = true;
+                plan.Boxes.Add(new KeyValuePair<LayoutEntry, OBB>(shift.Entry,
+                    EntryBox(shift.Entry, position, rotation)));
+                plan.Footprints.Add(new KeyValuePair<LayoutEntry, OBB>(shift.Entry,
+                    FootprintAt(shift.Entry.Prefab, position, rotation)));
+            }
+        }
+
+        // Every replaced part, and every other old part in the way of an entry step 1 places or a part moves to (its
+        // box at its pose), rises out of the way for the placement; a part parented to an old part rides along with
+        // it. A kept part in the way, or a player or animal in a footprint, refuses confirm.
+        private void PlanOverlaps(UpgradePlan plan, Dictionary<string, LayoutEntry> byId)
+        {
+            var occupied = new Dictionary<string, List<string>>();
+            foreach (UpgradeShift shift in plan.Shifts)
+                AddStash(plan, shift.Rec, shift.Entity, $"{shift.Entry.Id} replaces it", false);
+            // A part parented to an old part rides along with it; lifting it too would raise it twice.
+            foreach (UpgradeRetire r in plan.Retire.Where(r => r.Carry != null && !ParentedToRecord(r.Entity)))
+                AddStash(plan, r.Rec, r.Entity, $"{r.Carry.Id} replaces it", false);
+            foreach (KeyValuePair<LayoutEntry, OBB> footprint in plan.Footprints)
+            {
+                string occupant = Occupant(footprint.Value);
+                if (occupant != null)
+                    AddTo(occupied, occupant, footprint.Key.Id);
+            }
+            if (plan.Boxes.Count == 0)
+            {
+                ReportOccupied(plan, occupied);
+                return;
+            }
+            Dictionary<string, StructureRecord> records = RecordsById();
+            var parts = new List<OldPart>();
+            foreach (KeyValuePair<string, BaseEntity> old in plan.Pass.Ids)
+            {
+                BaseEntity entity = old.Value;
+                BaseEntity parent = entity.GetParentEntity();
+                if (parent != null && _structureIds.Contains(IdOf(parent)))
+                    continue;
+                StructureRecord rec;
+                LayoutEntry target;
+                records.TryGetValue(old.Key, out rec);
+                plan.Shifting.TryGetValue(IdOf(entity), out target);
+                parts.Add(new OldPart
+                {
+                    Id = old.Key,
+                    Entity = entity,
+                    Bounds = entity.WorldSpaceBounds(),
+                    Kept = byId.ContainsKey(old.Key),
+                    Rec = rec,
+                    Target = target,
+                });
+            }
+            List<Surface> surfaces = Surfaces();
+            var blocking = new Dictionary<string, List<string>>();
+            foreach (KeyValuePair<LayoutEntry, OBB> box in plan.Boxes)
+            {
+                OBB inner = Resize(box.Value, -KeptSlack);
+                foreach (OldPart part in parts)
+                {
+                    if (part.Target == box.Key)
+                        continue;
+                    if (part.Kept)
+                    {
+                        // The box test goes first: MayTouch can look for the block under the part.
+                        if (inner.Intersects(part.Bounds) && !MayTouch(box.Key, part.Id, part.Entity, byId, surfaces))
+                            AddTo(blocking, part.Id, box.Key.Id);
+                    }
+                    else if (part.Rec != null && box.Value.Intersects(part.Bounds))
+                    {
+                        AddStash(plan, part.Rec, part.Entity, $"it stands in the footprint of {box.Key.Id}", true);
+                    }
+                }
+            }
+            ReportOccupied(plan, occupied);
+            foreach (KeyValuePair<string, List<string>> pair in blocking)
+                plan.Problem($"{pair.Key}, which the layout keeps where it stands, is in the footprint of " +
+                             IdRanges(pair.Value), true);
+        }
+
+        private static void ReportOccupied(UpgradePlan plan, Dictionary<string, List<string>> occupied)
+        {
+            foreach (KeyValuePair<string, List<string>> pair in occupied)
+                plan.Problem($"{pair.Key} stands in the footprint of {IdRanges(pair.Value)}", true);
+        }
+
+        private bool ParentedToRecord(BaseEntity entity)
+        {
+            BaseEntity parent = entity == null ? null : entity.GetParentEntity();
+            return parent != null && _structureIds.Contains(IdOf(parent));
+        }
+
+        private void AddStash(UpgradePlan plan, StructureRecord rec, BaseEntity entity, string why, bool inWay)
+        {
+            if (entity == null)
+                return;
+            UpgradeStash stash = StashOf(plan, entity);
+            if (stash == null)
+            {
+                plan.Stash.Add(new UpgradeStash
+                {
+                    Rec = rec,
+                    Entity = entity,
+                    Id = rec?.Id ?? NameOf(entity),
+                    Why = why,
+                    InWay = inWay,
+                });
+                return;
+            }
+            if (inWay && !stash.InWay)
+                stash.Why += $"; {why}";
+            stash.InWay |= inWay;
+        }
+
+        private static void AddTo(Dictionary<string, List<string>> lists, string key, string value)
+        {
+            List<string> list;
+            if (!lists.TryGetValue(key, out list))
+                lists[key] = list = new List<string>();
+            if (!list.Contains(value))
+                list.Add(value);
+        }
+
+        // The box grown (or shrunk, by a negative amount) on every side.
+        private static OBB Resize(OBB box, float by) =>
+            new OBB(box.position, 2f * new Vector3(Mathf.Max(0.01f, box.extents.x + by),
+                Mathf.Max(0.01f, box.extents.y + by), Mathf.Max(0.01f, box.extents.z + by)), box.rotation);
+
+        // A kept part a new entry rests against by design: its support (On, Parent, up the parent chain), a block of
+        // its own building, anything standing on a block of that building (the herd's cupboard under the shelter
+        // roof), or, for a fence or gate, another fence or gate (rails meet end to end and at corners).
+        private bool MayTouch(LayoutEntry entry, string keptId, BaseEntity keptEntity,
+            Dictionary<string, LayoutEntry> byId, List<Surface> surfaces)
+        {
+            LayoutEntry e = entry;
+            for (int depth = 0; e != null && depth < 16; depth++)
+            {
+                if (e.On == keptId || e.Parent == keptId)
+                    return true;
+                LayoutEntry parent;
+                e = e.Parent != null && byId.TryGetValue(e.Parent, out parent) ? parent : null;
+            }
+            LayoutEntry kept;
+            if (!byId.TryGetValue(keptId, out kept))
+                return false;
+            if (IsPenLine(entry.Role) && IsPenLine(kept.Role))
+                return true;
+            string building = BuildingOf(entry, byId);
+            if (building == null)
+                return false;
+            if (BuildingOf(kept, byId) == building)
+                return true;
+            BuildingBlock under = BlockUnder(keptEntity.transform.position, true, surfaces);
+            LayoutEntry underEntry;
+            return under != null && byId.TryGetValue(NameOf(under), out underEntry) &&
+                   BuildingOf(underEntry, byId) == building;
+        }
+
+        // The herd's cupboard must not retire, and the block it stands on (ReattachCupboard's BlockUnder) must not
+        // retire or move away. Any other kept part standing on a foundation or floor that retires or moves away is
+        // reported: it would stand on nothing, and a block standing there may collapse.
+        private void PlanSupport(UpgradePlan plan)
+        {
+            foreach (UpgradeRetire r in plan.Retire.Where(r => r.Rec.Role == RoleCupboard))
+                plan.Problem($"the plan retires the herd's cupboard {r.Rec.Id}; the layout must keep its entry", true);
+            List<BuildingBlock> surfaces = plan.Retire.Select(r => r.Entity)
+                .Concat(plan.Shifts.Select(s => s.Entity))
+                .OfType<BuildingBlock>()
+                .Where(b => IsSurfacePrefab(b.PrefabName))
+                .ToList();
+            if (surfaces.Count == 0)
+                return;
+            BuildingPrivlidge cupboard = plan.Pass.Cupboard;
+            BuildingBlock home = cupboard == null || plan.Shifting.ContainsKey(IdOf(cupboard))
+                ? null
+                : BlockUnder(cupboard.transform.position, true);
+            if (home != null && (plan.Retiring.Contains(IdOf(home)) || plan.Shifting.ContainsKey(IdOf(home))))
+                plan.Problem($"the plan retires or moves {NameOf(home)}, which the herd's cupboard " +
+                             $"{NameOf(cupboard)} stands on; the layout must keep its entry", true);
+            foreach (KeyValuePair<string, BaseEntity> pair in plan.Pass.Ids)
+            {
+                BaseEntity entity = pair.Value;
+                ulong id = IdOf(entity);
+                if (entity == cupboard || plan.Retiring.Contains(id) || plan.Shifting.ContainsKey(id))
+                    continue;
+                foreach (BuildingBlock block in surfaces)
+                {
+                    Vector3 local = block.transform.InverseTransformPoint(entity.transform.position);
+                    if (local.y < -OnTolerance || local.y > StandsOnHeight ||
+                        !OnFootprint(local, IsTrianglePrefab(block.PrefabName)))
+                        continue;
+                    plan.Problem($"{pair.Key} stands on {NameOf(block)}, which retires or moves away; {pair.Key} " +
+                                 "stays where it is, " +
+                                 (entity is StabilityEntity ? "and may collapse" : "on nothing"), false);
+                    break;
+                }
+            }
+            // A part that is not the farm's dies with its ground (GroundWatch) and drops what it holds.
+            foreach (BuildingBlock block in surfaces)
+            {
+                var found = new List<BaseEntity>();
+                Vis.Entities(block.WorldSpaceBounds(), found,
+                    Rust.Layers.Mask.Deployed | Rust.Layers.Mask.Construction);
+                foreach (BaseEntity entity in found)
+                {
+                    BaseEntity parent = entity == null ? null : entity.GetParentEntity();
+                    if (entity == null || entity.IsDestroyed || entity == block || !(entity is DecayEntity) ||
+                        _structureIds.Contains(IdOf(entity)) ||
+                        (parent != null && _structureIds.Contains(IdOf(parent))))
+                        continue;
+                    Vector3 local = block.transform.InverseTransformPoint(entity.transform.position);
+                    if (local.y < -OnTolerance || local.y > StandsOnHeight ||
+                        !OnFootprint(local, IsTrianglePrefab(block.PrefabName)))
+                        continue;
+                    plan.Problem($"{NameOf(entity)}, which is not the farm's, stands on {NameOf(block)}, which " +
+                                 "retires or moves away; move it first, or it falls with what it holds", true);
+                }
+            }
+        }
+
+        // One retiring record: a planter with plants, or anything with a part attached that a kill would take along,
+        // stays; a coop first finds places for all of its chickens and hatching eggs (in its replacement first) or
+        // keeps them, and its items with them; everything else moves into its replacement, then by the item and
+        // water rules. One that stays but stands in a new entry's footprint refuses confirm: it could not go back.
+        private void PlanRetire(UpgradePlan plan, UpgradeRetire r)
+        {
+            BaseEntity entity = r.Entity;
+            r.Links.AddRange(IoLinks(entity));
+            foreach (string link in r.Links.Where(l => !plan.Drop.Contains(l)))
+                plan.Drop.Add(link);
+            // A static planter replants itself on a timer: its ripe crops go to the feed box and the rest go with it.
+            int plants = entity is PlanterBoxStatic ? 0 : PlantCount(entity);
+            string attached = plants > 0 ? null : Attached(entity, plan.Retiring);
+            var coop = entity as ChickenCoop;
+            if (entity is PlanterBoxStatic)
+                r.Notes.Add("its ripe crops go to the feed box first, and its other plants go with it");
+            if (plants > 0)
+            {
+                r.Stays = PlantsText(plants);
+            }
+            else if (attached != null)
+            {
+                r.Stays = $"{attached} is attached to it, and a kill would take it along";
+                plan.Problem($"{r.Rec.Id} stays standing, retired, with its items: {r.Stays}", false);
+            }
+            else if (coop != null && !ReserveCoops(plan, r, coop, false))
+            {
+                plan.Problem($"{r.Rec.Id}: {r.Stays}", false);
+            }
+            UpgradeStash stash = StashOf(plan, entity);
+            if (r.Stays != null)
+            {
+                if (stash != null && stash.InWay)
+                    plan.Problem($"{r.Rec.Id} cannot retire ({r.Stays}) and stands in a new entry's footprint, " +
+                                 "where it cannot go back", true);
+                return;
+            }
+            foreach (Item item in StoredItems(entity))
+                PlanMove(plan, r, item, false);
+            foreach (Item item in StoredWater(entity))
+                PlanMove(plan, r, item, true);
+            if (r.NoRoom.Count > 0)
+                plan.Problem($"no room for {string.Join(", ", r.NoRoom)} from {r.Rec.Id} ({r.Rec.Role}): " +
+                             string.Join("; ", r.NoRoomWhy), true);
+            var battery = entity as ElectricBattery;
+            if (battery == null || battery.rustWattSeconds < 1f)
+                return;
+            GameObject carry = r.Carry == null ? null : PrefabObject(r.Carry.Prefab);
+            ElectricBattery to = carry == null ? null : carry.GetComponent<ElectricBattery>();
+            if (to == null)
+            {
+                r.Notes.Add($"its charge of {battery.rustWattSeconds:0} rW s goes with it (no battery replaces it)");
+                return;
+            }
+            float moved = Mathf.Min(battery.rustWattSeconds, to.maxCapactiySeconds);
+            r.Notes.Add($"charge {moved:0} rW s to {r.Carry.Id}" + (moved < battery.rustWattSeconds
+                ? $"; {battery.rustWattSeconds - moved:0} rW s more than {r.Carry.Id} holds goes with it"
+                : string.Empty));
+        }
+
+        // A retiring battery's charge goes to the battery replacing it (another prefab), up to that one's capacity.
+        private void CarryCharge(UpgradePlan live, UpgradeRetire done, BaseEntity entity)
+        {
+            var from = entity as ElectricBattery;
+            var to = done.Carry == null ? null : live.Pass.ById(done.Carry.Id) as ElectricBattery;
+            if (from == null || from.rustWattSeconds < 1f)
+                return;
+            if (to == null)
+            {
+                done.Notes.Add($"its charge of {from.rustWattSeconds:0} rW s went with it (no battery replaces it)");
+                return;
+            }
+            float moved = Mathf.Min(from.rustWattSeconds, Mathf.Max(0f, to.maxCapactiySeconds - to.rustWattSeconds));
+            to.rustWattSeconds += moved;
+            from.rustWattSeconds -= moved;
+            to.SendNetworkUpdate();
+            done.Notes.Add($"charge {moved:0} rW s to {done.Carry.Id}" + (from.rustWattSeconds >= 1f
+                ? $", {from.rustWattSeconds:0} over its capacity lost"
+                : string.Empty));
+        }
+
+        private static string PlantsText(int plants) =>
+            $"holds {plants} plants, which the farm harvests until they are gone";
+
+        private void PlanMove(UpgradePlan plan, UpgradeRetire r, Item item, bool water)
+        {
+            List<string> roles = water ? WaterRoles(r.Rec.Role) : ItemRoles(r.Rec.Role, item.info);
+            List<UpgradeTarget> targets = MoveTargets(plan, r, roles, water);
+            string shortname = item.info.shortname;
+            long left = item.amount;
+            foreach (UpgradeTarget target in targets)
+            {
+                if (left <= 0)
+                    break;
+                long taken = target.Room.Take(item, left);
+                if (taken > 0)
+                    AddMove(r.Moves, target.Id, shortname, taken, water);
+                left -= taken;
+            }
+            if (water)
+            {
+                plan.Water += item.amount;
+                plan.WaterShort += left;
+            }
+            else
+            {
+                plan.Items += item.amount;
+                plan.ItemsShort += left;
+            }
+            if (left <= 0)
+                return;
+            AddMove(r.NoRoom, null, shortname, left, water);
+            r.NoRoomWhy.Add(targets.Count == 0
+                ? $"nothing of role {string.Join(", ", roles)} stands or is placed to take {shortname}"
+                : $"{string.Join(", ", targets.Select(t => t.Id))} have no room left for {shortname}");
+        }
+
+        private static void AddMove(List<UpgradeMove> moves, string to, string shortname, long amount, bool water)
+        {
+            UpgradeMove move = moves.FirstOrDefault(m => m.To == to && m.Shortname == shortname && m.Water == water);
+            if (move == null)
+                moves.Add(new UpgradeMove { To = to, Shortname = shortname, Amount = amount, Water = water });
+            else
+                move.Amount += amount;
+        }
+
+        // Layout entries whose standing record has another prefab or role than the entry, or stands more than 1 m
+        // across from the entry's spot. An Id that stays keeps its record where it stands; moving a part takes a new
+        // Id that Replaces the old one.
+        private void PlanKept(UpgradePlan plan)
+        {
+            Dictionary<string, StructureRecord> records = RecordsById();
+            foreach (LayoutEntry entry in _config.Layout.Entries)
+            {
+                BaseEntity entity = plan.Pass.ById(entry.Id);
+                StructureRecord rec;
+                if (entity == null || !records.TryGetValue(entry.Id, out rec))
+                    continue;
+                var why = new List<string>();
+                if (!string.Equals(rec.Prefab, entry.Prefab, StringComparison.OrdinalIgnoreCase))
+                    why.Add($"it is a {entity.ShortPrefabName}, the layout names " +
+                            Path.GetFileNameWithoutExtension(entry.Prefab ?? string.Empty));
+                if (rec.Role != entry.Role)
+                    why.Add($"its record keeps role {rec.Role}, the layout says {entry.Role}");
+                Vector3 spot = FarmPoint(entry.X, entry.Z);
+                Vector3 at = entity.transform.position;
+                float across = new Vector2(at.x - spot.x, at.z - spot.z).magnitude;
+                if (across > KeptDistance)
+                    why.Add($"it stands {across:0.0} m from its layout spot");
+                if (why.Count > 0)
+                    plan.Kept.Add($"{entry.Id}: {string.Join("; ", why)}");
+            }
+        }
+
+        // farm.upgrade confirm: plans again and applies the plan in this one call, or changes nothing while a problem
+        // blocks it. Order: lift what is in the way, place, move the replaced parts (then place what waited for
+        // them), carry over and retire, put back what could not retire, regrade, wire. A throw anywhere still puts
+        // every lifted part back.
+        private string Upgrade(ulong owner)
+        {
+            UpgradePlan plan = PlanUpgrade(BeginPass());
+            if (plan.Blocked)
+                return "farm.upgrade confirm refused; nothing changed\n" + UpgradeReport(plan);
+            if (plan.Empty)
+                return UpgradeReport(plan);
+            var lines = new List<string> { "farm.upgrade done:" };
+            var placed = new List<string>();
+            var moved = new List<string>();
+            var retired = new List<UpgradeRetire>();
+            var threw = new List<string>();
+            var dropped = new List<string>();
+            var errors = new List<string>();
+            var inPlace = new HashSet<string>();
+            bool trouble = false;
+            // Guard for this one call: every throw reaches the reply and is logged even when it repeats.
+            Action<string, Action> step = (what, action) =>
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception e)
+                {
+                    errors.Add($"{what}: {e.GetType().Name}: {e.Message}");
+                    Failure($"error:upgrade:{what}", $"upgrade: {what} threw {e}", "failure", 0f);
+                }
+            };
+            foreach (StructureRecord rec in plan.Unretire)
+                rec.Retired = false;
+            try
+            {
+                foreach (UpgradeStash stash in plan.Stash)
+                    step($"unwire {stash.Id}", () => dropped.AddRange(Unwire(stash.Entity)));
+                foreach (UpgradeShift shift in plan.Shifts.Where(sh => StashOf(plan, sh.Entity) == null))
+                    step($"unwire {shift.OldId}", () => dropped.AddRange(Unwire(shift.Entity)));
+                foreach (UpgradeStash stash in plan.Stash)
+                    step($"lift {stash.Id}", () => Lift(stash));
+                Physics.SyncTransforms();
+                PlaceTally first = null;
+                if (plan.Place.Count > 0)
+                {
+                    first = PlaceUpgrade(plan.Place, owner, plan.Retiring.Concat(plan.Shifting.Keys));
+                    inPlace.UnionWith(first.InPlaceIds);
+                    placed.Add(PlaceText(first));
+                    trouble |= first.Failed + first.DeferredIds.Count > 0;
+                }
+                // A placement the plan passed failed after all: nothing moves or retires, and the finally puts every
+                // lifted part back, retired, where it stood.
+                bool stop = first != null && first.Failed > 0;
+                if (stop)
+                    lines.Add($"stopped after placing, so nothing moved or retired: {first.Failed} entries failed " +
+                              $"({string.Join(", ", first.FailedIds)}; farm.status lists why)");
+                foreach (UpgradeShift shift in stop ? new List<UpgradeShift>() : plan.Shifts)
+                    step($"move {shift.OldId}", () =>
+                    {
+                        moved.Add(ShiftNow(plan, shift));
+                        Physics.SyncTransforms();
+                    });
+                foreach (UpgradeShift shift in plan.Shifts.Where(s => s.Done))
+                    step($"settle {shift.Entry.Id}", () => Settle(shift.Entity));
+                trouble |= plan.Shifts.Any(s => !s.Done);
+                if (first != null && first.DeferredIds.Count > 0 && plan.Shifts.Any(s => s.Done))
+                {
+                    List<LayoutEntry> again = MissingEntries(true).Where(e => first.DeferredIds.Contains(e.Id))
+                        .ToList();
+                    if (again.Count > 0)
+                    {
+                        PlaceTally later = PlaceUpgrade(again, owner, plan.Retiring);
+                        inPlace.UnionWith(later.InPlaceIds);
+                        placed.Add("after the moves, " + PlaceText(later));
+                    }
+                }
+                var live = new UpgradePlan { Pass = BeginPass(), Live = true };
+                live.Retiring.UnionWith(plan.Retiring);
+                foreach (UpgradeRetire r in stop ? new List<UpgradeRetire>() : plan.Retire)
+                {
+                    UpgradeRetire done = null;
+                    step($"retire {r.Rec.Id}", () => done = RetireNow(live, r, StashOf(plan, r.Entity)));
+                    if (done?.Threw != null)
+                        errors.Add($"retire {r.Rec.Id}: {done.Threw}");
+                    if (done != null)
+                        retired.Add(done);
+                    else
+                        threw.Add(r.Rec.Id);
+                }
+            }
+            catch (Exception e)
+            {
+                Failure("upgrade", "farm.upgrade confirm threw midway; every lifted part goes back where it stood: " +
+                                   e, "failure", 0f);
+                lines.Add($"threw midway ({e.GetType().Name}: {e.Message}); the log has the trace");
+                trouble = true;
+            }
+            finally
+            {
+                foreach (UpgradeStash stash in plan.Stash.Where(s => s.Up && !s.Settled))
+                    step($"put back {stash.Id}", () =>
+                    {
+                        if (stash.Rec != null)
+                            stash.Rec.Retired = true;
+                        PutBack(stash);
+                        threw.Add(stash.InWay ? $"{stash.Id} (back where it stood, {stash.Why})" : stash.Id);
+                    });
+                Physics.SyncTransforms();
+            }
+            foreach (StructureRecord rec in plan.Gone)
+            {
+                _data.Structures.Remove(rec);
+                _repairs.Remove(rec.Id);
+            }
+            _penHull = null;
+            if (placed.Count > 0)
+                lines.Add($"placed: {string.Join("; ", placed)}");
+            if (moved.Count > 0)
+            {
+                lines.Add($"moved {plan.Shifts.Count(s => s.Done)} of {plan.Shifts.Count} records:");
+                lines.AddRange(moved.Select(m => "  " + m));
+            }
+            AppendRetire(lines, retired, plan.Gone, plan.Unretire, true);
+            if (threw.Count > 0)
+                lines.Add("  threw, so these stay standing, retired, where they stood: " +
+                          string.Join(", ", threw.Distinct()));
+            UpkeepPass after = BeginPass();
+            var regraded = new List<string>();
+            foreach (LayoutEntry entry in _config.Layout.Entries)
+                step($"regrade {entry.Id}", () =>
+                {
+                    string line = RegradeStep(entry, after, true);
+                    if (line != null)
+                        regraded.Add(line);
+                });
+            if (regraded.Count > 0)
+                lines.Add($"regraded: {string.Join("; ", regraded)}");
+            step("wiring", () => WiringStep(BeginPass()));
+            UpkeepPass wired = BeginPass();
+            List<LayoutConnection> unwired = plan.Wire.Where(link => !IsWired(link, wired)).ToList();
+            int wiredCount = plan.Wire.Count - unwired.Count;
+            if (wiredCount > 0)
+                lines.Add($"wired: {string.Join("; ", plan.Wire.Except(unwired))}");
+            if (unwired.Count > 0)
+                lines.Add($"not wired: {string.Join("; ", unwired.Select(link => UnwiredText(link, wired)))}");
+            dropped = dropped.Concat(retired.SelectMany(r => r.Links)).Distinct().ToList();
+            if (dropped.Count > 0)
+                lines.Add($"links dropped: {string.Join("; ", dropped)}");
+            step("cupboard", ReattachCupboard);
+            var planters = new HashSet<string>(plan.Place.Where(e => e.Role == RolePlanter && inPlace.Contains(e.Id))
+                .Select(e => e.Id));
+            if (planters.Count > 0)
+                step("starter clones", () => StockStarterClones(BeginPass(), planters));
+            if (plan.Kept.Count > 0)
+            {
+                lines.Add("kept where it stands (an Id that stays never moves; a new Id that Replaces it does):");
+                lines.AddRange(plan.Kept.Select(k => "  " + k));
+            }
+            if (plan.Problems.Count > 0)
+            {
+                lines.Add($"problems the plan reported ({plan.Problems.Count}):");
+                lines.AddRange(plan.Problems.Select(p => "  " + p));
+            }
+            if (errors.Count > 0)
+            {
+                lines.Add($"threw ({errors.Count}; the log has each trace):");
+                lines.AddRange(errors.Select(e => "  " + e));
+            }
+            int stayed = retired.Count(r => r.Stays != null) + threw.Distinct().Count();
+            trouble |= stayed > 0 || unwired.Count > 0 || errors.Count > 0;
+            Event("upgrade", (placed.Count > 0 ? $"placed {string.Join("; ", placed)}; " : string.Empty) +
+                             $"moved {plan.Shifts.Count(s => s.Done)} of {plan.Shifts.Count} records; retired " +
+                             $"{retired.Count + threw.Distinct().Count() + plan.Gone.Count} records ({stayed} stay " +
+                             $"standing, retired); regraded {regraded.Count} blocks; wired {wiredCount} of " +
+                             $"{plan.Wire.Count} links; dropped {dropped.Count} links", trouble);
+            foreach (string line in lines.Skip(1))
+                Puts($"upgrade: {line.Trim()}");
+            return string.Join("\n", lines);
+        }
+
+        // Why a link of the plan is not wired after confirm: an end that is not placed yet, or one that is missing or
+        // no IO entity; anything else is in the wiring line of the log.
+        private string UnwiredText(LayoutConnection link, UpkeepPass pass)
+        {
+            Dictionary<string, StructureRecord> records = RecordsById();
+            StructureRecord rec;
+            string waiting = new[] { link.From, link.To }.FirstOrDefault(id =>
+                !records.TryGetValue(id ?? string.Empty, out rec) || NotYetPlaced(rec));
+            if (waiting != null)
+                return $"{link} (waits for {waiting}, which is not placed yet)";
+            string missing = new[] { link.From, link.To }.FirstOrDefault(id => IoEnd(pass.ById(id)) == null);
+            return missing != null
+                ? $"{link} ({missing} is missing or not an IO entity)"
+                : $"{link} (the wiring line in the log says why)";
+        }
+
+        // Places entries the way farm.repair does, with BuriedUnder ignoring the old parts this upgrade lifts,
+        // moves, or retires.
+        private PlaceTally PlaceUpgrade(List<LayoutEntry> entries, ulong owner, IEnumerable<ulong> old)
+        {
+            PlaceTally tally;
+            _retiring.UnionWith(old);
+            try
+            {
+                tally = PlaceMissing(entries, owner, "upgrade");
+            }
+            finally
+            {
+                _retiring.Clear();
+            }
+            float now = Time.realtimeSinceStartup;
+            foreach (string id in tally.InPlaceIds)
+                _repairs.Remove(id);
+            foreach (string id in tally.FailedIds)
+                BackOff(id, now);
+            foreach (string id in tally.DeferredIds)
+            {
+                RepairState state = RepairOf(id);
+                state.Waiting = true;
+                state.WaitingFor = tally.WaitReason(id);
+            }
+            Physics.SyncTransforms();
+            return tally;
+        }
+
+        private static string PlaceText(PlaceTally tally) =>
+            $"{tally.Placed} placed, {tally.Adopted} adopted, {tally.Failed} failed" +
+            (tally.FailedIds.Count > 0 ? $" ({string.Join(", ", tally.FailedIds)})" : string.Empty) +
+            (tally.DeferredIds.Count > 0
+                ? $", {tally.DeferredIds.Count} {tally.WaitingText()} (farm.upgrade confirm or farm.repair " +
+                  "places them later)"
+                : string.Empty);
+
+        private static UpgradeStash StashOf(UpgradePlan plan, BaseEntity entity) =>
+            entity == null ? null : plan.Stash.FirstOrDefault(s => s.Entity == entity);
+
+        // Raises the part with what is parented to it, with no network update: clients only ever see where it ends.
+        private static void Lift(UpgradeStash stash)
+        {
+            Transform transform = stash.Entity.transform;
+            stash.Position = transform.position;
+            stash.Rotation = transform.rotation;
+            transform.position = stash.Position + Vector3.up * StashHeight;
+            stash.Up = true;
+        }
+
+        // Sets a lifted part down silently where it stood, so the navmesh rebuild of a following MoveEntity or kill
+        // covers that spot rather than the lifted one.
+        private static void Unlift(UpgradeStash stash)
+        {
+            if (stash.Up && stash.Entity != null && !stash.Entity.IsDestroyed)
+                stash.Entity.transform.SetPositionAndRotation(stash.Position, stash.Rotation);
+            stash.Up = false;
+        }
+
+        private static void PutBack(UpgradeStash stash)
+        {
+            bool up = stash.Up;
+            Unlift(stash);
+            stash.Settled = true;
+            if (up && stash.Entity != null && !stash.Entity.IsDestroyed)
+                MoveEntity(stash.Entity, stash.Position, stash.Rotation);
+        }
+
+        // Moves a replaced part to its entry's pose and re-keys its record, or puts it back where it stood, retired,
+        // when its pose fails now or what it rests on did not get placed.
+        private string ShiftNow(UpgradePlan plan, UpgradeShift shift)
+        {
+            UpgradeStash stash = StashOf(plan, shift.Entity);
+            LayoutEntry entry = shift.Entry;
+            if (shift.Entity == null || shift.Entity.IsDestroyed)
+            {
+                if (stash != null)
+                    stash.Settled = true;
+                _data.Structures.Remove(shift.Rec);
+                _repairs.Remove(shift.OldId);
+                return $"{shift.OldId} was gone before it could move to {entry.Id}; dropped from the record, and " +
+                       $"farm.repair places {entry.Id}";
+            }
+            Vector3 position = Vector3.zero;
+            Quaternion rotation = Quaternion.identity;
+            string problem = null;
+            string support = new[] { entry.On, entry.Parent }
+                .FirstOrDefault(id => !string.IsNullOrEmpty(id) && StandingBlock(id) == null);
+            if (support != null)
+                problem = $"{support}, which it rests on, is not in place";
+            else if (!EntryPose(entry, plan.Aside, false, out position, out rotation, out problem))
+                problem = problem ?? "its pose check failed";
+            if (problem != null)
+            {
+                shift.Rec.Retired = true;
+                if (stash != null)
+                    PutBack(stash);
+                IoEnd(shift.Entity)?.DisconnectAll();
+                return $"{shift.OldId} stays standing, retired, where it stood instead of moving to {entry.Id}: " +
+                       problem + (stash != null && stash.InWay ? $"; back where it stood, {stash.Why}" : string.Empty);
+            }
+            try
+            {
+                if (stash != null)
+                    Unlift(stash);
+                MoveEntity(shift.Entity, position, rotation);
+                Rekey(shift.Rec, entry, shift.Entity);
+                DecayEntity mount = entry.Mount ? ParentEntity(entry) : null;
+                if (mount != null)
+                    shift.Entity.SetParent(mount, true);
+            }
+            catch
+            {
+                // Retired where it stood, as for a failed pose; the caller reports the throw.
+                shift.Rec.Retired = true;
+                if (shift.Rec.Id != shift.OldId)
+                    shift.Rec.Id = shift.OldId;
+                if (!shift.Entity.IsDestroyed)
+                    MoveEntity(shift.Entity, stash?.Position ?? shift.From, stash?.Rotation ?? shift.FromRotation);
+                if (stash != null)
+                    stash.Settled = true;
+                throw;
+            }
+            if (stash != null)
+                stash.Settled = true;
+            shift.Done = true;
+            return $"{shift.OldId} to {entry.Id}: {Where(shift.From)} to {Where(position)}";
+        }
+
+        // The moved part's record becomes the entry's, as Place would have recorded it; the net id stays, and so
+        // does the repair backoff, under the new Id.
+        private void Rekey(StructureRecord rec, LayoutEntry entry, BaseEntity entity)
+        {
+            string old = rec.Id;
+            _data.Structures.RemoveAll(r => r != rec && r.Id == entry.Id);
+            Vector3 at = entity.transform.position;
+            rec.Id = entry.Id;
+            rec.Role = entry.Role;
+            rec.Prefab = entry.Prefab;
+            rec.X = at.x;
+            rec.Y = at.y;
+            rec.Z = at.z;
+            rec.Yaw = _data.Yaw + entry.Yaw;
+            rec.Failure = null;
+            rec.Missing = false;
+            rec.Retired = false;
+            rec.Waiting = null;
+            RepairState state;
+            bool had = _repairs.TryGetValue(old, out state);
+            _repairs.Remove(old);
+            _repairs.Remove(entry.Id);
+            if (had)
+                _repairs[entry.Id] = state;
+        }
+
+        // What a transform write leaves stale after a move (its wires and hoses went before it, in Unwire, and
+        // WiringStep makes the layout's again): the entity query and sprinkler splash grids, and a coop's terrain
+        // test, which ChickenCoop.ServerInit runs once and its chickens snap to.
+        private void Settle(BaseEntity entity)
+        {
+            Regrid(entity);
+            var coop = entity as ChickenCoop;
+            RaycastHit hit;
+            if (coop != null && GamePhysics.Trace(new Ray(coop.transform.position + coop.transform.up,
+                    -coop.transform.up), 0f, out hit, 1.1f, CoopGroundMask))
+            {
+                coop.IsOnTerrain = hit.IsOnLayer(Rust.Layer.Terrain);
+                coop.UpdateMovementPlane();
+            }
+        }
+
+        // Disconnects every wire and hose of a part (a trough's on its water end) and returns them by their names now.
+        private List<string> Unwire(BaseEntity entity)
+        {
+            List<string> links = IoLinks(entity);
+            IoEnd(entity)?.DisconnectAll();
+            return links;
+        }
+
+        private static void Regrid(BaseEntity entity)
+        {
+            BaseEntity.Query.Server?.Move(entity);
+            if (Sprinkler.SplashableGrid.Grid.Contains(entity))
+                Sprinkler.SplashableGrid.RegisterEntity(entity);
+            foreach (BaseEntity child in entity.children.ToList())
+                if (child != null && !child.IsDestroyed)
+                    Regrid(child);
+        }
+
+        // Farm-local x and z, as the layout writes them, and the height.
+        private string Where(Vector3 world)
+        {
+            Vector2 local = LocalOf(world);
+            return $"({local.x:0.0}, {local.y:0.0}) at {world.y:0.00} m";
+        }
+
+        // Retires one record for real: its chickens first, then its items and water into its replacement and the
+        // live targets in the planned order. Emptied, it leaves the record before the kill, so OnEntityKill counts
+        // no loss; otherwise it stays standing, retired, unwired, and a lifted one goes back where it stood.
+        private UpgradeRetire RetireNow(UpgradePlan live, UpgradeRetire planned, UpgradeStash stash)
+        {
+            StructureRecord rec = planned.Rec;
+            var done = new UpgradeRetire { Rec = rec, Carry = planned.Carry };
+            BaseEntity entity = ResolveStructure(rec);
+            if (entity == null)
+            {
+                _data.Structures.Remove(rec);
+                _repairs.Remove(rec.Id);
+                done.Gone = true;
+                if (stash != null)
+                    stash.Settled = true;
+                return done;
+            }
+            rec.Retired = true;
+            done.Entity = entity;
+            done.Links.AddRange(IoLinks(entity));
+            if (entity is PlanterBoxStatic)
+                HarvestOnly(entity, live.Pass);
+            int plants = entity is PlanterBoxStatic ? 0 : PlantCount(entity);
+            string attached = Attached(entity, NoIds);
+            var coop = entity as ChickenCoop;
+            if (plants > 0)
+            {
+                done.Stays = PlantsText(plants);
+            }
+            else if (attached != null)
+            {
+                done.Stays = $"{attached} is attached to it, and a kill would take it along";
+            }
+            else if (coop == null || ReserveCoops(live, done, coop, true))
+            {
+                foreach (Item item in StoredItems(entity))
+                    MoveNow(live, done, item, false);
+                foreach (Item item in StoredWater(entity))
+                    MoveNow(live, done, item, true);
+                List<Item> left = StoredItems(entity).Concat(StoredWater(entity)).ToList();
+                if (left.Count > 0)
+                    done.Stays = $"no room for {Summarize(left)}";
+                else
+                    CarryCharge(live, done, entity);
+            }
+            if (done.Stays != null)
+            {
+                if (stash != null)
+                    PutBack(stash);
+                if (stash != null && stash.InWay)
+                    done.Notes.Add($"back where it stood, {stash.Why}");
+                IoEnd(entity)?.DisconnectAll();
+                return done;
+            }
+            _data.Structures.Remove(rec);
+            _structureIds.Remove(rec.NetId);
+            _repairs.Remove(rec.Id);
+            if (stash != null)
+                Unlift(stash);
+            try
+            {
+                entity.Kill();
+            }
+            catch (Exception e)
+            {
+                PrintError(e.ToString());
+                done.Threw = $"its kill threw {e.GetType().Name}: {e.Message}";
+                if (!entity.IsDestroyed)
+                {
+                    _data.Structures.Add(rec);
+                    _structureIds.Add(rec.NetId);
+                    done.Stays = done.Threw;
+                }
+                else
+                    done.Notes.Add(done.Threw);
+            }
+            if (stash != null)
+                stash.Settled = true;
+            return done;
+        }
+
+        // MoveToContainers' walk, one target at a time so each target's share is reported.
+        private void MoveNow(UpgradePlan live, UpgradeRetire done, Item item, bool water)
+        {
+            string shortname = item.info.shortname;
+            ItemContainer origin = item.parent;
+            List<string> roles = water ? WaterRoles(done.Rec.Role) : ItemRoles(done.Rec.Role, item.info);
+            foreach (UpgradeTarget target in MoveTargets(live, done, roles, water))
+            {
+                if (item.amount <= 0 || item.parent != origin)
+                    break;
+                int moved = MoveToContainers(item, new List<ItemContainer> { target.Container });
+                if (moved > 0)
+                    AddMove(done.Moves, target.Id, shortname, moved, water);
+            }
+        }
+
+        // "foundation-01 Stone skin 0 to Wood skin 10232" for a standing block whose grade or skin is not its entry's
+        // TargetGrade (a skin its prefab lacks counts as met, as ApplyGrade falls back to plain); with apply it also
+        // regrades the block.
+        private string RegradeStep(LayoutEntry entry, UpkeepPass pass, bool apply)
+        {
+            var block = pass.ById(entry.Id) as BuildingBlock;
+            BuildingGrade.Enum grade;
+            ulong skin;
+            if (block == null || !TargetGrade(entry, out grade, out skin))
+                return null;
+            bool skinMet = block.skinID == skin || !HasGradeSkin(block, grade, skin);
+            if (block.grade == grade && skinMet)
+                return null;
+            ulong effective = skin != 0 && !HasGradeSkin(block, grade, skin) ? 0UL : skin;
+            string line = $"{entry.Id} {block.grade} skin {block.skinID} to {grade} skin {effective}";
+            if (!apply)
+                return line;
+            StructureRecord rec = _data.Structures.FirstOrDefault(r => r.Id == entry.Id && r.NetId == IdOf(block));
+            if (rec == null)
+                return null;
+            ApplyGrade(block, rec, grade, skin, false);
+            return line;
+        }
+
+        // Fridges first for "Fridge items", as Targets does, then the source's own role, then the item's home box.
+        private List<string> ItemRoles(string role, ItemDefinition def)
+        {
+            var roles = new List<string>();
+            if (_config.FridgeItems.Contains(def.shortname))
+                roles.Add(RoleFridge);
+            roles.Add(role);
+            string home = HomeBox(def);
+            if (home != null)
+                roles.Add(home);
+            return roles.Distinct().ToList();
+        }
+
+        // Water goes to the source's own role first, then to the liquid containers of the other water source roles
+        // but pumps, whose store the sprinklers drain.
+        private List<string> WaterRoles(string role) =>
+            new[] { role }.Concat(_config.WaterSourceRoles.Where(r => r != RolePump)).Distinct().ToList();
+
+        // The box role upkeep stores an item in, or null for an item no step stores.
+        private string HomeBox(ItemDefinition def)
+        {
+            string name = def.shortname;
+            string role;
+            if (_config.SweptItems.TryGetValue(name, out role))
+                return role;
+            if (name == MilkShortname)
+                return BoxMilk;
+            if (name == EggShortname)
+                return BoxEggs;
+            if (name == WoolShortname)
+                return BoxWool;
+            if (name == DungShortname || name == FertilizerShortname)
+                return BoxDung;
+            if (name.StartsWith("clone.", StringComparison.Ordinal))
+                return BoxClones;
+            if (CullYield().Contains(name))
+                return BoxMeat;
+            return def.category == ItemCategory.Food ? BoxFeed : null;
+        }
+
+        // What CorpseTargets sends to the meat box: each herd prefab's corpse yield but wool.
+        private HashSet<string> CullYield()
+        {
+            if (_cullYield != null)
+                return _cullYield;
+            var names = new HashSet<string>();
+            IEnumerable<string> prefabs = _config.StarterHerd.Select(e => e.Prefab)
+                .Concat(new[] { CowPrefab, BullPrefab, CalfPrefab, CalfMalePrefab, SheepPrefab, LambPrefab });
+            foreach (string prefab in prefabs.Where(p => !string.IsNullOrEmpty(p)).Distinct())
+            {
+                GameObject animal = PrefabObject(prefab);
+                LivestockAnimalFSM fsm = animal == null ? null : animal.GetComponent<LivestockAnimalFSM>();
+                GameObject body = PrefabObject(fsm?.dead?.Corpse?.resourcePath);
+                ResourceDispenser dispenser = body == null ? null : body.GetComponent<ResourceDispenser>();
+                if (dispenser == null)
+                    continue;
+                foreach (ItemAmount amount in (dispenser.containedItems ?? new List<ItemAmount>())
+                         .Concat(dispenser.finishBonus ?? new List<ItemAmount>()))
+                    if (amount?.itemDef != null && amount.itemDef.shortname != WoolShortname)
+                        names.Add(amount.itemDef.shortname);
+            }
+            return _cullYield = names;
+        }
+
+        // The entry replacing the source with another prefab first, then the role rules' targets.
+        private List<UpgradeTarget> MoveTargets(UpgradePlan plan, UpgradeRetire r, List<string> roles, bool water)
+        {
+            var targets = new List<UpgradeTarget>();
+            UpgradeTarget carry = r.Carry == null ? null : CarryTarget(plan, r.Carry, water);
+            if (carry != null)
+                targets.Add(carry);
+            foreach (UpgradeTarget target in roles.SelectMany(role => RoleTargets(plan, role, water)))
+                if (!targets.Contains(target))
+                    targets.Add(target);
+            return targets;
+        }
+
+        private UpgradeTarget CarryTarget(UpgradePlan plan, LayoutEntry entry, bool water)
+        {
+            BaseEntity standing = plan.Pass.ById(entry.Id);
+            if (standing != null)
+                return TargetFor(plan, entry.Id, standing, null, water);
+            return !plan.Live && plan.Placing.Contains(entry.Id) ? TargetFor(plan, entry.Id, null, entry, water) : null;
+        }
+
+        // The containers of a role in layout order, as BeginPass gives them to upkeep and to the confirm: the standing
+        // records, then (planning only) the parts that move into an entry of that role and the entries of that role
+        // step 1 places, as the empty inventory their prefab starts with. Never a retiring record, nor (on confirm)
+        // one an earlier upgrade retired.
+        private List<UpgradeTarget> RoleTargets(UpgradePlan plan, string role, bool water)
+        {
+            string key = (water ? "water:" : "items:") + role;
+            List<UpgradeTarget> targets;
+            if (plan.Targets.TryGetValue(key, out targets))
+                return targets;
+            plan.Targets[key] = targets = new List<UpgradeTarget>();
+            var found = new List<KeyValuePair<string, Func<UpgradeTarget>>>();
+            foreach (BaseEntity entity in plan.Pass.Role(role))
+            {
+                ulong id = IdOf(entity);
+                if (plan.Retiring.Contains(id) || plan.Shifting.ContainsKey(id) ||
+                    (plan.Live && plan.Pass.Retired.Contains(id)))
+                    continue;
+                string name = plan.Pass.Name(entity);
+                BaseEntity standing = entity;
+                found.Add(new KeyValuePair<string, Func<UpgradeTarget>>(name,
+                    () => TargetFor(plan, name, standing, null, water)));
+            }
+            if (!plan.Live)
+            {
+                foreach (UpgradeShift shift in plan.Shifts.Where(s => s.Entry.Role == role))
+                    found.Add(new KeyValuePair<string, Func<UpgradeTarget>>(shift.Entry.Id,
+                        () => TargetFor(plan, shift.Entry.Id, shift.Entity, null, water)));
+                foreach (LayoutEntry entry in plan.Place.Where(e => e.Role == role && plan.Placing.Contains(e.Id)))
+                    found.Add(new KeyValuePair<string, Func<UpgradeTarget>>(entry.Id,
+                        () => TargetFor(plan, entry.Id, null, entry, water)));
+            }
+            Dictionary<string, int> order = LayoutIndex();
+            foreach (KeyValuePair<string, Func<UpgradeTarget>> target in found
+                         .Select((pair, index) => new { pair, index })
+                         .OrderBy(t => IndexIn(order, t.pair.Key))
+                         .ThenBy(t => t.index)
+                         .Select(t => t.pair))
+                AddTarget(targets, target.Value());
+            return targets;
+        }
+
+        private static int IndexIn(Dictionary<string, int> order, string id)
+        {
+            int index;
+            return id != null && order.TryGetValue(id, out index) ? index : int.MaxValue;
+        }
+
+        private Dictionary<string, int> LayoutIndex()
+        {
+            var order = new Dictionary<string, int>();
+            for (int i = 0; i < _config.Layout.Entries.Count; i++)
+                if (_config.Layout.Entries[i].Id != null && !order.ContainsKey(_config.Layout.Entries[i].Id))
+                    order[_config.Layout.Entries[i].Id] = i;
+            return order;
+        }
+
+        private static void AddTarget(List<UpgradeTarget> targets, UpgradeTarget target)
+        {
+            if (target != null && !targets.Contains(target))
+                targets.Add(target);
+        }
+
+        // One target per entry and kind (items or water), so its SimContainer serves every source of the plan.
+        private static UpgradeTarget TargetFor(UpgradePlan plan, string id, BaseEntity entity, LayoutEntry planned,
+            bool water)
+        {
+            string key = (water ? "water:" : "items:") + id;
+            UpgradeTarget target;
+            if (plan.TargetsById.TryGetValue(key, out target))
+                return target;
+            ItemContainer container = entity != null
+                ? water ? WaterInventory(entity) : entity is LiquidContainer ? null : InventoryOf(entity)
+                : planned == null
+                    ? null
+                    : water
+                        ? VirtualWater(planned.Prefab)
+                        : VirtualItems(planned.Prefab);
+            target = container == null
+                ? null
+                : new UpgradeTarget { Id = id, Container = container, Room = new SimContainer(container) };
+            plan.TargetsById[key] = target;
+            return target;
+        }
+
+        private static GameObject PrefabObject(string path) =>
+            string.IsNullOrEmpty(path) ? null : GameManager.server.FindPrefab(path);
+
+        private static ItemContainer VirtualItems(string prefab)
+        {
+            GameObject go = PrefabObject(prefab);
+            return go == null || go.GetComponent<LiquidContainer>() != null ? null : VirtualInventory(go);
+        }
+
+        // A trough keeps its water in a child LiquidContainer (HitchTrough.waterStoragePrefab), a coop in slot 2.
+        private static ItemContainer VirtualWater(string prefab)
+        {
+            GameObject go = PrefabObject(prefab);
+            if (go == null)
+                return null;
+            var trough = go.GetComponent<HitchTrough>();
+            if (trough != null)
+                return trough.waterStoragePrefab != null && trough.waterStoragePrefab.isValid
+                    ? VirtualInventory(PrefabObject(trough.waterStoragePrefab.resourcePath))
+                    : null;
+            return go.GetComponent<LiquidContainer>() != null || go.GetComponent<ChickenCoop>() != null
+                ? VirtualInventory(go)
+                : null;
+        }
+
+        // The empty inventory a spawned prefab starts with: StorageContainer.CreateInventory, or
+        // ContainerIOEntity.CreateInventory for a fridge or liquid container, then what each ServerInit changes
+        // (PlanterBox takes only fertilizer, ChickenCoop reserves its egg output slot, BaseOven sizes it). It is
+        // never spawned or filled, only measured through a SimContainer.
+        private static ItemContainer VirtualInventory(GameObject go)
+        {
+            if (go == null)
+                return null;
+            var container = new ItemContainer();
+            var storage = go.GetComponent<StorageContainer>();
+            if (storage != null)
+            {
+                var oven = storage as BaseOven;
+                container.allowedContents = storage.allowedContents == 0
+                    ? ItemContainer.ContentsType.Generic
+                    : storage.allowedContents;
+                container.SetOnlyAllowedItems(storage.allowedItems ?? new ItemDefinition[0], storage.allowedItem,
+                    storage.allowedItem2);
+                container.SetBlacklist(storage.blockedItems);
+                container.maxStackSize = storage.maxStackSize;
+                container.ServerInitialize(null,
+                    oven != null ? oven.fuelSlots + oven.inputSlots + oven.outputSlots : storage.inventorySlots);
+                container.canAcceptItem = oven != null ? OvenFilter(oven) : storage.ItemFilter;
+                var planter = storage as PlanterBox;
+                if (planter != null)
+                {
+                    container.SetOnlyAllowedItem(planter.allowedItem);
+                    container.canAcceptItem = planter.InventoryItemFilter;
+                }
+                var coop = storage as ChickenCoop;
+                if (coop != null)
+                    container.slotIsReserved = coop.SlotIsReserved;
+                return container;
+            }
+            var io = go.GetComponent<ContainerIOEntity>();
+            if (io == null)
+                return null;
+            container.allowedContents =
+                io.allowedContents == 0 ? ItemContainer.ContentsType.Generic : io.allowedContents;
+            container.SetOnlyAllowedItem(io.onlyAllowedItem);
+            container.maxStackSize = io.maxStackSize;
+            container.ServerInitialize(null, io.numSlots);
+            var fridge = io as Fridge;
+            var liquid = io as LiquidContainer;
+            if (fridge != null)
+                container.canAcceptItem = fridge.CanAcceptItem;
+            else if (liquid != null)
+                container.canAcceptItem = liquid.CanAcceptItem;
+            return container;
+        }
+
+        // BaseOven.ItemFilter with the slot ranges a spawned oven has: the prefab's own filter reads ranges that
+        // PreInitShared sets only on a spawned oven.
+        private static Func<BasePlayer, Item, int, bool> OvenFilter(BaseOven oven)
+        {
+            int input = oven.fuelSlots;
+            int output = input + oven.inputSlots;
+            return (player, item, slot) =>
+            {
+                if (oven.onlyAcceptCategory != ItemCategory.All && item.info.category != oven.onlyAcceptCategory)
+                    return false;
+                if (oven.IsBurnableItem(item))
+                    return slot >= 0 && slot < input;
+                if (oven.IsOutputItem(item))
+                    return slot >= output && slot < output + oven.outputSlots;
+                return oven.IsMaterialInput(item) && slot >= input && slot < output;
+            };
+        }
+
+        // Every standing coop that is not retiring, then (planning only) every coop a part moves into and every coop
+        // step 1 places, with its free places; a plan reserves places in them as it goes.
+        private List<CoopRoom> CoopRooms(UpgradePlan plan)
+        {
+            if (plan.Coops != null)
+                return plan.Coops;
+            plan.Coops = new List<CoopRoom>();
+            foreach (ChickenCoop coop in plan.Pass.Role(RoleCoop).OfType<ChickenCoop>())
+            {
+                ulong id = IdOf(coop);
+                if (!plan.Retiring.Contains(id) && !plan.Shifting.ContainsKey(id) &&
+                    !(plan.Live && plan.Pass.Retired.Contains(id)))
+                    plan.Coops.Add(Room(plan.Pass.Name(coop), coop));
+            }
+            if (plan.Live)
+                return plan.Coops;
+            foreach (UpgradeShift shift in plan.Shifts.Where(s => s.Entry.Role == RoleCoop && s.Entity is ChickenCoop))
+                plan.Coops.Add(Room(shift.Entry.Id, (ChickenCoop)shift.Entity));
+            foreach (LayoutEntry entry in plan.Place.Where(e => e.Role == RoleCoop && plan.Placing.Contains(e.Id)))
+            {
+                GameObject go = PrefabObject(entry.Prefab);
+                ChickenCoop prefab = go == null ? null : go.GetComponent<ChickenCoop>();
+                if (prefab != null)
+                    plan.Coops.Add(new CoopRoom { Id = entry.Id, Free = prefab.MaxChickens });
+            }
+            return plan.Coops;
+        }
+
+        private static CoopRoom Room(string id, ChickenCoop coop) => new CoopRoom
+        {
+            Id = id,
+            Coop = coop,
+            Free = coop.MaxChickens - coop.Animals.Count,
+            Hatching = coop.HasFlag(ChickenCoop.Hatching) || coop.Animals.Any(s => !s.SpawnedAnimal.IsSet),
+        };
+
+        // Places for every chicken and hatching egg of a retiring coop, its replacement first, reserved in the plan's
+        // coops; with apply the animals move. False, with r.Stays, when they do not all fit.
+        private bool ReserveCoops(UpgradePlan plan, UpgradeRetire r, ChickenCoop coop, bool apply)
+        {
+            int chickens = coop.Animals.Count(s => s.SpawnedAnimal.IsSet && s.SpawnedAnimal.Get(true) != null);
+            int eggs = coop.Animals.Count(s => !s.SpawnedAnimal.IsSet);
+            if (chickens + eggs == 0)
+                return true;
+            string first = r.Carry?.Id;
+            List<CoopRoom> rooms = CoopRooms(plan);
+            rooms = rooms.Where(c => c.Id == first).Concat(rooms.Where(c => c.Id != first)).ToList();
+            List<CoopPick> picks = PickCoops(rooms, chickens, eggs);
+            if (picks == null)
+            {
+                r.Stays = $"its {AnimalsText(chickens, eggs)} do not fit in the other coops " +
+                          $"({rooms.Sum(c => Math.Max(0, c.Free))} free places), so it keeps them and its items";
+                return false;
+            }
+            if (apply)
+                HandOverChickens(coop, picks);
+            foreach (CoopPick pick in picks)
+            {
+                pick.Room.Free -= pick.Chickens + pick.Eggs;
+                pick.Room.Hatching |= pick.Eggs > 0;
+                r.Chickens.Add($"{AnimalsText(pick.Chickens, pick.Eggs)} to {pick.Room.Id}");
+            }
+            return true;
+        }
+
+        // All or nothing, coops in the order given. At most one hatching egg per coop, and none into a coop already
+        // hatching: CheckEggHatchState stops its timer once the first egg hatches, so a second would never hatch.
+        private static List<CoopPick> PickCoops(List<CoopRoom> rooms, int chickens, int eggs)
+        {
+            var picks = new List<CoopPick>();
+            foreach (CoopRoom room in rooms)
+            {
+                if (chickens == 0 && eggs == 0)
+                    break;
+                int free = Math.Max(0, room.Free);
+                int egg = eggs > 0 && !room.Hatching && free > 0 ? 1 : 0;
+                int hens = Math.Min(free - egg, chickens);
+                if (egg + hens == 0)
+                    continue;
+                picks.Add(new CoopPick { Room = room, Chickens = hens, Eggs = egg });
+                chickens -= hens;
+                eggs -= egg;
+            }
+            return chickens == 0 && eggs == 0 ? picks : null;
+        }
+
+        // FarmableAnimal finds its coop through its parent, so a chicken moves by reparenting it onto a move point of
+        // the new coop, with its AnimalStatus entry; a hatching egg is only its entry. Both coops then get the flags
+        // and hatch timer SubmitEggForHatching and OnAnimalDied leave.
+        private static void HandOverChickens(ChickenCoop from, List<CoopPick> picks)
+        {
+            List<ChickenCoop.AnimalStatus> eggs = from.Animals.Where(s => !s.SpawnedAnimal.IsSet).ToList();
+            List<ChickenCoop.AnimalStatus> hens = from.Animals
+                .Where(s => s.SpawnedAnimal.IsSet && s.SpawnedAnimal.Get(true) != null)
+                .ToList();
+            int nextEgg = 0;
+            int nextHen = 0;
+            foreach (CoopPick pick in picks)
+            {
+                ChickenCoop to = pick.Room.Coop;
+                var moving = new List<ChickenCoop.AnimalStatus>();
+                for (int i = 0; i < pick.Eggs; i++)
+                    moving.Add(eggs[nextEgg++]);
+                for (int i = 0; i < pick.Chickens; i++)
+                    moving.Add(hens[nextHen++]);
+                foreach (ChickenCoop.AnimalStatus status in moving)
+                {
+                    FarmableAnimal chicken = status.SpawnedAnimal.Get(true);
+                    if (chicken != null)
+                    {
+                        Vector3 point = to.GetRandomMovePoint();
+                        chicken.SetParent(to);
+                        chicken.transform.localPosition = chicken.SnapMovementPos(point);
+                        chicken.SendNetworkUpdate();
+                    }
+                    to.Animals.Add(status);
+                    int index = chicken != null
+                        ? from.Animals.FindIndex(s => s.SpawnedAnimal.uid == chicken.net.ID)
+                        : from.Animals.FindIndex(s => !s.SpawnedAnimal.IsSet);
+                    if (index >= 0)
+                        from.Animals.RemoveAt(index);
+                }
+                SetCoopState(to);
+            }
+            SetCoopState(from);
+        }
+
+        private static void SetCoopState(ChickenCoop coop)
+        {
+            bool hatching = coop.Animals.Any(s => !s.SpawnedAnimal.IsSet);
+            using (BaseEntity.FlagsUpdateScope flags = coop.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate))
+            {
+                flags.Set(ChickenCoop.Hatching, hatching);
+                flags.Set(ChickenCoop.Full, coop.Animals.Count >= coop.MaxChickens);
+            }
+            if (hatching && !coop.IsInvoking(coop.CheckEggHatchState))
+                coop.InvokeRepeating(coop.CheckEggHatchState, 10f, 10f);
+            else if (!hatching)
+                coop.CancelInvoke(coop.CheckEggHatchState);
+            coop.SendNetworkUpdate();
+        }
+
+        private static string AnimalsText(int chickens, int eggs)
+        {
+            var parts = new List<string>();
+            if (chickens > 0)
+                parts.Add(chickens == 1 ? "1 chicken" : $"{chickens} chickens");
+            if (eggs > 0)
+                parts.Add(eggs == 1 ? "1 hatching egg" : $"{eggs} hatching eggs");
+            return string.Join(" and ", parts);
+        }
+
+        // Everything a retiring entity stores but its water: a coop's water slot and a liquid container's contents
+        // move by the water rule.
+        private static List<Item> StoredItems(BaseEntity entity)
+        {
+            ItemContainer inventory = entity is LiquidContainer ? null : InventoryOf(entity);
+            if (inventory == null)
+                return new List<Item>();
+            Item water = entity is ChickenCoop ? inventory.GetSlot(ChickenCoop.WaterSlot) : null;
+            return inventory.itemList.Where(i => i != water && i.amount > 0).ToList();
+        }
+
+        private static List<Item> StoredWater(BaseEntity entity)
+        {
+            ItemContainer water = WaterInventory(entity);
+            if (water == null)
+                return new List<Item>();
+            if (entity is ChickenCoop)
+            {
+                Item slot = water.GetSlot(ChickenCoop.WaterSlot);
+                return slot != null && slot.amount > 0 ? new List<Item> { slot } : new List<Item>();
+            }
+            return water.itemList.Where(i => i.amount > 0).ToList();
+        }
+
+        // A liquid container's inventory, a trough's water end, or a coop's inventory (water lives in slot 2).
+        private static ItemContainer WaterInventory(BaseEntity entity) =>
+            entity is LiquidContainer || entity is ChickenCoop
+                ? InventoryOf(entity)
+                : (entity as HitchTrough)?.WaterStorage?.inventory;
+
+        private static int PlantCount(BaseEntity entity) =>
+            entity is PlanterBox ? entity.children.Count(c => c is GrowableEntity && !c.IsDestroyed) : 0;
+
+        // Children a kill would take along: anything but a trough's water end, a coop's chickens, a planter's plants,
+        // and parts this upgrade retires first.
+        private string Attached(BaseEntity entity, HashSet<ulong> retiring)
+        {
+            BaseEntity waterEnd = (entity as HitchTrough)?.WaterStorage;
+            List<string> names = entity.children
+                .Where(c => c != null && !c.IsDestroyed && c != waterEnd &&
+                            !(c is FarmableAnimal && entity is ChickenCoop) &&
+                            !(c is GrowableEntity && entity is PlanterBox) && !retiring.Contains(IdOf(c)))
+                .Select(NameOf)
+                .ToList();
+            return names.Count > 0 ? string.Join(", ", names) : null;
+        }
+
+        // "solar-02 out 0 to battery-01 in 0" for every wire or hose on the entity.
+        private List<string> IoLinks(BaseEntity entity)
+        {
+            var links = new List<string>();
+            IOEntity io = IoEnd(entity);
+            if (io == null)
+                return links;
+            for (int i = 0; i < io.outputs.Length; i++)
+            {
+                IOEntity other = io.outputs[i].connectedTo.Get();
+                if (other != null)
+                    links.Add($"{NameOf(io)} out {i} to {NameOf(other)} in {io.outputs[i].connectedToSlot}");
+            }
+            for (int i = 0; i < io.inputs.Length; i++)
+            {
+                IOEntity other = io.inputs[i].connectedTo.Get();
+                if (other != null)
+                    links.Add($"{NameOf(other)} out {io.inputs[i].connectedToSlot} to {NameOf(io)} in {i}");
+            }
+            return links;
+        }
+
+        private string UpgradeReport(UpgradePlan plan)
+        {
+            var lines = new List<string>
+            {
+                plan.Empty
+                    ? "farm.upgrade: nothing to do"
+                    : plan.Blocked
+                        ? "farm.upgrade plan (farm.upgrade confirm refuses it while a problem below blocks it):"
+                        : "farm.upgrade plan (farm.upgrade confirm applies it):",
+            };
+            if (plan.Place.Count > 0)
+            {
+                lines.Add($"place {plan.Place.Count} entries:");
+                lines.AddRange(plan.PlaceLines.Select(l => "  " + l));
+                var planters = new HashSet<string>(plan.Place
+                    .Where(e => e.Role == RolePlanter && plan.Placing.Contains(e.Id)).Select(e => e.Id));
+                Dictionary<string, int> clones = PlannedSlots(planters);
+                if (clones.Count > 0)
+                    lines.Add($"  starter clones for the new planters in {BoxClones} ({_config.CloneGenes}): " +
+                              string.Join(", ", clones.Select(c => $"{c.Key} x{2 * c.Value}")));
+            }
+            if (plan.Shifts.Count > 0)
+            {
+                lines.Add($"move {plan.Shifts.Count} records (each keeps its items, crops, chickens, charge, and net " +
+                          "id):");
+                lines.AddRange(plan.Shifts.Select(s => $"  {s.OldId} to {s.Entry.Id}: " + (s.Posed
+                    ? $"{Where(s.From)} to {Where(s.To)}"
+                    : "its new pose fails (problems say why)")));
+            }
+            if (plan.Stash.Count > 0)
+            {
+                lines.Add($"lift {plan.Stash.Count} old parts {StashHeight:0} m up while the new entries are placed, " +
+                          "then move, retire, or put them back:");
+                lines.AddRange(plan.Stash.Select(s => $"  {s.Id}: {s.Why}"));
+            }
+            AppendRetire(lines, plan.Retire, plan.Gone, plan.Unretire, false);
+            if (plan.Regrade.Count > 0)
+            {
+                lines.Add($"regrade {plan.Regrade.Count} blocks:");
+                lines.AddRange(plan.Regrade.Select(l => "  " + l));
+            }
+            if (plan.Wire.Count + plan.Drop.Count > 0)
+            {
+                lines.Add($"rewire {plan.Wire.Count + plan.Drop.Count} links:");
+                lines.AddRange(plan.Wire.Select(l => $"  wire {l}"));
+                lines.AddRange(plan.Drop.Select(l => $"  drop {l}"));
+            }
+            if (plan.Kept.Count > 0)
+            {
+                lines.Add("kept where it stands (an Id that stays never moves; a new Id that Replaces it does):");
+                lines.AddRange(plan.Kept.Select(k => "  " + k));
+            }
+            lines.Add(plan.Problems.Count == 0 ? "problems: none" : $"problems ({plan.Problems.Count}):");
+            lines.AddRange(plan.Problems.Select(p => "  " + p));
+            return string.Join("\n", lines);
+        }
+
+        private static void AppendRetire(List<string> lines, List<UpgradeRetire> retire, List<StructureRecord> gone,
+            List<StructureRecord> back, bool done)
+        {
+            List<string> vanished = retire.Where(r => r.Gone).Select(r => $"{r.Rec.Id} ({r.Rec.Role})")
+                .Concat(gone.Select(g => $"{g.Id} ({g.Role})"))
+                .ToList();
+            int count = retire.Count(r => !r.Gone) + vanished.Count;
+            if (count > 0)
+            {
+                lines.Add(done ? $"retired {count} records:" : $"retire {count} records:");
+                foreach (UpgradeRetire r in retire.Where(r => !r.Gone && !r.Bare))
+                    lines.Add("  " + RetireLine(r, done));
+                List<string> bare = retire.Where(r => r.Bare).Select(r => r.Rec.Id).ToList();
+                if (bare.Count > 0)
+                    lines.Add($"  {(done ? "removed" : "remove")}, nothing to move: {IdRanges(bare)}");
+                if (vanished.Count > 0)
+                    lines.Add($"  already gone, {(done ? "dropped" : "drop")} from the record: " +
+                              string.Join(", ", vanished));
+            }
+            if (back.Count > 0)
+                lines.Add($"{(done ? "tracked again" : "track again")} as entries (retired before, back in the " +
+                          $"layout): {string.Join(", ", back.Select(b => b.Id))}");
+        }
+
+        // "box-feed (box_feed), replaced by barn-barrel-feed: potato x40 to barn-barrel-feed; then removed"
+        private static string RetireLine(UpgradeRetire r, bool done)
+        {
+            List<string> parts = r.Chickens.Concat(r.Moves.Select(m => m.ToString())).Concat(r.Notes).ToList();
+            string line = $"{r.Rec.Id} ({r.Rec.Role})" +
+                          (r.Carry != null ? $", replaced by {r.Carry.Id}" : string.Empty) +
+                          (parts.Count > 0 ? ": " + string.Join(", ", parts) : string.Empty);
+            if (r.NoRoom.Count > 0)
+                return line + $"; no room for {string.Join(", ", r.NoRoom)}, so it would stay standing, retired";
+            if (r.Stays != null)
+                return line + $"; {(done ? "stays" : "would stay")} standing, retired: {r.Stays}";
+            return line + (done ? "; removed" : "; then removed");
+        }
+
+        // "fence-01 to 63, gate-01": consecutive numbers of one prefix and width collapse into a range.
+        private static string IdRanges(IEnumerable<string> ids)
+        {
+            var runs = new List<List<string>>();
+            foreach (string id in ids)
+            {
+                List<string> run = runs.Count > 0 ? runs[runs.Count - 1] : null;
+                if (run != null && Follows(run[run.Count - 1], id))
+                    run.Add(id);
+                else
+                    runs.Add(new List<string> { id });
+            }
+            return string.Join(", ", runs.Select(r =>
+            {
+                string last = r[r.Count - 1];
+                return r.Count == 1 ? r[0] : $"{r[0]} to {last.Substring(last.Length - TrailingDigits(last))}";
+            }));
+        }
+
+        private static bool Follows(string previous, string next)
+        {
+            int digits = TrailingDigits(previous);
+            int a;
+            int b;
+            return digits > 0 && digits < 10 && previous.Length == next.Length && TrailingDigits(next) == digits &&
+                   string.CompareOrdinal(previous, 0, next, 0, previous.Length - digits) == 0 &&
+                   int.TryParse(previous.Substring(previous.Length - digits), out a) &&
+                   int.TryParse(next.Substring(next.Length - digits), out b) && b == a + 1;
+        }
+
+        private static int TrailingDigits(string id)
+        {
+            int digits = 0;
+            while (digits < id.Length && char.IsDigit(id[id.Length - 1 - digits]))
+                digits++;
+            return digits;
+        }
+
+        #endregion
+
+        #region Signs
+
+        // Generated by research/farm/v2/plugin/tools/sign_images.py from research/farm/v2/construction/assets/.
+        private static readonly Dictionary<string, string> SignImages = new Dictionary<string, string>
+        {
+            ["pandora-farm-sign.huge.wood-1024x256"] =
+                "iVBORw0KGgoAAAANSUhEUgAABAAAAAEACAIAAACiR5NzAABHb0lEQVR42uzdtZr1uhUG4H0VaVOFGapcQq4kZaowcxNswszMzMzM" +
+                "acL3ETg841n/yFvWXkt6n+etzr/PkG3p+wzy6S/fftP5/vC1NxD49RdfM97PPvOqg/zoEy8rJPhFBgg2EJBnDGSiEZiGyYhlo2lQ" +
+                "AA4n9HdXfQoxXAKKB6I212MVfUP46Yjv5By/Wceo2mWnumnvYsqdk/pDNOQiLhMVgKIkfgxzcyd1HJgjAWL0337w9kUoAKJ/mYkf" +
+                "Ob4VRgYQhaeN0SgAQpvB9Dizpvz8jx6uQG24zpCF0MzE/v3zD2RwGhaJMKWJ++WTvSivOSgMhlP5GKG8vpNVfdbJ65TI9GI6msZS" +
+                "FUKIHw84lU5vRmrSpvkM2R2UigWvSCgPwFkF4CkPfVA5AABAVACCf6v4qwIAAMFZ/tkKAAAAENwrqAAAAEAiCgAAAKAAAAAACgAA" +
+                "ABAUgOZlQK00f4SLvBeW1r8kdjz7Kg4f9r3pwoF8aI7yLtfW0F61AGTbqGaFM0lFEoZ3YDmyIJsdg1XFA0oQr6+9AAR/oPhqQl0S" +
+                "mJBRmiDOyB7ikIdzCoAI7iXWY16G3fwisGB33Pxam59EfKdJ6cj+vQ+/iLQmbhfGn0CJ82jVTxTectQNdlTpXHDvRQHoT3Afzw5T" +
+                "Pal/8/3PvQjWqRmGROePL94EdlwBCDaQjI4CIOIvEdCvDKlpb81KkuPF9AVpGtXrhMIwpbAAbIsLgCifgmcAOhaAJz/2kfd308cw" +
+                "JeQP9EfneNkd5qgTzgf911JXAIIR/vqOceafyEUArkTrYx8CjgtAnP51AEPtrIFejgddYqknKJyoCtJ/sKtc2Y67f3jYjNa9Vu5p" +
+                "XgUo/hGf9fSn/Vfwg15hALJ00n/lD/SiPOgSvVj6qeY9w2H6b6gBHaywcCJBtO5y287OAhCk/7gDkE22k/QCvQdMaWXfduxYZ/ZM" +
+                "4RS2Hf3vuOmDZ4JjcMdo3aEAnH87kQIg048P9HLPmktPslT3wDF+qX4SH3q333D7ShHcMVpf/182Q3vwLfoUgOA6xX+d84pf5rjr" +
+                "RqY3WzOTdfqGFqFy7N7HjMm7ecFiEK1zFYCY9P9fCZettMqNe4Jd9y9B2XChQ2EoupV3D/UoALEOBaDLMwAx8b3QCvTzzYsJgrvw" +
+                "jWaibKAAuJDrpFWKAtDtIeD/umz690bYQPUzXpbjEBNNTlyneCSnCQj3yw6AvZ8D3tBnFaDg32Z9D0DROSnDGOd+d4kKc63WkZBW" +
+                "k/a3MERYeXa3OFqf+x6A4I/YejtRfHkioTzDIsav3USBWYkLaCP5bR6wDiIvYO0luK3m3AIQ7HmbX8vRLs1I8LpodxZmSUKXOBMK" +
+                "mOR9kSBOuHLPhnoFQHx3F40oL4tjaVqDDyOjs0Qulx9tK6Y3KFAAxHdPrwr0InsXX33XM/PQKEa2C0VCBkVM5/a3AM1ZAIRy8b36" +
+                "OktrhvIFC4DKcYU6oTMg1tNq/mcASD4fxP+9YqYfk+MBXUKjgI6rwBMs3XnIKkAxcXwwC6peIc0DpR+iMAkGFA8Y/R4Ad5JMPwCN" +
+                "yfQCvaCDJ7lxw2pL9wA6nLXfWQCQ6Z2kdxoyJ3QPcj4dByQqAPHzBApAfjJ9OW47PgeKh6ahVCgk0PTgbocCcOizGuR/NNZUXWUS" +
+                "cgtcFRpIq7kva2gUqDpkvAKQP+i7gT5m5cqcA2vOCA7LNg0PeFyhLWgIeAZgWou/UkqC30dYpzR9o9xtVCCIJ1dgFaDgx71UAVj2" +
+                "kvcFzxi5i0Zwh6KUDXVF2pa/vc0tuG1nxHsAjKSLXAXOObZK8HOnKOy6DhadRMg2+Hhf8l++/abrNkP75ifvkvRNwE5j5EzqQnxd" +
+                "AsdIrmhjcMDhVjdeJ5e3ALi26BJn34EPofw45Ew5gNPb/O0Hb7+lzdAefL65AGSOsIJ75hCP1L7J8TsxXUKeQxYX2TvIUABM5yVm" +
+                "erNplTQvmo+HRhFQFRJCNCdXAcBSkn0npNJp3on27hGTnM0h27bWJRQJaR5anwE4cBUgcXzivJ4/5XdP80BrAchZEd3mpFSgfigA" +
+                "R70IbMFH742qAv05ZCDszJj1FA8Y9B6AfV9rnVu9jTgyfVHTRwc0kBjOr80EUhQAqpPpPQSiCTtgz6Fs5KFaqCXQetvOqdftROfM" +
+                "bThPby5MnsjdtGrEUzNQLdJSh2g9a68AJGK5m0tJOGJmCNYjkzc6yUxXM7QORUJbYMJnABZkvfnSLj665Tk1vi/Eo0XEHzNcL/tQ" +
+                "uJqBEF/1IeDgtz2oAHgOL/OAXnEx+PzJPlUBiLmsxwULgMctrD1Vi1gvsvdSYBlQY6K3AgWE+4QkLTMW9uqJoyrGvYNM/h6A1jcB" +
+                "Zw7QovkAtcJ9TBZJwpxt/sY6tvk5MSGjZ/C3H7x902Zo3/zkXU5PfeKDb7L5tYLPDwYAALSGdgUgBAAACgAAAKAApAcAAArAv3/+" +
+                "gZtsfq3g84MBAACtof301Xc98yabX+ub73/uEequS2OtAGsRFJV6iQ9vpE4wEC21Lsc06/ZYUGURg8f/hCPzNKms1590M7RfCcz3" +
+                "D96nIJQHX6uL43YFwV3ut0iZtyllVuUg6rVo3QCDj5S5A3287fJTDwa03C4D7+DUlyGQHDevbYb2YOX6U5DFg691S86499pRkPJL" +
+                "sJh6k1o753yZb9heN35r1tp2akC2Xy1BSUh3/iX/jLYZ2oPedQqiefC1epEvFYAuFIBluUYkC06w5yy+HZ3gL/rXS3DH0U4zxcW4" +
+                "AAS/yKn1akKJu2UEd5qsUxXM2RLDgrFP0Jfs55N2KySvBLHSraC5ALReTZgpwHm/elo6gzS5g8gu6CfM+nYP1/1uUmXwSXihoFAm" +
+                "uWwBCD5fvwCI6YTmbgsLJleEQkHfpkx4sm+C2jCy0SWoBDm6gQIgvqMw1CwJGsI2pjnRK+sP3nZupq14GVkl6J4lpi0AErxFypWE" +
+                "fVxJIIPJbucQ9MdstZVPz2WbEVSC0nvCogVAapf1dYPjSoKewKx3bMv6h261tLO8mWWaetB9b5xpW6crAPHvKb4L9wZoTyYM6Ays" +
+                "vRiroN9hw3WM9YJB9UXuVYJESWP8MqCyeyriLxY7mrVLeNPCsHU2Bf0S4V5sGDxf7zsGVYLB+W1oARDTB5DdSc4717xArVbQF/Td" +
+                "luOG3sBB479KcNR2bA/tdxeA4Pttfi2JvBc3oI9nSQp7hRAv6Cd3gaDfnmxYM4pMUwyOmPcvvgu1nrVPXQAk+xXCGaqFXZG5n/0Q" +
+                "9Jk+0lQvBk3jVa5K0B7aFYA9esV6+cl51r60helJ+bK+lN/q0D+CkpClGOSvBANaQXtoP33vwy+6yebX2vhkI8m+lZecF+UqxGqN" +
+                "Aks5XWrJHaulZaAedO8GCeJHcAgnaAWpCoBb7XdbNhlQsR6s0CJyFqopD+T5zuuPDwfZTrE7oXD9j6MY/Ie9q+Cx3oiB/QUVQ1lU" +
+                "0QlPdIIyMzMzMzMzMzNXUBYU/1pHsmSd7Bd/m83OOg+kaT/K5dlrmtnkJWpzrjzIlwSE5KELgM1TL9kNrsOcXkYCMQdLNhcK0tkn" +
+                "ddy2qsrllTE8Nr/s7L+6ihsmav9hmsVxl5KmE1aAkRjC7kiY7cUEQt/LfIPeKAEQZMiMvgOQ0j6yhEGitM1iLRUltywSZa2+hTxb" +
+                "U+umY3kJEyzMYTzT037OLzSYw836cdDnf7dGOnueXpUr8I2IUWvOpv7/ffOQh/59oRKQv6eqiyb5w9/mYwkD+lOAlu6um+ZVlN/m" +
+                "OFyqm1NMOxskUrWa2twuP7aBNs/bkvlXzYTKzUsnHNMFOXsHvZuGT/xirobD0a98xMnfYIYSUFGYQZeYIao1gJ6hAbmfgDjH4g/9" +
+                "6/P7GnxucbbXcZKZXPkfKwCCSZT2JuBEjuJLaKxC7d8OmosB776CN2zGigHf5qgw5sVlPx+2l84vOzfKYP4BhROupLSD0muQt3yM" +
+                "jR1PAPiS6QDvVJ9b9k3cTQamI96yLSzwYIDyUCFUCEayEFRuiV9t2bww8lHwqTXUloc+4o8P7xrCWGNiOVGR8H20wXRS1/VNwMv7" +
+                "sA45yWzbdHnXq3Dc+O5rkgH1S30Z27jZ0fGDcCFDKsgiOma1WVVy5WT6fSAx8xji+hWjwi9y7KaBSYwUwjEldgwBYFaGcYO7d9zW" +
+                "rylh/mP11aogFdMxRInKb7BhDNByO4HCuJgJMsMQCMrVjvpFdS3m5YagBwLAloM788/v3FoBY0aFqTaXCJyzpyRYSNqDhrZXxdWE" +
+                "JX8Mn53QPinT4RvExC2QuCGK11qHzWEKL6i6oLuRo2MtNObFAlItZGAso82SpsHO6/SbRmLFZTJZ0vjH124Evn7hmgByDA6Ox1j5" +
+                "daG4vVRoEmr4YtcaCoDd1H8KWSxfuiBw5Fdo2cZl0nIicvuewrN/dZOKIL6FQ6RBLDhB9LUfTHz5fTDHPfge2eh4AaBRsI26F9Rg" +
+                "sdZKygb3UnLlQbUAGAJbABAIPYH9IxuEEHz61BUMfPjoxQF2H6m8xHSKITFQ8cYT0xClCMVIEsRHOGV6hHHBwLQMMZJnpyy+aQ3B" +
+                "jNGVFPPgHSN/1CQJk6RHf+xuoHE2NtxR3uO2uslhCcHbD5z37M2n3nvpUdectnPJ8dvnHL518s7BJ24fZIC/xD/hAByGgx+79gT8" +
+                "oJZekKglGkDslNwQw9IDJ4iHn3jXVgOQFiSoFykZU8Kdnwzje5fY3LBZNYQsGrJCVywWAL4BygwN4tLKZR0iamr5sLNDJBV+3AuK" +
+                "x73de5L1T/HOj0612cB3bLEWvbcbYjYiIL3XrKFUSBMAq/G0E60f6VzICRACeJcCw0huPfdQMJJX7jpLMxWIW4MiboVDzAlVIe5T" +
+                "fQTHWsiwPbydfYzE+mPZzYzxMsA0X2H/4JHwsblJcBlpIDkA2zpnqaHL8BHJabhysFZWA0xj/35jVUUR7EHJoHZ8CLb23TuG8Rdu" +
+                "SvVprpoJEbhmBAB+BPWLE+K0qbBqBwIJSWUcNMxPvWvL/vGhuiCkpIWzSFGvAQDqc2wCZtawd/EWDUbCVCuZCi5+io86Q9lDxGsA" +
+                "QcD+CUOENe61r5px72e96YTiWpZHaCyiIQNrDfHQiZaS7WbQi83NHzHE1gYNBECDcy3hS0y1ecmOFLJBuEI6TJqiQQjf8kogvuUu" +
+                "oNRahMqf0IDEfapf8EW4rLgQdwrfLMBaEo009W8GvNAahnk4p5BRgL0CDbnyxB1lZdKG/ZuUQF1gfOoIaesmTouT4yMM4TAsObgC" +
+                "gOORS7Fhue0FYxtJpVvmDWWAWQrdaulWxXDKR42HYHeAMV9IfcZcBCi8iVSKEXOqT2QxCst3kQhDhNhR4R06qox7c71OnRWIa/PJ" +
+                "MRgPs31cAjGGCkWDTbEZH4pMkBVeuLYWfGGg+J+9a8fRndmNZynehNfhvTly4tSrcOLEmVMHjpx4HyZQQEEo6uPRfGKJao0A4mLu" +
+                "/HPUzX6wq7r5eCwBgHrjspaB3jJsXBKIg5DSgFKgsrzBxTfD7lB9t40gWEwbT0X6SdvtHvAwwbC/xTEjxhcXvT5ThYddwxHrwspn" +
+                "aAD+poD+4EK877dqh1MZKBmq1RyAqBeQN8bE0EPL9IUdyDTg+MR9IkIhmD4+lF1jaqCOgwMcTwG0EAGAncECkJ1bH6AEc5fNLOyM" +
+                "TG5x32whAP7jHma/OOvHVZOe83GmJgDoMA/Nqd7CpP8URPUSAwc38McArF9w23cx4MYicU7HWSIPhRo5dAD9b6//8XR4mY3I2Drk" +
+                "r0TlyvvvGA1YB+lnwU8CbVgJAFwtxwlAIVuaunv5uhsfXLj9ZKjBV2Pw1ZArtQMNiA7UEBk/A/XGXxoIgNe8xPYUGqAT98OUTdvp" +
+                "i49fZmowWcUj3hE5f8e0FgEo/KaKAxQG8MpD5BN0y0m3DIfIgDndfQ1ouyAzPM7IjpM1Q0seOq5BAAx5+RzGZ2EC4HiTLZ4FlyMA" +
+                "EPiphwXkU0D2CKohtVgNt02UzodFi57fnADAlhVu7ujexQQg+gMCsMS5VXjOFGiy8PnBIAdCxa3/oGq8KVeltPMeAuA3L4TOuzxH" +
+                "2E793jtyEQ5FYqnggBc40gj0511MDZSpHC6Nb74efeIQGbhFmhC8zslxD5Up86qlx5ni2ZzTIY7HqxMA86OByhnQ/ncC0FAIzIXg" +
+                "G2TpiwECkdg8uxzgiDUU/58r/fDCnGVgbbDdFkegnJGTBNJKABAEEgKLucq5hQHk6B1PMPLpjU6jLKYhclaKggjg5QgAhPH64vJU" +
+                "Txwlg+CRIz+maesFJIjWl656XQJQxNfWB2hsc/MhojO760oa8tfnbt6hLCT5uNfknqOqyaGZA4ogec3gIfdZBGD+3eDSQmA3Ka/9" +
+                "03GftwsGo1ATALn+D2HOREWu/o13cwIAQaIA6epLAL54SCkCA0IENmX0j+0ZC/5uuy9nTpRb0vivRH7rcoDv8mnKPMqRP3IfyTly" +
+                "x+Q9gwDUjvVyi3TxISKWeYAATB/3IVAKUzCuWhGiTZH8DTDpgwSgjiQZLwv9hRwH7TSDf4rP7X7Lhd39Qugm9mvdiwHECdWpgSi7" +
+                "iqsf3lyIbYjhlabZYUk4wEsADt6X1wUWBDKGNFwu+lWDxzyVytdd6xIAmpfCj+uTfHITx5E/hWhlyXVh/YcRgDqb++45cp9DBPJI" +
+                "AkBOvg3/oyCb/rhq6GQsBpmXhsSD/hihg0nJbyJfg/ZMA/4Uzex+a0Th3nKYMeWrEwCiK/GoOUgACqsxm2eTsu1w7WY6ErUsg/kS" +
+                "gNodqOYAChn96N/EAUImc/MZzMsXuXSKZ5zrCXx2ZDoC918CUJwj9zxEinfvZxAAlqmRsoz4QWdh2guI2Dokux7Uj4GzSQK8l9d+" +
+                "+emtfScBwEzfX2LKzSZs/i5kyxQL223N3VaEAWw7jL6Np3CuHYFeAnBGPnGAkMKx2Kivwe01B+ctTQBqp97j5Vc5myOmZkvPJP7E" +
+                "JDn+4RkEoMgiPX+IsLfzfqT2Gwc6AkG8BKCBm6lJbPD/8WcJW8Cl5Rxop75/CqC8+61p+P4SAI2IOp4XedR3s4i/0e3XQAD8mYsE" +
+                "rb4EoNbiE5UqjmocEjcXKXFNMSzaGeZWPwLUBEAZ8kRxK7IXPwHQAOho9HkEIIO5WCTjh0jtsLQ+AdALqZoAjHsBfYpXRldnDzIh" +
+                "ALJy2mNc3e4wJ2/tfyMB8McADBturuaaAOBYmnKcKAiAcIBZLCUID+dfJgBvGtDjMcH1cwpQhWk83feRUM2fHnE+Ocxx/59BUxNQ" +
+                "Y5uvqZEA/DUKYusJhmXwPAIQf3+rQyRkIN/3xJs/OUBNAKZ7qLEK8UtD4VFX0ttCxgNfz4D2lwCMxwYNVEefDsTRDH0ZVeQNNnuI" +
+                "Fs8sFBKA5xQC8x/bxUj6PdPsz0SQZxAAqKbVwQ6UiQ3ZAq8RUwPbmJM1/ZQAnKg0vzYBKBLocave7RCZ8CMd8LERAjCIYYoqOhKo" +
+                "IHlHliYAWcbT4XwH2n8FAdBhGnQNHCjAMZ+ItyjnXhOAIp5y8MIpI1cQAEf3YKri+5N3PIYHYhlJ/Ox1/vHnzNFTWQ3L2l5ANQGg" +
+                "ZAIQ4zBoaqLzu3HA57E+5EAIxNoEgOrkxAy8zb3zqTcwEX7F72xqYOTjwMqdlFNslgBIlUCIv4yVlxX8LgJwhioBefCFOs456ti+" +
+                "2kRMdPY4ARDfzdnDJu/A3GekEcQcUUYQXkaugDhxUYoitZCuBUOnT5h42wiwURXfjbJ4iFpjCp16afSbXHc9YMpCi0wAakBMAgB6" +
+                "PGVqYBuPd76Ww6e+ZrO9+HyBfG2TPyVGFJf60UNEO2w4RAwTYailAykxzMDUsGoBBeg/xn/wdVdOVawcIbr3r2x7Mgh4AQKAjrol" +
+                "R8TG6oxlgZqjvR7k8Vl8OX4GUnQn68i2e/DRo0CBPyItsCAhmKORrIjb2Ca5uuYSOmPjACVDQWi6fe1lEyHtqxQtUtBErKv2lw20" +
+                "lT3mTdf/qJwdQxpvOKFOSPwQ/xdszXQwUzvrlMGwcL7i5/gNbmQdYQCfymntJsAJuc/bHbyApP9dWD9Ldpe/4HwRqWvnFXi6Ts0c" +
+                "klIzz7/KFo4cmbfEP8FcLLofcdwLAZADCKqNewHhEYDoPwQsZaRXqEiDCaLzmHDdQm5LCSA3DQK+Z4HlojAWiuNi0/Y+h0GwRWMD" +
+                "x+/deNpSvN3gVX8whIvTpHM058IOkb6dHFvMJnF/dit3hFKFUc7Pyo47G1muFJP3PyuR4TTabkOcke168RHgsinb8sMQZosyhdIW" +
+                "XjS7IbAIAJg1NTmGwXpOF+cLNlR0yXS+UOBp3RXtTb0kqc7sISJ1Kj4RgHz/ZdqPAnkx3Yb9SOYjFyguDNO1LAfD2LBaOEG5uOfX" +
+                "9XfvRgnsBGC58si1jbbaBewEpcICqvwluMcTgBbl3Hf7nGsX1HM04uotHIAmuIUAkGZ8aqX99MrIlaNNyOIIAoE4PAqgF6tlU8Q/" +
+                "xxTcIuKeMrbS3hAWZEEAihpYDAC4YYiU03NXra7sJuv5Qgh4kgBAl7pOHw6RWZRZzGzNAS64Q9EZ93tR6vk47QVE9F/CnnkCEOIA" +
+                "nJfxgZoAFGZqvhJwdGVEPuFLNwEAB+h9PN16pwipNRRvN5Ywy7ylJgCzKQ5ggk0EAB8sUuU40GQ+URxpsjD77kQW8mJDkZly6CVn" +
+                "s3/KjPPFXDrHXwC2RQCik3cwNUWi5C652HYVuJMEoDEvSsbQ2sTozN6EAGRCzlxJvvs+SK3a1EFJDhA/8MJllgBgUoQAQC6GrA4+" +
+                "4K8EPA/rvY8ADgKQo2EAwd2VEfMhlOzRfDoz2YoigwSgvtsQW+8gAByWPA4ONEkoeUHtxhwy26iRYJoct20qhSFnM8U0ZWxIVMN8" +
+                "DRIAgq1RN3GdFLkqPnlI1Qdf8YDpfgjiK9B3BECQdFHbASRzfGaLMICaA/gIeYg8+9DOuAlAiNjS2cRoMSaU2QUDAsCbuwJ1iEzf" +
+                "ZStbGCYABt1m0P8sAej1dmArAgg+oeeTUaqmkoHoqoUAGExbTGK+73EQABkKNwEQvmGo5KqzjznFjmhPAVnzKOAkX6NSb6SdAAhh" +
+                "U738BKC+/o9/NW9q9H7kGw7w05O+dr904043AYgmXDNrqFR9TSLs4kUOhNxHAOrTYfZ9Bo8ACH3UY3GUANByFhxgCWJwlgA0fGsF" +
+                "oK/yUAIgYFqvPM+5PqMh2P2u7CKFT15BAMSrctARSB7fQU6eQQCs/r6cfZNTHCGyYr6UEqSXdRBI5T1oIgA6X5cQgC0H+JQA9OSy" +
+                "if5jH3VNyqcyt+4D6JqdK7gTC/t8vtRMALjA+P3xmf1rpWqtCeAnAJTfTADoBQT/H5iClQiAP4nlSwAEqbtlgAAgHD67AJkIQOHw" +
+                "cBJpYRchhVGXi3aMdr0n8fM0ASg6r2lYfAQgfh4kAKacOTJo7QRAkIFcBDqITSjyJAKAmcr1dIsKuOjGmQSgSN+EXJamEtRuAnDl" +
+                "xXMGndywBwXnlBCAwv/nVjNbBHi8BOAmXkBAHbclAFlM3MBADwZiAJaRej64bdwEwJ0QNz6VF3d+iDyJtAAFwnbHXnK75bkIgMG6" +
+                "cWZ7CYCAFUkrvjQBkKisEEyolQAIJvMRANyXX0kAQqwEgKn0P1UC/uQlEpcFZ0wNU7X2pknIKQfM3ro6LFYCAEH21RjDgwKCxCkW" +
+                "9Hz/mT1IALBNVncBAiF3EQCDF5D6/0wTAA7deRksfvVwAoBxcYsbXIIAhGmQhLiOIGBB0pSchfoMFAjbDS+gRmf6mpffkwAA6uVs" +
+                "xy0EQMAKxe1JzOayr3w7AcDWUD48SwAMrkdoyEQAcrBBe4YWnOJFgkhI71U3GmVNva7FtksAzHk8dGSuIQCA6bD5InJhAdvL+a0J" +
+                "gGFmLWleQ4q0H9cHATcSAAzgKgQAR+S4/w+JYiYAMoCQdbmBnQCgT2tJPbWCkgGR2wkAOQB+ZsVT21W6XkKczz4Ev+34Qhebhy3j" +
+                "tnS9APhvOCTb8boEAD4AEGsQMJdTfFn58MouQNAr1kAm4ZchP/XQsLlZS5UoDuz5zFFotLGIEivdZgLQBfSnCECRwBcTQeEv5Yyo" +
+                "KyJJ/2ENbj+zAwQgpwHlgdW+H90EoBH/RG+/QzsAnO1553KiFBUPH7B6Fk1VAvaLfyawZ4QA+JJhISK+PVH3EQJwMhUXdAlb1tV5" +
+                "gN1PD3O3zQIkdl/mt50AyEWyM4m1ToG1chzpE7eD6SZekI2fAGj6Uf+Noyai5Xj6b1gV/ZPtnPH6De1QtB8faSyflBVpxPoSGiE3" +
+                "6G4CIHfPEIGkgvgpdVS0ULvzMxt9bp/ZQQJQFwJD3u32/egjAIjTaLzjw4E41QdipHytNoxCDfRgkgCg6wuJXJv5CEB8cwsQwwJy" +
+                "f/qiaalaSwJQbEjoAkLfazfrnWmAv82vnNv5LQb5JQCiKXCeHpDdd+RyTaJpapyVp5QArFZ5lN7zn1znJZvC+WoY3FMwlaGpw89N" +
+                "YOIZoF8I/thHAGQZZDaYCUC2sXU4BCeX1O78zLIslGeJ6sxmJuPbjyHbzXjBfmwnAJimliMesCHkO1SDPpgIgPFi2i9doP1P0cbu" +
+                "t77r7ksAIEDPYkAd+TQp2bvpPFyDS19vhj4lAM5AbdNN9rIEQG+VQtCcmwDQQxQ7wkIA/GlAi8wkFEfc9m56sV42xfw5uwk062z3" +
+                "J2ONsKF4V9KiS3wtw8QWoD9OAGBCC8EMFpN4MItR18zG/7bPrGQxorgJAEzozH40EACcQY2zE/LFeMa4mQhAfvWirEsJIAsTACzf" +
+                "AWkKky3WMdzgAqbHz7qvDBW1BMBBOyYAPe+w0RjChc9G3woCYEnVanAEwsGGwVkrBkALyUH8BCC+CQIQKpsIQH1VltOZ93qbmAgA" +
+                "pgwBORRYGDTRbltqAiCjGn9/PtaIMLE34gi6KAHogfsDBIDLAJY5Cy8mviuDIATgfGgHwn58MyuJjIpcRtb9CDHtx5gFNwGIqQFv" +
+                "GXxXR65YUznwIr52HUrQANr/FLB491t+OD6A/n0EAItPxFFuoyAA9P/Blj4ZvAXBpxqpuZQxdhOA3lmQ55FFXwC4hNwEQIhTvuX1" +
+                "+TXpQvIQAN42URysddc+O2o1ZMBRoH9QnfOmBjCRYUuNIIAw0fEI4A8CVjmY5h+vUjKJx9E/qd3X04GuMieeb2bJ7vwvAPP70UcA" +
+                "YnZgG0cIAK5NHS8APAvcBACtLEsAXgLgF1MiHSEALZ7BDMuLthicZ3rBcBEAg49jTm/3JAKArYHF4yMAOSl4r1L1MEYfrDmnIf7I" +
+                "dVeli0+vc4L+ZXtiC5yME9USQoZHIRIAkxhw59nk8YJ+avSfU7u2zCxzYTuimFQ7YxDwwH6kQfuUKkNOh4F83/bcQQYXIP/dv8Ep" +
+                "pgG0/+EjdZbdb+U/G5ffTABgUosKAFQNQVcn3bVJAPC13hgGxRm2GAAch3iAboezDyMAGj3iMfT6cadSopeVAFBOMPDxWtcFM9ft" +
+                "eX5U+aRJAgBT40jQJDDxPNAvYPRsjna9Iz9MAOTmpWVmmTG5fWbrZKCZzKy4H2MWCgKAaWohADE7I15ABBs+AiCmzFR7ygr9XwLw" +
+                "EgA9pOsSYLhIOxm85UhkJFrU1xuNBq7dQZNFLl8CEPISAKn/7ScAliJ3OX40i2TpbTE1rJrCcTPFUAImmoTA4p4EAHKw5yvObMj8" +
+                "RFgcfXUztp+PgOBhHkecGhoJAOR8GtB59O8gADHEn+STN+Ej5Z/+8R8gUHwVAsCeQ7JSlJNK4Wv6QY8i7jmCOoa5hiL45qmP6JzW" +
+                "I2BaSP5NQU1NH4cK/mGsm17esNS7cn1Ts/L5YlD8PUSW3I+G8zFk5AVg/Y3vlybQvioBeAkA5sJvESoD1KiO6uInAA4tNOvZSwBe" +
+                "ArC+YckD+FRT8xKA9xBZdz/6z8eXALwE4CUAi1wJ9IAP3ZP6zaUJwMAlx0sAXgKwGtTI+/GppuYlAO8hsu5+XP18ZNMvAXgJwEsA" +
+                "2h4EyeO7bLdpfw4YuIEZfwnASwAWQxs6gA81NS8BeA+Rpffj+gRAtX4JgJ0A/N9//dsn2f2W/M3q8r//+a8h//Mf//Lf//7PSOYQ" +
+                "MSII4rxzMBBSWERvkaY6Oh8qQBeoE4Kk1BH5FH+McP6WCOBtdo7eCucRoAOlVKPuOULeIYZNp+TW84HdMWXbcYCYVinyF8VoxFLh" +
+                "ckJbXELRnClVP3ICOj4uSskwUi9TheNoWvJL3NmwYLgQwr5NlBk9z/sRlvORpuap5wutSj4vim6/h8gS+9F0PiLgWEu/+Vcp220s" +
+                "047UGjEsOA5k/S8rDaD9DxdQlt1vyd8sLUQDqOESOydsR6y8G9qF6E9sBhTNZQI7IQAZ4lCjMLKOEie9r7dh6chqCgMXincZuLpK" +
+                "6yABiC7R3LMU0bakaPxBLwGI0eC6yonz4r/6anWZ0uNAKaR62B1G6OUjAGga0j5lprUHOxMrUGqocSluhzEkJ7nHeN7Z1KAcFVQT" +
+                "Q+qQ7SgNFgKLs0OsSqHyA2aWmkoxYCnJvNB+PJLktEU1FhdittZ2I1knBGfatNC93SZv77kAM54ku/sr/xlh1dgLwK1oADhAAS7H" +
+                "TQA2JGpY7EL/rBEpTewlA4O3bP4wXtyfbgIAfEMOgKTUdyMAckj7CIBgZQia8xEApMsMEV16WY0odQEBCHUuIABWIIWXxlwz6xMB" +
+                "QApCXBYuUTyRqn1HAGB7a9niaROXRiJdbCLcqQO3iQA77qL/I31efWYh1zOx9rS8Uuksp211EID4wV0QgBYbPAeCKo2OV1nBTpfK" +
+                "SwBeF6BCtnc2fAQkjimgPzUSAhAWgQUX7yx8pJNXTvE0aCcAMbDMck0zN04AxFTlU9lBAAQMYTuwud7DUko+hcpWAoCRpIAY+whA" +
+                "qGMlAIL84odYz9FoY0FlzA4vHTIByHfboaDbla5RtWxUFdl3yHagHASAtY1zHRhKLv1LZQ+SlrVmNjCrslYzAcB+jCFCJfjYj3GU" +
+                "xGY37Udo5yYA4I2QUAr0zw0AUHgE0kgA8HG6h70EgLIsATBwACDm2D+Gi7oqGgNYP4xFbNpoOvYeK/DrTUYJ/YUAUB0HuoI4EBu3" +
+                "aHZ/bycAPCO1NMw0ASAR4jntc1TDyItxFOBiIgAoeWa6YVJWcyEBCHWsBADawURIHcNY2PGfHEwm09GMqKDgEqaGMDFj4ka5wHkv" +
+                "lzfCfOVCp/Xdv/R5xZkFECdrtRKA+vaaTizt+xHEVbQDB2gnAADiuIy3noxSpTvERwBeF6Ct/OFbwO8kAJBtwFMvAYBdIJkmuxWR" +
+                "qsZYpmqyS+hPEW+Z+PgqhY3hwRnqQ3HZovFDF/yFrZEjExxA/Q5HCYDwPaVAHgLAlba9CDQRABTvBGy9gABQIzcBCHUAQULomOsg" +
+                "AHLj2+7MBjglryiZAEBBBO0tZGoIE/0EwPgCIOVveXbkQr8yfbvKrj6zxJFYtH4CoExMJIausaItqptnL6B2AsAgYIg7TwYHkEAI" +
+                "93HWGIAMMB4gu6C9+Ps6CPglAD0oJFvnuv48DZYu02PoP4RYOTYVdVnCgzN2vrzT8WRqJwCclC1Kw230LAEAC9p9BvERALkasWYB" +
+                "kpCvQGN+AuAKAq4jESFYWibDQmlfw9yS9QsA3cQXMjV43CBMXJ0AiJNPfaBQPvVWAgCGnEgbrsmvJwAArxRwADzC9wY5fIoDbiQA" +
+                "1MKdC4izdg0BMBD+ZQkAsYUjC9DrAkQUkm8jjgeZ7c5RHc/A3G0k7ksIfHMzTScYbSQAtKEQw8FgSQMav7wsDWiIjwAAKMdom04X" +
+                "bL1d5OomAKGOEACuK9/NAgSILbAIxrPXd7YgAAbm7JWY9+wFtCIBKFze67Om7i3t4dIzyzG5kgBsX+RC6EPvCF8xqKZJMqAI3cD8" +
+                "/j9KAKxhP3eWSwlAlok0oAO0gaDZRACUdx6eYJmOYqBy/h+f67bbgzO2PYbL5wFPAvDJgBKPjhMATr1zlQ4QAMw1H82RZNAXUlLE" +
+                "UjvaJf64jACQwbIt6GWID9H9WOeJWsJZXBbJogRAXUZLqcN/h9NlGvxkriEAOQib7uyN+zGnAodIpqneGDlrIDhH72ICELIiyp8k" +
+                "AMXfZ8A6LjXub88wU6CQIw9PJwdT3MTDECzkuynQPAOORg94tMJ3BrTCEwI1m3Dp9csJgNUFCBd1JACijgW5CiAzEACeNH4CoFe/" +
+                "jYnABU6RRxUEYDDX8HmUk+3zcgRAVCjkeNJSviYtOrPkRSHZT8YajAFxpJfAHVlObibPce0EACsh1PTl/yH0J2uaJwB+NP9YAgC5" +
+                "OWEQzwo3AZBV0jg+1AKGADbuvO8m572W9hBYNwGIkQlDWUBDHg/zLkATBEAQHk8Uj9On5mC1pjZyEwA6l9M553oCwCeyFo2ioexJ" +
+                "tbqpAezIzuItp3vhUTNIAAoVitSucVey7sxKaAT3iJMA6MaHfevdj5hxR5nIggBQC7//j4kA6GZfAtN7swA1fmtQzqJ/Hmb+DOtf" +
+                "EIBtb6X/FIHIsAInY49gCHJxGUr8Ph5be6FbADJQpmsIAL+fBxCOQOMEwB8EPJAGNCd9EwTZy71FKZMLUB1fjuPTRAByW9j7XYBD" +
+                "LJhcFYe+LaaG1axEYGdihaCVdseD0M53LygeNeMuQDR0IvIKyt62zGzMXczgrlhnVjjABQRgm4aV7wC9BICJubbT7XgBkHgGkxcQ" +
+                "MiWOEAAHyl8xDahK/a0nSX7LdhMAWXBn6I0o0p7hRDIbiHejCbrBNxcjdiUByGNIR6ApAhA92U2E6iMAWKXuirmcZYfHp/iubHPY" +
+                "7zrLtjcqF/PWOgD0N7ASgJip2ue40dTA2ojg9+3ZomAHimrHXejfjTuFw3COKN/1FrsSM3vSI/9TFmz8HrkyrTMrGwSqmSZiZD96" +
+                "sgApAQAoN9X/ut4FqIb+C1xkn87c86flW7XcGf0T81kJQF1y8ut1sKsIrQB8N8/vGVqBnHAwpB26wfowQjfnb2mMAVArkIaRlvR6" +
+                "AqD8x/9OJRhimxmp18Nbl5bnfRnZeATb8ZjkHkGL7cnm8qWjrw6AFBxwAI4txBS9ukwN1IFGIg5MwKSKsM+ORwB8J0Nqq+cJpqZO" +
+                "A1p3ldPakp4r+AMIgBS9EQ6AhtpnNm8QqOafCDsB4HSbKgHHRwSUO4K1SDZmCcBN4PsAAZC42DPfWkKEAMhbtuOlfvvwtMsBziwg" +
+                "0WWblht3Ki3ezPkeRdAGzE3jlUD0f/dCmkG6rVmA9nE28qgig9tsJeDCy9OdUqZeS71ZJtpbYc5s6OWu+cASYGxuSzbcBGALbnoB" +
+                "B3KqFMMIx4CugBCsBzQnF5B9oE2JB000EXMv+hfc6asELAWAIQUNKLp6vvwTq30LARAOAAKAp4bemUVz1sDcggCwxSv3I1RrqgSs" +
+                "oJxLwur/M08A5mH9BAFoqQS8EA0QtCcEwBerR1v8BQHgIIsu7QCRXtrZzUCsmwQbmC6kt+dTbx0A8csSTkiYOEIAsounD03KO48J" +
+                "shC1oDk25Cg4ytNl91JZMYffL99DABQuOwgAgVQexvOXgiBOQgByQ716iSsaZ+2If/BxdxoaZBOHUS9N3cIkokoDCvTf2FVCyb++" +
+                "AIQWjbuDrkcyMjYyKftR+YZ1P7IhqtZIAERA1UJZk/8PVHDHAEiEYSfcfwmARQxMQwjANckB8hnDJfhFGQRRRN4xoumum4ZdTBNi" +
+                "uruVQv3tWIo30JwO4QDCpo44wvryIEH8nsTqgCFlLO15cgxMEnY/1pIcZvAm5wA2Hmail9ynugsPmQgA6rV9ur4FIOhqog43wgWk" +
+                "KRi9JR9o4f1PWNO4DEBx8+xAHTHdVC3nPhY/pa6ZxfCCALCTFCEAATrdviUQph5+0n6kXhjM8wRA3m0oJPym/D9WAiBvfd9dwr4E" +
+                "YG3JuBleJYhGCquHzdN1DwH8ATPHHQV0G00LAThfxQxbFIi8pefoPJHN9pDAiKG5dowIA8RNC9TLOeoycNBLOIA8AtAR6HoCQOHD" +
+                "znYEuhrFXMeASH6nOEGD+bTX/xLXfCIPRwm26Hx8MMYqZjzUCYkf4gCLX7brBdYq93/cI+4pw05pvylnfp6QLSbACsEiOW9qwoDg" +
+                "+9BImAYWJNdkO22Lz2IAY76KdG1fZ//EjECLmLXG2wQOHScIwoWBwSzrBCtRQT+7ZpYpgGT9cFqZCAgEoHdmsUdCpFHTRODLsh8J" +
+                "mq37MX7gYEZPoNqZMwiztt2PbAjHfXv9L6IXzFHvmRsDQiTG2qwtjwDzcQIvATiJm3FfDkwA6YUglGgCEs3FNg6buyUAZxSJpRz7" +
+                "JxAGtWjsOTpM3AancM+IadPRSuxbXkdtB7NLNQTd1nWO9HLaTwB4YDPyIYyXf5WqOLQTRFI7d7WIVS9JPY49wuhYLlq3YcEVlxCA" +
+                "3oaA53A8gxn2mhrZ8rzyx5p3mxqYuJwb4EcpJXafEN3LQEQWBh6mcp7QTFSY0AkD7pjZODiAwFD6wzyz2m6sqyv3oxQ69O1H3MGZ" +
+                "zsfoOaas924eNlNSQeCUd88OiEd2BBoTfxrQjwTgJQBh+2I1jGR7xCPAeQIAOx77J2/LdrccjZ70DxRtt6NFxhz/NRoYjkAjBIB1" +
+                "CTAC6wq9/6ldrtA5UH7Bdv2vi9Y8tgQcvQQgOwdjjtxbPqTwQDOZuOJq8IjI9QFMx9TOhVKorFLUP5KMro+cWQBlvbr22zpPhIM+" +
+                "ZYc4MvRLoHzvA6N434EAWA2muDfLTjdwgDXrACxHAF4CgMPGTQC4XUkAVrfdNHChVD71c2RF9AGn40sAzqTlgWpFGctrkIGp8igl" +
+                "JvF5BACAAwTAveVHCIBk4D2TXZoEgMtgRGoCwN1HAuCe2SkCEOv2YgIQ28RNAGIM/QRAUzaz+E9XeOT1BIA7XS7+XgJwyJ3oMQQg" +
+                "5p4EYLDga3TmfABAbMtrCABebx9PADIHUGzqJwDAECsTAEXJkoQhoxA+tqyibHSVmfJnCUB0gy4HqxMAugJbd1yRHZgRQQ8gAHQB" +
+                "qt85n00ATCi5DnZi/M/qBCDn/jofZoDPDhIA8QK6RpYnAAfl/kHAjACO/TlLAPgIcIbGXEMAQp5NAGSHiCMQvJ8vIwAQuyOBfxKB" +
+                "kuvUq9ugSX/UdWfwX07LPU4AlnYBAlwbIQDYegILHvMCIPtOth4IwAPfdkBcLycAMe9PIgAwceeLqEiScQpiCy8mALopLpHFCYBB" +
+                "rr/+HycAYRFOEAChMRcRgDAEv4wA6CMAjJTzjFQCgHbXJQAM66RSgq4+FeRG9OcSTk04S3JSo+sJAHbomaDDlwDky/LjZ3ku2n2r" +
+                "F4BdjX4JATiZ1+glAFIfBkagy//n8QTgUS5Ad5CT1/80fIMEgLizyARaaPESAB8ByAXjjhRZewlAgf6L7Mu7RTkMoSb9M5XrfHPK" +
+                "XgJwcsvPE4CvkIFE1t4tBuAxLwAvAYBeoMqXEQAIHTXPWM6nEoDnxwCsLEoAYjVPEwDFnTX6Vy1eAmAjAOQAcqWnedCcBGDdGAB4" +
+                "/kS3a/RPyVHXXGmroH/ILAEIeQYBCEWuJwDMUSsc4LjkIgA3JwBS9PAlAP4YgCcQAF7QnPH/wWcXIQB+uP8SgJcAQF4CME4AKLuO" +
+                "QDC4bxBwvcIl6aeg/zzIMs739AWKzsT6x6FI1aRsMwnA+llHxgjASKgoHboka/5xkcz6dyAARfC9UG4QgOe97YAAxP9eTwC4H1cn" +
+                "AFhC572AcFUhSZOXIwC/OAvQ+uifsbPvC8AbBHyEAMhQ463cZNNBAORGeRUCABVQ544QOadVqTdm5gCobTmuPlTj9ZUUVxL8N0gA" +
+                "HvACAEWWIwBkgLJ6xwmAKJXpCv06HhndMUQAsB8fRQBCtl5AKMl/PmnyeBagkMXu/l8C8LoA9cYAvAQgw9NPwQAmRyCmh1qRALBy" +
+                "ZIxM4fZzhJwLNImvAQuidOiUdlQtw6mMqNZ3ARpLA8rHxlBk3AUopEb8IuIGdgcCEMNIvppfqxh183gCEK2vT8iHCQDkay8gRtpk" +
+                "RrEaAVBZkgC8BGA2C5DiziEC8NYBkHRMIZ+eXLY+HjC7DgLAc5rNoVrFzaF/9vjfvfg//rQlTwFhuHHnFHJxMANQaUxN7SNOirhi" +
+                "EPBLALB6z/j/ZBeg2xAAJTa5qy8B8BPy5xCA2guoyP/Dr1GmCICmxnqDgF8CcHEdgOMEoICkIACPrAQMNIBDdDAfK0ZbOEB7RiDY" +
+                "dC6MOxMA9BbgGOcQsw0WF/9/XdvFUwBIFxZDHEt8DXBrB48UQMPoQ1YwZ4Dho81bB2ChcCPWAcj0NeRrApBhzTgBCJHHise/ACBX" +
+                "5iP34wUEYGv6uGBgjWsvoAx76D85kzf5fQGgvAQAdQDGKwGfJABgMnHSgAD49gxe7kYIQLRuJQCwAjVO3U0KFMa3cdhh08Mabg3T" +
+                "VL3q3DdKoATg/sCCNOgZGR9H/zUHyDQgGo2mYxPF4KNLvWrGZ+PjseoK6C86SlqV6wlALEU66fkAB9AbYOLDHhsBC77OAZrdwMbT" +
+                "gILBxjBOE4D58G48Iz9yP7pfyLd+ccIBinwYBYrQr+lOGdjpA0D/JQBTIs4zyGgbho8SmjqE3w/rAJyHxfeVC5ASgFjQuBal9HY4" +
+                "0Mw2XVf8Jn7vFrQbLQbmcLSIiQjrU1//FxwgJrFxNBBjGv0h/uAqjVMEq9Qv2qWQaDqYUhxjYe5jRnBBm1GF+PyEfFe741NUQL5e" +
+                "BROISeSbAOVrVkPcj1ui7BFeZzIN2ZJD6ZXJsIT66DPf6ECNGoWx3TCYJr1QOIKPjdEiFLEKTY1w73zkH6EBEsEC26WN+oWOeRLY" +
+                "UEQsxOS6Z5ZvOzGz7q3BdnmL5J8I3Y/ksVDWsR9NqkERyUoH2aL2yhromOhjAr925U7B44wmxlWIv6T8FLT/XgIg+UZw2JCvOwQf" +
+                "h4AEb6//T74AQAvcjFKO9Oe4YN9CpCGrMPtY+5eJ8H5Ui02GHVCPwOukwNTSKgkHONPEyRWLvknwFo14AY5/Wr+v3q1CA0K2EWlI" +
+                "uBGHfRy3gXvivImTaZebgdLEH8SfxR/HPyGryff9BSKUfuaF0WJSgLmzyN+An0OkUfz9SeH4hOCbDgFsOqJIu30GJshzfVwyB6BZ" +
+                "RuevlzKsWUl1dJX9xFPPETneGa4fmDKn4rqidN2aJe9H0+RaB5P7gsZwlwMcHFWm2Mpfw6fcO0V2ek31r5FeZPsSgG84gOAJk/C1" +
+                "q4iPhHx9P8q9ZBLd/35BWz7JfurHHVTySX9e8gn9CfWOiHSVvS3MaO9uzTRAxoRlZUpKppSGrEa1+6DaGauCTjpEm7AKxtkgB5tr" +
+                "H7fCge08B5AZyVo7B7OOWVcO4Oth7yq6//IemXHT4pG3o3wFE9LyNcfg582ed/o8lB8hAAXQ+SUEgKc15RNSbJTznhL1/aintyoH" +
+                "/skCcjJK9buRL9bYtmOQfFQ3ync0TGZZOtxrHDO6yivwkzrbODNKrWNBaQpF6v3YNRHzgpG8vXyhV/3Uc5IDhFw/5p+uFYq4Bd8V" +
+                "w1+1e/4aNjNz3z6S46m4f6klQ/9MQSnte7zYDn5Y/xQCEL9fWvJRrajCL2jua+hf04BJ8cfQWPtzZAoaF0/Nl6ST8g/Hpeit9cG0" +
+                "HpMvCJLolTWqD4MThqVnQkUR/LyQHHz0c78WKus7vZhrpuqWQi8RQz+XX4Gv5D1Vv0tD6u8Un+pde8cPL8d79UsAFpDiinHK/aud" +
+                "1Sz1pOWfCIOyNS05yQ97v2mSgk1dwwFO4ulaqYblcYK4OuarGJ9XegntDfesamTuasszskOOQ8lX6rmDtOyy6zfCONp5CcC8jE/Y" +
+                "DTV6xlBbCYD7gcL4cYNcydN8cFmV6mCJ/nGw8IpXTm4H77AbKPry68TAeF8pFhX/9//bOwNNy34zjt43KQBFUX2KPkkBBVoKg6KP" +
+                "USgGigIUhUHRh+plqHF8N7c580uy8p3FAnWd/3Qn2fmt7CTfLMx5CpbjFQAA2yKyEJQAEOwkE38jc1LQGIMzTeChMZiNBYD03wRs" +
+                "37jdCpThey/RbzPFKwAFogaMBz9GAwIZkcx6EwhzdeMCnrAIUQMk9W48kOwlWwhMAWiPe65uTNtCDq+3+x7BwUTM4vwPVn5kvoVk" +
+                "JWAFIIIpX+wS8CwLmDhBUqoPYDG7i0Hft9CUAAz+floATDyviQle7u1ybb4hqARmZXkpDPrv3Dtm6QIQPE9gwLoF07y04Ui6BX52" +
+                "v0sJlAERs/5lg0sBIO+lNu6Y6UUe2BZzsfeu9lYCrUDM+l3DfYMWbCUA3nMiZnpRD5jpdsN7WCXQDcSsH+zSJvtTtwDtFgCFwVgv" +
+                "ohjAJ5i7lEA3EIO+1Qb98BK/Baj4LT46g5le7For6GQFBDc4lVF0A3GbfqeuxW8LYiXgwG9FUQCCGOjN7kJuL0DGBYgB6VJXTUD4" +
+                "l2wa8Wd5kcXl5ZWAGwcFo48Y5QVtBYCAu3/KzCYhI740K5v14hHfJeN9AmAYMr6LdXZpwEdo/QsYKzj7Af1s1zXlk7E4rgv5hnuW" +
+                "AIgY6437asNxNi8NHklLB7u3JgDPjqb8Ni1lvlcAREz2qgKR7koQiBeBgGVp0hxGeRfyUe3Y8A2sAIiY7EVD6G8FdRbRDRB6IJ67" +
+                "/c8//vIRgZQP2JHvPJW/BnSDAIgY7kVVuKgJlqWW/LYiJUHY7ZWP+GOgQV8a1AEoj76JmN3F1BWcIG8xgd73hIxRACSf4xMsGlO+" +
+                "3uGUoX3w9x9WAh4IwIprNMTI7hqtqd35YGfvzT7MFTGIudHcLGKaDwb6f//9zz/y/X9ZnfshFu2J+SBJARh/TYDEKYuMmhdF7j1q" +
+                "2fLGccIiKP98qmAD308m+Cz53N+3BaUM7YO/f4t8TXCl1nTeG3GR3nI58UuEVsSsqDYEMHYf5Ln1eAjx7grrDIEW5EMXgN/++hcf" +
+                "Uf5W8ZcrERERERGRYGhXAIaIiIiIiCgAIiIiIiKiANAREREREVEALARGR0REREQkGNoD14DCecFLqRrc9iC0uwt8mHa2l+qNNln2" +
+                "QhsIgOdGR759/XIpZWgf/P0zlYCxnNWG26O/wiCikDODu7f1e7vimLtcS3+QzQJQ/hsAAoABogpOh8ygphqZ47H4MC2RsbqTwHO/" +
+                "X9X8YCJlaC//UgF4npbVjphzmIhiTNaATvE9OzW4/dVdYZqDKrKzWlwZ2gf/lxWAMG3CMWRmEjHfE+I+4U3inAJ5FWMDrlbwNAIM" +
+                "9JOsFwDGootWcIBT61UiAg/6zgLHIbyTyQFXMeDAh3nSPS8Ap24B0h9UghKVQIQZ9M3393KjGHjHlGIgGwSgHtLlb5HzZYPpRyXQ" +
+                "CsS4n2XPKO6agPnwxYBoBR4zEAWgGJkxAQjg1KUSaAXrkP196eqsb6bvRODBAsTAq4fUA3lSAAb9oPytBpfHgSc8lUAryCMH+8ml" +
+                "Wb/flhUg3nbKt4K8GCgJogAwVeFGMVAJFAOBdIDrsv69Eb/jkes8/a3A2uqqgigAkDlVJVgxdekGAmxTsz6huqIl9l7BE/gfCtQD" +
+                "LQIsAPUdRwABQJJ9daoEdCsA6IHAG8isf7Y24otEDaAqaAXqwRXoJzOVgBWAeTpZQZu8C5+TBPKc+XGfn/UxRz9dLywAeKnbhzob" +
+                "gsCrFmQEgHYLUA8xUAmYuVNh8MyG2ws3FCox2XMAeKxWoCrguLs22bwABK4BBXKdFagEioHc9nIw6xeY79vQwA20Ap2hWQXivABc" +
+                "Vwn4akkIKIEHCXQDUz4y6/Pj/vGgb455wVzIfwNrBcKP+HkBKIfBWADicxIwcNCsQCXQEMz3Zv1ZTmV9FyMX0c8NAC9eYAkzMd/n" +
+                "BaC4BnQweZS/1a/MO9MNVAJVgR/rzfpjzPqQWI99S7yaJzQQA63AcM9kqg5AXgD4gEoVqgS8lOkV+Ab9Nkv7nFyyoh2lmSHEWx9g" +
+                "BYqBmT5GoA5ANdYAAkBi5w3EKoFKIKi13ktv2T++rs9I9n52K7hdD/xcoBuwc3wg2QeZuLtfAQBclBGGdrxYK5AD6tu6otaprE8u" +
+                "QSXbhqdiUEIuhGe+38bxzj8QgHJQKAD8WzVUApgVCMBmF2V94z6r2Nk8t08W/NDJF4P++4i8e9e7dytm7+5/5hags/S3AqoS8J+t" +
+                "YlBDPeYeBPAOIcb9sykf9bZXAMbcLwYeMCggHCuXbVNnQAAIhcBaqkJICTxIEJhZrVh343UrgJcAOu4fCfqp97NBvIcedBIDfnUz" +
+                "76HaD2ACzQnA7G9RggIvHACsQCUIzPTuujnLpbafyfrzYIO+gb5GMcinRsWgoN9aletieQF44jwBB/o+AcClHx4kKDn1VhXMNz3+" +
+                "0n6eG1+SN9a1sJZIPysgZJK7hoBRPkBSAIqmeZu9UejU2OMscTVcX1QJAoFDT3DnXkGPrE8ebpdml9fUBoIVZG9ugaxXvpInS2Db" +
+                "Tl4AfvOrX/4IxtQDIzM6R6oEBR7jeweY472khR/3+UEfeCOK65FaQaEEOTcA1Chs4gnyEK0HQ2MgAOUYCQhAkf4LB2BxPNeqBPwP" +
+                "BW5KziZ7D+UDTJsV9L3ocJbNtvCaVrD6xndgwROsNkgZrcf79gehPSUAdfr/4+9/987AAfhg9sCoBAXWlDDHm/WnJviWFdP7lRyC" +
+                "CAMxXwKsYFtTkm9S5tPv6u3JaF2H9kEHDgjAwz8x4ABU1lmBSsC3ArEqn1l/g0EBEjwd/oI03goCvQ7UTIBDq8b9+GwyG63fO1gZ" +
+                "2suu+O3rl3cUgJNiQMi1tGVR9nFtMesHQGf99UH/bLKXg9di9raCfLuAt4dJuFrCfLR+7EIfCMD3rF8yfw1orSn1d4rvvGaliafH" +
+                "m0pw4z1OAthq4jYe0HHne/O9HHUDraCGVsTKKL/6SPqn0fphOf+d5QJQnlEYY1G6n7QC8j3cV1StIu+Al2X3ix+gQdafepLIiC+P" +
+                "seCIHoDFoOj5DXR3dVaRzaeMPo3WD2n+GQEYdPr1ApDkXkNQCeIJjFPcVI6XFw3CP9FOyPrMBWw+m61gzNKHDxADaBWzNkODn+Dj" +
+                "xMdmSgAG/8W3wegqf6scMIN/4u0VrVUCmhLwr8Az2X9KZNh6QjeQ9dlBfxxZJGgFszDFoGttY116P3v1u+b/Sf+fngEYtOzboMcP" +
+                "BeCRXPoPsEcP4EowCCIqAbYOCzrE9y/hlAkZR1qKmPXdtABYsMxHlrQewMVgftD1FwOmTqD23UX4aCPQR//16ToAKQF4B5H+AWuQ" +
+                "KkFJt0Oc86rgLcv8Kqou7aOmfNK4DsC0hc1BJ9V5Iu2LsgL+rVkSyfSzlOl//urOYsgEBAAPfwyrBDUNlo29E82sH4j74Kx/Ktw7" +
+                "xGqObknfkI0uPWCwYbVRQ7Cyx/jqTgWAtRcQoATkUmU1ffOogT7wYAFZnxj3j0xIxvpTbNCDnWLg54LELmUloX/NvoEAlN1pWgCW" +
+                "lZHTClSCmnvvjRHrQmTj/sS0jUz5VxQl1RCSx0XmrUAx2GZ98S34BvqzX0RnQ3vgGtCz8MUAbgX5XUN8K8CLgax4CQCK6IHi/qL5" +
+                "if9u9/vAkWXmnWcoQ1YQ6OScrnvdJelt7jXaOCGuFwD+jgi+J6gE6+hxDaURn1/Qjbxxnx/0TfaKQd4K+GKAcIMawHl0Ovj0OxaA" +
+                "osXfnttOFMdLWhJKYFGCGuAdsob7eGk24z4n6BvudYOsGNRKALCCuBgA3cCZDrWinVq1nxYAPiIiIiIiMpDwt6kbhfiIiIiIiEgR" +
+                "77sKgIiIiIiIDLa3dRMAEREREREZnJnpJgAiIiIiIvK/uP+vv/3pgW6HgEVERERE5DH3KwAiIiIiIi8qAP0uHibUs1h6fSy/LgGh" +
+                "JAetqpTcUiwvVT+SNtjzb9f8kJdAX41wsHYSJDYcLVYQINDcgRaHsngMBrpEHdnT8AUgA6EDqQSQWn0HKlIZ7itCIzeW9Q/oKKD6" +
+                "j0E/j4bAEQOtICAJNQ6WollhET8jAMz6uEA9gLwHj7cLKklknu36h8zI7gFOzb5jzmX9mvhzNutfXUBUPfjJRswnAX5tY5Qz8Amk" +
+                "eX64ryn/nQpAzAQIExtwX0H2oa2efvLzzbAVsOwcR2dTSzD3z7KiFTBZ08QfgB/9Uxxs+vGogZsAIEoi4ed1QEvVAiBMBxhzank7" +
+                "9VQvXbKKTD8cTqUWbOagtSDVqWoM/UGAGnBkRZnfW1LPHxhe5Z9//cMKkqF/ZtwpACwNOPgShDzVu5aveiQbSKTYEyOCDcHP9/2G" +
+                "hkA0AL4F5Wgfyxt4wAQAwbdENib+R2oBEMArIABWDyIPEDJRoZLTqV7HzwQrEsDxS3XWtQ45+gvkbbBt08XS1wKN1GPvHvpN/IEh" +
+                "8Lb0PSXwjRCn9sR7xGoA57QTn20CHGd9GghAcFenjxgADaDtU8ded5N9+JpA/8RfdeyeAqADLJrOcZMxwAQ8NbVh5l7fjWvuivsN" +
+                "7hGXrvchXnHgEi+9gCZQCQBb+be9vf8LDoBj+Wq8WqIAAAAASUVORK5CYII=",
+            ["pandora-farm-sign.post.town-512x256"] =
+                "iVBORw0KGgoAAAANSUhEUgAAAgAAAAEACAIAAABK8lkwAAAq/klEQVR42uzdgaZUURTH4fMUAQSEEBLoEXqSAAECQSAIAhcCCAJB" +
+                "IBgUBEFw0as0ii3Nmm12p5l91pqPDzQalzvn/7vTnX1avn18PQT4+uEVXMCX9y/Pavn+6U0N2OU9UAIBQN5gdUgEAFA4Kk1/s9zu" +
+                "blx7fYB0VVv/FoDmMAYAglFs+pul/voDAuBffvwOAPATfe1Pdg5ZrvN1gNky2WVU+ZTOBL2DYI/v3QEgNQEoBEAAABAAAAQAAAEA" +
+                "oPPhJQEAOI0AtEfxuWncmL6e1N+m6QFAPAABAPEAAdjccXYkBASgs7Dhc/16CEHSEhAAhAR1QQAePbj/p/VTiFSAGP81rVsMQPvi" +
+                "sjTA+gO51r/ZVgDal/X82dO9czeAf3tBd/6WomDxN6gzrYMBiA9zrAlAvP4XaAArX9lWAFufbv1PacDAvYAEoOoLPfxOawAmvlgA" +
+                "Di/zWQEI3qc0Zx1chs7rawD2PctdN+JpvUwATj8I1r6aY7yOp6z/7t2L3zQA457x9krxov7fAHS+QwKQ5RIKd78JS6ABmPX5W586" +
+                "AI31n3ulxesf8T4Am57o/qn99Z8fgMb6CwCmnMu8D9jizeCsf9IAyIAFJ/FJYLeDFoBmOADWv8BwgwAIQKcBjgXUXnAQAA0IMuA0" +
+                "gJVnAgFwsnf2GWDngSvFALrX7Pho+/8AKjTpHK8kdIJMV5YAiIrR1w+u5RIQACUAEIAxSqBDEBOA293NXvhc+z8vr14SvJWBgACE" +
+                "C5ggABqDloAACAmKAgJALwmJ46E3IAB4zwHaLABoBsiJAKAWwPhn9wUAqYAcBABEAgQAFAIEAOQBhgPw4/PbY8Lnao+WscHdQR5A" +
+                "AEQFhQABkBCkAgQA8UA2WH8LZwEIKAdc+ZKmUy4AyAYgAFht/LSO3wGYaUwwCIDlxUaDk8DYa2A4AE8e3j0mfK72KAAbMj7aAgCQ" +
+                "jgAAIAAA/GTvCjStCqLo+4I+oC+ICIIoSESEJzxJlEiUwhMeKahQJCgUKFEoKAQCQai/6EdaLJax5pztnrtnrnm5LOTec/Zes2f2" +
+                "WnOmc2uxAfz9/WEOk7H07VAoX93ZwH/iPPfTQb1EtIh2Q+Y1qzk+m8kLLB/pKBDJBRO9cMaBug5/vj1bEZNsjWFisQ1Qw5FaZlwk" +
+                "RHvnx/uDSfz89GgyFj4fEKL9/e0+8PX13d5gIsFKZ/j15bFhkrnQhJWRiVO3zWupO2RM8EzAZ9lrGyIx759f3iaWVr4moOxCMMw8" +
+                "4nK5jYXmYQap4SRhfGo33Twy768vfXd/J5itw2IAtaawW4iPz2/G4GXrwfowkL+6CWvy1u0ZVoEHmARY3mQp4iJYRiYdFrXUxjpr" +
+                "uiadWt16tWLfPblOvHl4xaCvuHRFz7jFBqDsvTFnA5MGEPzLPGYDZgBNzMkMICHH7dHxCSAQ1sNoAGgJts2rg70esD6Uf1gfxh4w" +
+                "KYitmJObbEBMAi3GKDSuRFmY1+0nzkiskYvmrYopVB7xFE8+YM2ov9vAnOtL9DGQp3cu3r969tbuqcvnTuyePlae7fIP+BBfXbtw" +
+                "8t7eGVyMW0jSy+4664qppJ1QbrDETcTW23HzGhkA4iAmB5IBIiAOopkBuP4Oi60BSFmw8tA8bJi2sA5EFjQqO9BkIvaAgDlaOsmc" +
+                "JKEOiBYbgAQIzPMVY17wlwcEBpDPiCmg6CtO71ku7W1Oau10fsYA3PWp+8iCdOVYjh89EkCXkSoq/2L/Ehmu4gFIzcUG9GgTq+GD" +
+                "G+eNnnlAqf7x7/NLA0AoRGauJEAS0cSHZMaX/q0BeDuhUbHm2D9doYKo/bgtlUb48/gKzBGqCTcsaPCJHwJK48lXTHmhlShCXQGz" +
+                "OlhUJiPuxQChm73n2mwVcsNZrj1g7lDblNfqgFHIwzIDIUNUA/Wn9xuxEtz++xT0ryF1FkNGAVEBO3iJN921AeBejKLh0gUrxPwf" +
+                "DGBrAD7BnVEubj0N1OIbH8Lg3vxSFh9IFWI6B0+dNwDPi1DQZZfIngawyVmm32O3jmWmKVZtAwMw9ce9IC/pb8sQtaX9i5v9HUBj" +
+                "A0gwBBM3AKl/aAAcCBYSCphnpRUlPlsD2BrAYlAdoLzBmWwJOweArDQ0AJ4CIXL/JwBP7QdBAxtAfqI1xsAApLw6AcM+HREQp992" +
+                "BMsJif6xdwWc9j3Jcb8/QEAgEFggnyAQBAILEgRBYIF8hTRFOWru6989XdPn9Xt3KPz+u+/O6TNzpmqmu6dH9An/2C8AhoXvawAE" +
+                "4Or/iW7c+93GaP7cTUAxCyhJWXvZlv5Zisc0YIIAcC8JahAGXPNwWj1XwS/rKpXj0iYA6giaLwCODbGEj06Gv4XjuwqAsH8QX3TR" +
+                "M+ZFV181oEsADAupATntrv6f6Pb4+d4pE8ZwEEWNfGruxz0BQMTFEoABUL9qkwD4DCj8KwIQXOaTwkqR0XJuQIcAwBEE+REvEP5z" +
+                "mgD4Li9ogGwCZPkP9o9lZj/t6kCIDA8RAFgYchi9h67TTUDq/4nODMrea0z0FcZR1OgZfM+NYMk5w5dtJX/vwBAAdWh8uwBw4omP" +
+                "eNUtBgDWzaxvA50AuQEUgI6nr5sA8KAvAEgJNSzf6Q5aNYC4ut0NL5/rDMQo+EPQsVqK3ls3AUn+D9Q0frXa70fOMI5iTAA2DEel" +
+                "HPR6AM8QgKdhrGfbJ15w+heBOLWZC8O+mf8yHZBc0NFjzETCqr9DAFy/WcNCexVajnJ8D8Ymz/VuYykAjBIAfKjxnUhGkHAu2Z9p" +
+                "rFDTDks4X+RQ2PybLUwBULxsa06pFspAy3q2n39FtDrWVmClfGXaxAXsAQbDMUDTBcB42XivNeKK5aqf4+v7JK/HFecIAMxbfS+B" +
+                "9fzX9aNtmjKcs3pObSR80v7BAgD00lk//yJu0bE2hKNcXBPSaa3uYOypuQmwl5/at40CYLzsNeZPh/t+17+RFLAlDv+A74Xg8p/b" +
+                "1uenjEHNnfAFwN1NDFA/8bT6J2vklR0vUO4apnMAT+mIsIGSaIB0Gg+FOj2WgP7xqwCESfLEwuE71BvYPtaAQ7IMezDG40T4eYTK" +
+                "fE18DDyv3tR19v5JP1Sif8qou0yNmYYjAMBLDcDx+lqWWPwEJ9cD8Z2hEZ9/pUKAKFbTWiwWyMm8ghnXHsNCtSMZkRrAuDeeuK5D" +
+                "c4aNQWFVBrTjWA6RvpYkiv+ESX7om2/qfEI4XUjzkEJqbgIAlFGKxp1pEiYB0Y5pm/heAkkqbeuUweeanO04AjAL4tPgxKuFieIn" +
+                "PNBrCkn8kMcdvxKAeER8/d1uqPdT1MPsPgc0NYCOCCHuvD85Oa8Ma451jC8IkUXZoscw4qanxUzwxffD+iJk7aBd2FZTO7bGanr+" +
+                "NAHCVNjmOd+Vdtcdc/eU4Z71p2jAEQClM/gZnC+bn3W5SAM2tokAwM4bBOG5ocShKZ2GHuME7nAEgRYBRwDEoUTLHQGgST5rowiH" +
+                "z9dIo0JTNMw56ogP8qoovgBIWc3oN1BzLQc/95dybYf52B3L+RQByNr6sQJgkgInHiYJ6cD3wKzLmfeNNHchf9wE9AkAzKDfhnTm" +
+                "CACc7B0CAGXySRaL4vhPfzNB0H1fFhVUaiJ8AeDuxHlfDAQEIEmZ4z61e8rEU44A9GYB9QlAYK8AIIfPFgD9oG/lw4D+UECm5l31" +
+                "BcB3BF35glx2VwD0YMEmAUCzfpIMSBYxamcngZddBQCU7XiBooU+AdAB9QVAD/rkQ6Nn9DBlCtL7gACMOAeAdyN8AXgeTTsAwheA" +
+                "5BSuEkSan4DZZUwtTQbtFwB1BF2VdaMACIv5AkDDnMAyklXMcn52wEO/opkCIJwrAnCt9fItU2bmmQBfANpLQTzG/ntjAJwkvgtI" +
+                "q3GVvJlwTQpBmz5NRwDMqCYAvvBdQODEITsA8A5yY2CVIwByDZkpAOKh6hcANwi8Tuq7Uybezpkysmb6fQJwrxgcBGAs1FfoCQAB" +
+                "AfCdiQCY625pMIQEuaL0zyT7kumUSgUcASD8sfYFYO1wCIDZiL6sLQD0b4yKAcAqFQBvUvtThrfWNB0J9iv/mMXgBlUD3V0UyBUA" +
+                "+EkBbuTNQyVErW4dUuADBSlCMujLutCmZBb6hLn8UFZTANCTcwRABgvj2ysARhy4KwvIWCrlKUB3pwxkGFPGrwnRwN0DBMC5EGZa" +
+                "XeiAfw5ADgfFV15ObFiLQtdKQIMOyCm2JdAAWzINRxAq+WCNPEQAAqYAyNozQDb0BcD3dylxP38OwDszzwoQt5xdLBnr1ISQy+KP" +
+                "AHTBZ38yrPNl4x7wQHzQTjaI+JeFszBbbrmVa+c28fP1mnhfMh1HUMFJogfBxgsA2MoXADvgoWzrC4B/Ejg/BmxWgMAsDgGgm9E8" +
+                "xk8BGK4Bd2MAhgDMgy8AgLyyeSmKCIBmc9+cbHgp/4KwAHqsJgCwyslxjMkcrDFHANigKQBoFm/nl8fxU57y88DmNBH0VazKa+rl" +
+                "jlystMoZHFKnGhhbGvrTBQATRg4ZPQ9QdtiwkkuA3tJbkxYCUPuasSZd/VGOAOAefCdVJl5qqgBAnkcIgIyUmayFL9MXAB8whkn3" +
+                "uQAgABB/fOuDhwBgIMxqvr8jDTTsF/weARAPuy8A/k2BPMdPZoFtd68AQ1ARAoB7RcqCRGO2CIDpIovHfXsMAG46NLVXAAJHAN6s" +
+                "E5X7f1g05daU0eN4fmSiRwO+4yTwEYD+z5rLfxWAm7MOxEcBQGjRP1jkCwDT7GBPbfUXrzZNANDgKAG4fuF7BcAP/JTNYE7wWnnN" +
+                "PKXICDAFIL4cP42btk3G3dz94wJqiXAK+4sA3LrJhGkzZlYS1kS+AKz7EtOJjH9/40GwNdPmcwTA3wE4QSBOk+QEQOEaUTgYrwKA" +
+                "0XQueAhLTA2AqnXjtgCY5wB+ZRDYcWiu7E8UEkA5YykATu374OvtAuBoEuAIwJZSENogBKAnBnAEAK+GTOuXAhAA+5dvzcM7on3M" +
+                "GjNERPOoAd0gwebwD28ZAjAJvgD4+9mgDPH7C63AMAYACmmpQE0A0E4SB64JAOaYRiY6BcB3ix8B8AXAXyrFc6OLRAPkRmWOL6bM" +
+                "rXfEEMBL6WSEr06qybjrthkmAAMOghWuJwxGvn7KK8OKMoHB/Xw7P7U8eswRAMbZZJF1BADU0x8EdguCPp8tLTIQxrxzQsWfMluS" +
+                "ua/m1TiqG79QAN7fLpHO/JpZK3g1K0KXQRDRvtxQKAv/l74pBAC+8Z76VQDILDUB0PsdOwUgnjVfAPyDYPMFQM5L8obhcp3wrzyT" +
+                "zh04Plg5Y53ak2AIgB9P8DGtFlB80My6ofOdwJoXUyjn/VUAnNumfGDy06cJOAIgZcXgCPq5OwAjCNxSCkJocWMpCApAjKB5nXI0" +
+                "xeuUNbXBPjKJlRykdMKBHoyFoQEjdwATBcDQgF3F4MDvAIkekC91pf612hqtIlX5KNeng/2+AKz3C4JNnhcAPwjsp4H+oGJwXMRs" +
+                "EYCAEwpCU68PzXjXau6tYT5JAwa4gObvAPw6t8L1QvdEXs6IJvknjHy8TKRhjzkCAA2o1d4ach8AMKccdHYjmCFOTQJQdgOyVpWs" +
+                "tMwS0z7YY0lyx+cKgI++5b9fHuCr8U4G/p3Q9Hq5mA+/RB1sMwWAGuA7gh6vBqoku+tCmPiHGX6US+Fhm9lsqwBgIMzb6q97SnrS" +
+                "OuATwo8XAP5L8HFZQMZ451bRJN5n5IejAScLEJyyVwCAG5xiXJMrlfX8sfYvNlkr9zm+CwoAzTO99nKokL77jQLAitBVtdOXRWDp" +
+                "26cMkkGvnPBjXUBKVs+dBH6S/UkK3QKQmCTe/4JJmK5IZxawjFqNAtbtNszzBQBTt2nVxmjhuij24z0ASMdxZCGtxSncBHCpfjUv" +
+                "uUatcKhwgADoy8pAQO0KU0ZhlHbnBsUQgG4yNA6CkdpW5AIw8wywXwuIpFDWgKtVNEnWlbXpSnCv7fg0xX2PHqulgYoANAXurl4R" +
+                "c1EsYy1wBEwKN5XjwNer00w/u4iTfEiQkyECECD731Ri3X7Ja/pTJhGA4QfBEt/7bQGQvzHRxP4gBV8AXiZ6AgWTkM1Wna4qANwa" +
+                "O6znrLYoAOvO3eMpY51o3P5GCmM2ixMAcNbXYpugLE6sKtgkAGjQFACBN2UU5pQRATCpf0otIJDUS7xsS5JhJkDyxkhA/pctMoAH" +
+                "5QJ2tYom1RZHOCcpxxH4nz5J8R1rbBVPB5uwlwg0m1voZ7AAymK2SyTMNpfYbNAcpjCDrZH9HUWJJTBbY4PmNBE5cQTA309w2/QS" +
+                "kBMzDCAC0MrmswWgH3/k/ZX9Qf30kptHHOFwB+msW4FckESNCvagtBwtoVeBPs2ym4ItS5u3LETdU3TRqgEd9SE4vUkQ/ljjXhoi" +
+                "DA4y8kOs/p3S1ACMFBDtg8J8/w/6zZ8mnCOOAGCtw3YChWHFFkdM4kcSCNv8zZMUaHqe/TffBwBSe4mXbclJqG+HZA3D84BT6c5p" +
+                "yStwdck1cPqVRK2Vn7EQrtlzNQDlhrBeM98OYLM8wFm2UHxBgesWXvnUFgDhVn+sBU6Kre0WV/AD8F8T276OrsOHZCY+oR3wrD9l" +
+                "MGe5r/WnDJuNF4x5nQhAd8X/AQLQBpP9sdaGyPedBqQG5Fb54VAxIFmvOc3qssiuLgDo6dAeAYDlEwCGhRAaYdvG00yy/PeFed36" +
+                "mGrHIWYj/nBk7kHjBmO5IcCg/iMANkC1fcdG+H1L/Z9Azv5gwMkCEK1tFICXGsDQwi8WALgIRAVbqiQZtMWtiVyS5eMIANh/vgCs" +
+                "DqUfLwDX1MPHBEA0QNj/YwWAlHeVZHO9OV8AYJjUj5K8WD8cYo4yv95dAnAEQK8wszXg+SDwbxMAJYV+AchN+kgB0CR9dgKWwGMF" +
+                "wHT9y+5w3Q46B7j8rYlsSpwCy0cA1ouCGzBVAI4AJF6gswOgOooGcB6OFgDjShOh/pf5YFYwwGB/2ZfsFYAjAKM04O5J4D1poN+u" +
+                "AWCZCTGAIwBfybM/NBQAir3JYn7v4cXzuoHX0vY+HxXYf50vEADfjCMAgcLVVX14UAAGwGcZRwASq65LrQ/JAmLPfCWHtiNIz4v6" +
+                "jmzzSts368PIVoD90CQDzMuEeWvVP9S7PgLgCIBxHvgIwG6QYkgK3ZdCfEsaKM4B+AKw6oovAC+vzWOHGH7wQQJwvQIaZqwL/5UO" +
+                "qAFSqRBD6chAfhhKzJNTk0cAfooAdJeDbqsF1A8l3LYLSfAxUQDyw8Ad9xnBAB4E6xAA8wCUXJydnIs2S9lgFADHj1E4WAR3Galf" +
+                "3jchAtEAOSToywDsRP+EhfmH2icAZr0dtPPjBOD5otBHADLCjU+QM8rHehL4VimIAC9I8QzQY40b3+u6FC0Ak3a9ZYysJ4vfWofA" +
+                "WhayBnC9mmH5u1f/h8FfOQBz9ieSEoHYDaAExfVd3lQmbkpwzuulhYRcerz3Q0JsxvnaobLR1RunTGDvlAlxOgIwC6ufgSVuTKAd" +
+                "2e8DBZOAmg1SAMcHmzXbxBxL/OBJh9x6CkyVLCMYD+zqEIBPXHN/84ug8418Ur6QxeOCsIIHQw+C2aFGqzjFHyB+g6g4jczZX+qT" +
+                "b+y3axln/4M0G+mbMmMvBz4CoNHXjUhWVQl8kyaDy/BkRZyzXgFJHnAfvqpW8ubloGtXJL0BAs1VbRUnDkdi5B+fe/D+Zz/3Ysgj" +
+                "AB2kUGB/WvUkVZkvWEbCiQnrmc/ym3KeW7vW4v2P9q4GC/snAlCeKQe5vv5QAWjMAnpYAIA/rhC3UIBv1Xz4tJj3CbC3RGD3CxJ9" +
+                "H60p3rmdTl8dGCuAwQIAr+JLJCGyg4ODg4MRMEh7vgAcHBwcHBwBODg4ODg4AnBwcHBw4ArA//7HP3+Fl20lf9+Kg//5938C/vvf" +
+                "/vGK//zXf2iFPI5mvG2k4snnNvSAQM0DVvOSntlrIR/kd5E/TP04sEj7L8k3/bIt/F8u+KH0465hfQTq98Zq4VeXS+QmFW6rkNd5" +
+                "x8Itl12sBuQDJ09sRdpFCu38fXauNsh3ldvgQ15cBODvf/trE/7vv/7lHeCP+Y9uNCz7buAlaSd/bwiAweaDeN+gfl/t7n4KPtP5" +
+                "RJPIgNi2pQQun548mt3C5/LRfciFKtcn+a1tg5ohGrAa0Pp59GsAqH8EJgmJsQPwxaRv6+fyfj+c3nj/UxCGfZM4duUXozUh4pyF" +
+                "fQPWa1dzASg81zSMWDUyYX+1sG2ArugzQHrA0IDpYjBfTl6SdkIsf7m7m3jK2X0Dk/nd//RXAYhpdi2vtgt/PHEaT7xSzB9ZOP6e" +
+                "v3VKTehzUwGIv4zOeaxExFoTWGQAgG3d5q0dBci6IUzdbkA0iKdf5acgAEcPTOQCsOKbg8ATWN7geo/lDfaPSoeV9ACjOiaKcXKS" +
+                "r0S8sj+M9DPK8Nxce/hodk4rWCsU5dhQHlLuCFx9/a3m4RKYrzTgyv5RQSjs7+iTUAJ+HhQAf8ochTAFIPl7QwAGrOXnc70PdiPn" +
+                "cEzy77pePGiO/CJhRmGZ4IL4+123rgfDgltzAYDwPHbvrpSqDiXAMnz1itDXHx3YZ16YEeR+7ShAhBnV9jt6I56uAuDNmrkicQTA" +
+                "j80ern8z8iMcZ5CIhVwAyDLwckS5Sr390bty8itHEB/tM6wvBvFoyAB3A1dAF2Fekw1RTRoKtG5BaACEuUkA8Oh+ATg60SMAZhDY" +
+                "J+sRwdh+3NpCyeJ6iABwkq/L/+AgvRnKvt0JPpZVA7jC3c+wxn28QYVSHBv/bjUPCgT5kRwhdI4jzIYAYHJ9LkYLQEKa5jmAw/W7" +
+                "QiOrd+W7BCAeHQYIBQOtLBz+5fACgUypAat/Yz/DGlckyi1pvIqr1Txcz0k3FED2D3vg/5m5Azh4XgD8cwCjM3AmE/0Np9lUAQiI" +
+                "eSCaIAJ/mbneOx+8JhoAXFe4wbCbLwo2di28O3C9jb3vuUHxMUxSphgKhM7pe3RoDz8PakDrrDwYJgAG0c/neoPlLUwTgGQNDqIJ" +
+                "P3iY18Fr0AAYQAwUACzGww8GDQCeEYBonw4oAvITIhpWtQoARmc9DXADRySeOgfwtACYLA/MZPlWDIkBIM+P/PvVGjz+JjIdtwtA" +
+                "vHKQqWwCyP7UnjkCAJt5mzRS77sFAMITRA+xJHAJMP0/3QIgTkJzyh+F6BAAwBCAhOUP0XtYg8ABI9GlyRGvC3BQMDiuybu9pttf" +
+                "z7WOEgDYjKQgolsAuFvizqN/86ECIE7CAlGMFokjAM6wzSd62P8w3skCmiAA9C2s/MswI/JMmnIcJcNyVSAnytphc2yGwqR+FlYv" +
+                "EHce3Hy0+n8oAIw/UwMI321wROIJAcizgMqd/rHLeR+rAESAkcdry9NVcEsAXiaZoPYDEkCbwqp5GAAOqI7OMb1AJOIQg0gQonnd" +
+                "XiCi1f+Dd4nPYxUAaECOIxLfKQBJf71s67D8w9QPSKAVzoSY5LUjwfET1DCIFgLxj2DtYA1fAEBwMKkjCo0wwFeJQNI5oQTlzomf" +
+                "B50FonNQvMHZNjEXCBog5vV5ga6uJ2yMmtxc0VH8NhwB6BWJD9CJJ2oBzc+n/MlcryD7XwWAVIJwa82dEjMWAB8VBAD2SAAg/qw5" +
+                "yV0FAJBQRDkWjZRTYc/atgY2o9MCMAzg2HXHn4E+/w8W/lA4n/3ni4SpE8B0AcjbMin+sHzhWgISnC8ALK4QBBEtAG8KwHUBHlgj" +
+                "wNEO7GktdZCnojIZCU6PmgCIAx2+e8MzrkmZNK9PLCFj3f4fLAss9p8vEoZO+OgVgI1tNRQH/TiiF9InhN0CvgCA+gFEbmtZQLWD" +
+                "pjWzw7/EVNRVAAIdAoDgLV1bvgCIea1eoACM7xOA1S9XZtj5IuFLRatatAvAofg60Ru3M75MuPQFgC4CCMCtg2Bq0p0yDMhUCe64" +
+                "a7yIEFea6iWDGhkCcGV/aK0vAFIUqFsAYizi0dze9ScHv64R0lcubL5ONEkFsOdGsLti8hnkrti+nCcMAbDc3Gt+Oug4QRBKUGEi" +
+                "AGsFiDylB5RaqwlBM5oEgDsAXwCiWwwBcL1ADGD0Hw/UKoE+jlQkcK5xrAvAJ7O8SfQ+5NDTXjc3coGiQSD+fQViBnIM+CoAtypA" +
+                "wJsP48u1buKhtARoEgAIZEEAwMKPC4CmM8HyVgGQ2xosAThSYajFS9JOlON2NVBzPA7RO2iNc/Lixq8uPhT2dypAIHcQglHwbCTJ" +
+                "oAENSBjbIz+NEh4SXwAw+wonwkJow4Y3C1k/LACJI4H/8PEJPiigUL6hvRz0IfoaxIwmL4dogJA+eX89eQsz1ips77NGGADftLOm" +
+                "Fg2gSb4AXIUQQfKw2YlaUwAK4o23rvXVm6cNcKejIwAYiEwA+iOi3QQyXzBeknby95trAY1i+flEX8iWu667fY5LrjtP2P9lQAJh" +
+                "5FvxyRCAQl0EGB8WPiMAyKKpNQVPF00lYN5dASj7oN4ckaDy8hZHYgAGLRjyMFItfEwUgIEUP5/ofcefCADud7UPuyp4cjVd+2sC" +
+                "aB5pXCvk4FkFUsPPGQagbbYAaOdAongS2M+Rd+5miabi72FGU7QAYmwIgJUD2i8PH6EW7QJwWL6V63P4OwAiyfZ5ebRndbWXK0Dw" +
+                "HHIwLOz3a0JQAHo6h41YQmUKQHRagaMbGjcEwMNkhVjxPElWYgBJt24UAH/j4xP9fK5vEgAvdV0DrdSAcgUIRIDjJ+UMRdaESOLS" +
+                "Tuf4YHG0r0onFQQAe5GO4Y44QTQ+UACmbSPma0ZO2huCwBazGyz/YVyveHn3Vr8AaKol4VSAQARYaxCVfOszBQAS9bJ4tSMA8EcZ" +
+                "XqCsM6Px4QJwRCJHbdX+QgAquwmD332Wl/kPDOB6F0kWEJi3TwCSur5mNiojwBCA+EfwjpNdQyOBbxcA5FPGo+Gk2isA6K4bL2W0" +
+                "bB4EewJHJPyTwIY7SRiq/Shsjvlc72ukw7ymAIgltQoQ9IyzDh3jwLX46ioADdujSuo9KnFSAPwYAGl69QL5/p9o1hQAvGBNAI5I" +
+                "AIMEoJBRtOWIEzGf632Wr8nnMwJAbl0rO66ZSKgAcSvhJH7CHYBTtHn1sPudY5bfCfZHBR4k1NJC0zz6zQwvUBqQbxAAO1J4dKK/" +
+                "FtDdlNJmcld0Z9YPIPqxAqBe3a/iEDjQe/cuGqIsAKgJsSZZmp3jx37jjVCKmebJKTBHAGrO+qRZmPqwAPg4UlEL3KoAJDSaC4BJ" +
+                "7v2LesVMlndcQB1poDgRKmG9vOw+GNx5tHPniTKsWylPLayJExIrcRswLDTNowDYXiANpUSDaHZjENhit6MW/cXgiNsC0M/1FtED" +
+                "o4jeeKnGUhDxw+vJL4C1gPIE0OvFZLcqQHRcECaHlvEPRwAQpWBpPF7hW7srkZsAwhSAzAtkXAxnZgGh858/CHYEwy0GlzC1IQDt" +
+                "K3piAsv7r/a8AICb6KcGpPxDfgIABrAChAWDv8CwAZNhV1oEcC0wotzlG+Ft8zR3Nren1qYpAOIFEjQ6SY5aOAfBHAFozrNUTGF5" +
+                "4wV97BUAKfpGT8U71d/AYmateT+DJdgnZ1jzujQg/pdgutomYLcAqBfI9/+YAkBHnKwYhl6rMgA/WACeIcHxLK/oLgVO8xoE4DX7" +
+                "A0n1N+OixG0IzkqW2Bsr5fFNzUh1oGYeo7WA7wVaNzqmACRuQ8H8axonY7MA+EFgfzjnOOUtuu+HnwWUCICwPyDsLwKgRZIHhAFy" +
+                "AXBuBCu0hj0Ky0GbWUDILuX5CdMLJIqyVwD6T2IekXDr9xQFoG9gmvImJ9C9Dw3AqhuhVwCE/fn0aMTI/1GYYQAYRpgCQOcYpI7O" +
+                "LufEslMOGgLAHUlJkNSwIO4BAmDMyiMSfhaQUVp6BC3uxeS38y+FTwQAeNP/Eygsill0LOhVEP8jHCw1IusWAGhA+f6yXQKA08WE" +
+                "E36HcF7dXNF4kwuob7bOFwngCMAgiid+kIx95YI3BYDh03UTQPbPAwDwQtx1Okt81blxhQS01wVEtxKA1hwBUBeQIQD+NcXcT/h3" +
+                "XuYCMHLiK0Zd9f6JAjBgmOeKWcK/mLSmAKyJQG/m/xQSQOOP6XQm79ChwXqi5oId5vkxgI0CEG/n65MIAOQfXqmy/6dVAN6kxR9B" +
+                "IE3JHT5+hgBM2PfNZ/kcIOVVAMKpYgrAqgEUgK/uW68RYngYQjNEAIxLdzXThm+xbo/8ILApAKtDqSwANIxeoHLgpEkA5CzYriTI" +
+                "D3QntKaBGgLQ36fzub6D5XP2v7qPwZhwnftXQvIYMKhq9eRK9Tc8/Zb2gArDYDyRGoAExAAuJCkX4Ix3wStATpDYDgtr/Air2GZB" +
+                "AICrbSDumnk4UgCTzORU+n/YiNP/YRhekEWh/XJAvlT4+KGUdTsNNHlz4xzAfvxoovchhSRZn8DJA1mBm8eD4r8SgHg6luqFR/Mp" +
+                "LJcPFxZexH8XNBvm+Z2zmur4W9AOTgUHauaxqetWgFaV/T9Y+PvdxRJSKAgBASgXOp5z5+D85EPTbWOcA9iNQ/T5sygAMc2wW28q" +
+                "Z49NwFcCUHbWr1cCrC4sv9n1RKt/2DjsJNU6HYtXNs0Lqr2u36HH5fwfucvTLyLLL4c7gFF3KA6s8lvA+sOfJwC/yUHfXhHPuICl" +
+                "4LKQ6r5HAHwBYAgksEsA6FCCF6imH00CgAneLwCzpAL4Fip7s4b/owJwiB7we+lKwUcAjgCg+gXAE2p3/T/47V4BiLeTMMCEu3PH" +
+                "OKAMwZjvAvpYlve5Po/7r0UgHhYAiQBHtPAIwAQBYEIRSPxW/g/14xkB8DXgqIXg2wRgPsuDsIZzfWGwo8HHBADT+HoO4AiA+eJe" +
+                "DEAFQM4ooBsLvz0CMFwtiI5qoCoAAw+C+SzvwyF682YMQwA27wA+0wWENoP9RwkA6u8TVOW7ZTOQ0TvcBXTgnwRO9GP6QTCl4/lc" +
+                "7x/+9gVgfAwAuZUdAhAc1CEA0SejBEDumEx4XPw/ZH9WTJqTBeTjoP0ksEHuFsXPd9b7dD/DBaRpoMR2AQh8oABg7BwBgEJfEUOW" +
+                "HnvWq7uIDgF4mQL097/9NXAI+lsEIPl7IwjsUfx8rvfp3gcFgBSM2d59DmC92w/jGE8Pht0iADjHJLTlN4tC+dMEAB2LWIIvANyi" +
+                "XY8HoixE7v/hMW8A35Kvl3xEvB39P2B/UP9NHJ0YLADmcVYTn0P66/KffRi7+Fg4x2znAU4faC0QLUf7wv5XBULYEH9cQ/w8fBGs" +
+                "h/P+D/9oP6qNmp0jbUKrePtNrVkcscamR8zLn74CCg0eJ7gsSPo8BAwOegLfEk4mm8AjoqN4DFgEwMSPiNn+RAG4fSWkQd8W2km/" +
+                "n/oLj16PAnC2YwXtQ6qzBSPI8l9EiE8nCs+Sqm27gOTI7T1DU/12YJ7TiLA/IeOyjuyV/a9ny2GSCfQ8lv+5APgYRfpDUBeAhHML" +
+                "AnB1L84n/cnINYDRvxx0+KbQIRP2FwGgAQKa1IcDGSZAZl/yq+SaTxNs+Vb+jy8ARwzcctDJoL5sy/g+3oLP+POp398HBPq2WdJ7" +
+                "hadj0BtwIOyvGnDrV0DHlyMpDx+Ytv/s6TDjUvi7Ltct7sK9ODg4ODgokPb/t3fHNlIsURSGNx4MLILCxNxUMMkDizRIBix0tRS0" +
+                "tlXT596eT/q856CGd/5Z6Kq5OAAACAAAAgAQIAAbXykFwEEw0gLn9QJu/7aPp8raplc3818JGddvgpUDxUUAxENLQP8EQEskkJJG" +
+                "2HB9gwDcbUklQQAIEACGrqcGPIy5RwCwoZh7BAAlwNYjACiBoQcBQAwMPQgASmDlYfs5gHUA6nd9CIAYmHjmcqDs4CeAZQCWBOA0" +
+                "JTDxELkz6lwA1gSgGyUw9Fj56uoA1B8R+sPubwH5oW8VgEoPBEAJuI38yk8JgB4Yd0kYjfzQzw2AHpj1QbSBwNALgB5Yf3kgIjL0" +
+                "AiAGGiAJBOwfeieB1wEQAwHQANLyQ+8qiGtKoAGYfgavvLuAZMD0n2Lx7b6VdxmcjcbigwBoAOYeDm8DfeOfbwEJwNASYO7xIpPL" +
+                "4JQAo89zHUa77WVwSoDdx8oPOAj26eOH6vZbLwbWHy5Y+TfT2i0Adf01QAwEAFu/7WjCclrzAViu/+uXz7/VX6jjXWIwrgHQ5O6g" +
+                "/0xrPgDL9V80oOtRLzEQAGh7cdDhtL43AH//P5IKgB6IgeknIL/1uwNQl3052n/+62MDUH9OqVwKJAZGn4jRl8QdTmv5898jAEsu" +
+                "ibsgBrYehg59/RRfrRf1mQOgByb+vbD4nVe+Oh2A8FtAgfUv9MDKY/EHDv2BxTugRf9zAHX9A64ZXDGw+zzUeuXnD/3ocwALB+uf" +
+                "FtxZMRidAQj8OR9wEnisViM7ugRigKF/ui+F3/oVYHn9d3Z+BiQBWz8/ANvXc2IPvKgjDPjbGwHYP6CVGCAP2PoHBuDnj6/VcQAa" +
+                "vI2jB0iFrfe7vz8A1YkABHoQDYMYyAa2PmXDZXAHAZgMgLr40wMAgAAAIAAAbLsNdHQAANh/HTQAAgDAmAAszgFc/AZ9/TeGE278" +
+                "hQHX/4K9Te9V+gfxiKY85JcmJ630oAM9MPEneFZzH+nLuIO4+wKgBwccu7VcPtrnn+GUAEy/BzSykjPX38rnefh9AhD6IswNXh40" +
+                "FhNTEdzHbEV8kKTVKl3fgxGPKx+AEXMW/eCP0TfoGzzz4/r+7fVdBgdg7t+ftJ0/W8/phRKAfdud1y4AqV279/pjx7vNVrcGhB5O" +
+                "XqMAeKkLW3y9+PR4UJ1/C34BP7yblfEbb7kAAAAASUVORK5CYII=",
+        };
+
+        // FileStorage keys a row by the image's CRC alone (INSERT OR REPLACE), so signs given identical bytes share one
+        // row, and after a restart Signage.Load clears every one of them but the row's last writer. SignTag puts a
+        // tEXt chunk naming the sign's net id and texture index after IHDR, so each sign stores distinct bytes;
+        // ImageProcessing.IsValidPNG reads only the length and the first 29 bytes.
+        private const string SignTagPrefix = "Comment\0farm sign ";
+        private const int PngIhdrEnd = 33;
+
+        private static readonly byte[] PngSignature = { 137, 80, 78, 71, 13, 10, 26, 10 };
+
+        private static readonly uint[] PngCrcTable = MakePngCrcTable();
+
+        // Decoded on first use and shared, so callers must not modify the arrays.
+        private static readonly Dictionary<string, byte[]> SignPngs = new Dictionary<string, byte[]>();
+
+        private static byte[] SignPng(string image)
+        {
+            byte[] png;
+            string base64;
+            if (image == null)
+                return null;
+            if (SignPngs.TryGetValue(image, out png))
+                return png;
+            if (!SignImages.TryGetValue(image, out base64))
+                return null;
+            png = Convert.FromBase64String(base64);
+            SignPngs[image] = png;
+            return png;
+        }
+
+        private static bool HasSignImage(string image) => image != null && SignImages.ContainsKey(image);
+
+        // Signage.UpdateSign's checks and storage for texture 0 without a player, then the lock: Locked lets only
+        // OwnerID and admins repaint (Signage.CanUpdateSign), and BlockUnlocking makes the UnLockSign RPC refuse
+        // everyone, admins too. Returns null once painted, otherwise the reason it was not.
+        private static string PaintSign(Signage sign, byte[] png, ulong owner)
+        {
+            if (sign == null || sign.IsDestroyed)
+                return "the sign is gone";
+            if (sign.net == null)
+                return "the sign is not spawned";
+            // Server prefabs keep the paintableSources array but strip its client-only elements, so the length still
+            // counts the textures while Signage.TextureSize throws.
+            if (sign.paintableSources == null || sign.paintableSources.Length == 0)
+                return "the sign has no texture 0";
+            int maxWidth = sign.overrideMaxImageWidth > 0 ? sign.overrideMaxImageWidth : 1024;
+            int maxHeight = sign.overrideMaxImageHeight > 0 ? sign.overrideMaxImageHeight : 1024;
+            if (!ImageProcessing.IsValidPNG(png, maxWidth, maxHeight))
+                return $"IsValidPNG refuses the image at {maxWidth} x {maxHeight}: " +
+                       DescribePng(png, maxWidth, maxHeight);
+            byte[] tagged = SignTag(png, sign.net.ID.Value);
+            if (tagged == null)
+                return "the image ends inside its IHDR chunk";
+            if (!ImageProcessing.IsValidPNG(tagged, maxWidth, maxHeight))
+                return $"IsValidPNG refuses the tagged image at {maxWidth} x {maxHeight}: " +
+                       DescribePng(tagged, maxWidth, maxHeight);
+            sign.EnsureInitialized();
+            uint old = sign.textureIDs[0];
+            if (old != 0)
+                FileStorage.server.RemoveExact(old, FileStorage.Type.png, sign.net.ID, 0u);
+            sign.textureIDs[0] = FileStorage.server.Store(tagged, FileStorage.Type.png, sign.net.ID, 0u);
+            LockSign(sign, owner);
+            return null;
+        }
+
+        // Compares the stored bytes, tag included, with what PaintSign would store now. A row missing from
+        // FileStorage's in-memory cache is read from sv.files.<protocol>.db on the calling thread.
+        private static bool SignPainted(Signage sign, byte[] png)
+        {
+            if (sign == null || sign.IsDestroyed || sign.net == null || sign.textureIDs == null ||
+                sign.textureIDs.Length == 0 || sign.textureIDs[0] == 0)
+                return false;
+            byte[] expected = SignTag(png, sign.net.ID.Value);
+            byte[] stored = FileStorage.server.Get(sign.textureIDs[0], FileStorage.Type.png, sign.net.ID, 0u);
+            return expected != null && stored != null && stored.AsSpan().SequenceEqual(expected);
+        }
+
+        private static bool SignLocked(Signage sign, ulong owner) =>
+            sign != null && !sign.IsDestroyed && sign.IsLocked() && sign.HasFlag(Signage.BlockUnlocking) &&
+            sign.OwnerID == owner;
+
+        // png with the tag of texture 0 of the sign with this net id right after IHDR, in place of a tag an earlier
+        // call left there; null when png ends inside IHDR.
+        private static byte[] SignTag(byte[] png, ulong netId)
+        {
+            if (png == null || png.Length < PngIhdrEnd)
+                return null;
+            int rest = PngIhdrEnd + OldSignTagLength(png);
+            byte[] text = Encoding.ASCII.GetBytes(SignTagPrefix + netId.ToString(CultureInfo.InvariantCulture) + "/0");
+            var tagged = new byte[PngIhdrEnd + 12 + text.Length + png.Length - rest];
+            Buffer.BlockCopy(png, 0, tagged, 0, PngIhdrEnd);
+            WriteBigEndian(tagged, PngIhdrEnd, (uint)text.Length);
+            Encoding.ASCII.GetBytes("tEXt", 0, 4, tagged, PngIhdrEnd + 4);
+            Buffer.BlockCopy(text, 0, tagged, PngIhdrEnd + 8, text.Length);
+            WriteBigEndian(tagged, PngIhdrEnd + 8 + text.Length, PngCrc32(tagged, PngIhdrEnd + 4, 4 + text.Length));
+            Buffer.BlockCopy(png, rest, tagged, PngIhdrEnd + 12 + text.Length, png.Length - rest);
+            return tagged;
+        }
+
+        // Length of the chunk after IHDR when an earlier SignTag put it there, otherwise 0.
+        private static int OldSignTagLength(byte[] png)
+        {
+            const int at = PngIhdrEnd;
+            if (png.Length < at + 12 + SignTagPrefix.Length || png[at + 4] != 't' || png[at + 5] != 'E' ||
+                png[at + 6] != 'X' || png[at + 7] != 't')
+                return 0;
+            uint length = ReadBigEndian(png, at);
+            if (length < SignTagPrefix.Length || at + 12L + length > png.Length)
+                return 0;
+            for (int i = 0; i < SignTagPrefix.Length; i++)
+                if (png[at + 8 + i] != SignTagPrefix[i])
+                    return 0;
+            return 12 + (int)length;
+        }
+
+        // The first ImageProcessing.IsValidPNG check that png fails at these limits.
+        private static string DescribePng(byte[] png, int maxWidth, int maxHeight)
+        {
+            if (png == null)
+                return "no image";
+            long maxBytes = 29L + 4L * maxWidth * maxHeight;
+            if (png.Length < 29 || png.Length > maxBytes)
+                return $"{png.Length} bytes, outside 29..{maxBytes}";
+            for (int i = 0; i < PngSignature.Length; i++)
+                if (png[i] != PngSignature[i])
+                    return "no PNG signature";
+            if (ReadBigEndian(png, 8) != 13 || png[12] != 'I' || png[13] != 'H' || png[14] != 'D' || png[15] != 'R')
+                return "the first chunk is not a 13-byte IHDR";
+            // IsValidPNG reads these as signed ints; above int.MaxValue both readings fail.
+            uint width = ReadBigEndian(png, 16);
+            uint height = ReadBigEndian(png, 20);
+            if (width < 1 || width > maxWidth || height < 1 || height > maxHeight)
+                return $"{width} x {height} pixels";
+            if (png[24] != 8 && png[24] != 16)
+                return $"bit depth {png[24]}, not 8 or 16";
+            if (png[25] != 2 && png[25] != 6)
+                return $"color type {png[25]}, not 2 (RGB) or 6 (RGBA)";
+            if (png[26] != 0 || png[27] != 0)
+                return $"compression method {png[26]} and filter method {png[27]}, not 0";
+            return png[28] != 0 ? $"interlace method {png[28]}, not 0" : "a check DescribePng does not know";
+        }
+
+        private static uint PngCrc32(byte[] data, int offset, int count)
+        {
+            uint crc = 0xFFFFFFFFu;
+            for (int i = offset; i < offset + count; i++)
+                crc = PngCrcTable[(crc ^ data[i]) & 0xFF] ^ (crc >> 8);
+            return crc ^ 0xFFFFFFFFu;
+        }
+
+        private static uint[] MakePngCrcTable()
+        {
+            var table = new uint[256];
+            for (uint n = 0; n < 256; n++)
+            {
+                uint c = n;
+                for (int k = 0; k < 8; k++)
+                    c = (c & 1) != 0 ? 0xEDB88320u ^ (c >> 1) : c >> 1;
+                table[n] = c;
+            }
+            return table;
+        }
+
+        private static uint ReadBigEndian(byte[] data, int at) =>
+            (uint)data[at] << 24 | (uint)data[at + 1] << 16 | (uint)data[at + 2] << 8 | data[at + 3];
+
+        private static void WriteBigEndian(byte[] data, int at, uint value)
+        {
+            data[at] = (byte)(value >> 24);
+            data[at + 1] = (byte)(value >> 16);
+            data[at + 2] = (byte)(value >> 8);
+            data[at + 3] = (byte)value;
+        }
+
+        private static void LockSign(Signage sign, ulong owner)
+        {
+            sign.OwnerID = owner;
+            sign.SetFlagLocal(BaseEntity.Flags.Locked, true);
+            sign.SetFlagLocal(Signage.BlockUnlocking, true);
+            sign.SendNetworkUpdate();
+        }
+
+        #endregion
+
         #region Status
 
         private static readonly string[] EventKinds =
         {
             "stale", "topup", "cull", "birth", "adopt", "stray", "released", "reseed", "breeding", "death", "needs",
-            "destroyed", "full", "placement", "repair", "owner", "failure", "build",
+            "destroyed", "full", "placement", "repair", "owner", "failure", "build", "upgrade",
         };
 
         private static string ReseedLeft(ReseedState reseed)
@@ -5098,7 +9644,7 @@ namespace Oxide.Plugins
                 return sb.ToString().TrimEnd();
             }
             UpkeepPass pass = null;
-            StatusSection(sb, "record", () => pass = BeginPass());
+            StatusSection(sb, "record", () => pass = BeginPass(false));
             if (pass == null)
                 return sb.ToString().TrimEnd();
             StatusSection(sb, "header", () =>
@@ -5240,6 +9786,10 @@ namespace Oxide.Plugins
                 foreach (LayoutConnection link in _config.Layout.Connections)
                     sb.AppendLine($"  {link}: {(IsWired(link, pass) ? "connected" : "NOT connected")}");
             });
+            StatusSection(sb, "power", () => AppendPower(sb, pass));
+            StatusSection(sb, "buildings", () => AppendBuildings(sb, pass));
+            StatusSection(sb, "parts", () => AppendParts(sb, pass));
+            StatusSection(sb, "upgrade", () => sb.AppendLine(UpgradeSummary(pass)));
             StatusSection(sb, "storage", () =>
             {
                 sb.AppendLine("storage:");
@@ -5249,7 +9799,8 @@ namespace Oxide.Plugins
                         ItemContainer inventory = InventoryOf(entity);
                         if (inventory == null || entity is PlanterBox)
                             continue;
-                        string line = $"  {pass.Name(entity)} [{IdOf(entity)}]: {Contents(inventory)}";
+                        string retired = pass.Retired.Contains(IdOf(entity)) ? " retired" : string.Empty;
+                        string line = $"  {pass.Name(entity)} [{IdOf(entity)}]{retired}: {Contents(inventory)}";
                         var trough = entity as HitchTrough;
                         if (trough?.WaterStorage != null)
                             line += $"; water end {Contents(trough.WaterStorage.inventory)}";
@@ -5270,8 +9821,8 @@ namespace Oxide.Plugins
                         entries[entry.Id] = entry;
                 LayoutEntry layoutEntry;
                 List<StructureRecord> missing = _data.Structures
-                    .Where(r => r.Missing && entries.TryGetValue(r.Id, out layoutEntry) &&
-                                !NeverPlaced(layoutEntry, records))
+                    .Where(r => (r.Missing || (r.Pending && r.NetId == 0)) &&
+                                entries.TryGetValue(r.Id, out layoutEntry) && !NeverPlaced(layoutEntry, records))
                     .ToList();
                 if (missing.Count > 0)
                     sb.AppendLine("missing structures (" + (_config.AutoRepair
@@ -5283,6 +9834,10 @@ namespace Oxide.Plugins
                 if (orphans.Count > 0)
                     sb.AppendLine("missing structures no longer in the layout (they stay gone): " +
                                   string.Join(", ", orphans.Select(r => $"{r.Id} ({r.Role})")));
+                List<StructureRecord> retired = _data.Structures.Where(r => r.Retired && !r.Missing).ToList();
+                if (retired.Count > 0)
+                    sb.AppendLine("retired by farm.upgrade but still standing (the next farm.upgrade confirm tries " +
+                                  "again): " + string.Join(", ", retired.Select(r => $"{r.Id} ({r.Role})")));
                 // Only entries not standing now: an old-layout fridge on terrain stays put until a rebuild.
                 List<string> unplaced = _config.Layout.Entries
                     .Where(e =>
@@ -5294,11 +9849,17 @@ namespace Oxide.Plugins
                     .Select(e =>
                     {
                         StructureRecord rec;
+                        StructureRecord under;
                         string why = !records.TryGetValue(e.Id, out rec)
                             ? "added to the layout after the build"
-                            : Unplaced(rec)
+                            : rec.Role == RolePlaceholder
                                 ? "an old placeholder record"
-                                : $"stands on {e.On}, which the farm never placed";
+                                : Unplaced(rec)
+                                    ? $"not placed yet{RepairWait(e.Id)}"
+                                    : !string.IsNullOrEmpty(e.On) &&
+                                      (!records.TryGetValue(e.On, out under) || Unplaced(under))
+                                        ? $"stands on {e.On}, which the farm never placed"
+                                        : $"its parent {e.Parent} was never placed";
                         return $"{e.Id} ({e.Role}, {why})";
                     })
                     .ToList();
@@ -5321,6 +9882,202 @@ namespace Oxide.Plugins
                     AppendEvents(sb, kind);
             });
             return sb.ToString().TrimEnd();
+        }
+
+        // Windmills, batteries, and fridges; solar panels and the pump show their state through the wiring and crops
+        // lines.
+        private static void AppendPower(StringBuilder sb, UpkeepPass pass)
+        {
+            var parts = new List<string>();
+            foreach (ElectricWindmill windmill in pass.Role(RoleWindmill).OfType<ElectricWindmill>())
+                parts.Add($"{pass.Name(windmill)} [{IdOf(windmill)}] output {windmill.currentEnergy} of " +
+                          $"{windmill.maxPowerGeneration}");
+            foreach (ElectricBattery battery in pass.Role(RoleBattery).OfType<ElectricBattery>())
+                parts.Add($"{pass.Name(battery)} [{IdOf(battery)}] charge {battery.rustWattSeconds:0} of " +
+                          $"{battery.maxCapactiySeconds:0} rW s " +
+                          $"({100f * battery.rustWattSeconds / Mathf.Max(1f, battery.maxCapactiySeconds):0}%)");
+            foreach (Fridge fridge in pass.Role(RoleFridge).OfType<Fridge>())
+                parts.Add($"{pass.Name(fridge)} [{IdOf(fridge)}] {(fridge.IsPowered() ? "powered" : "unpowered")}, " +
+                          $"{fridge.currentEnergy} of {fridge.ConsumptionAmount()} rW");
+            if (parts.Count > 0)
+                sb.AppendLine("power: " + string.Join("; ", parts));
+        }
+
+        // Each layout Building: its base height T, blocks, inserts, and other parts standing, the socket links among
+        // its blocks and inserts, and blocks whose grade or skin differs from the farm's or the layout's.
+        private void AppendBuildings(StringBuilder sb, UpkeepPass pass)
+        {
+            Dictionary<string, LayoutEntry> byId = EntriesById();
+            List<string> buildings = _config.Layout.Entries.Select(e => BuildingOf(e, byId)).Where(b => b != null)
+                .Distinct().ToList();
+            if (buildings.Count == 0)
+                return;
+            sb.AppendLine("buildings:");
+            foreach (string building in buildings)
+            {
+                List<LayoutEntry> members = _config.Layout.Entries.Where(e => BuildingOf(e, byId) == building).ToList();
+                List<LayoutEntry> blocks = members.Where(IsBuildingBlock).ToList();
+                List<LayoutEntry> inserts = members.Where(e => e.Role == RoleDoor || e.Role == RoleInsert).ToList();
+                float t;
+                string height = _data.Buildings.TryGetValue(building, out t) ? $"T {t:0.00} m" : "T not set yet";
+                int links = members.Select(e => pass.ById(e.Id)).Where(e => e != null).Sum(LinkCount);
+                var drift = new List<string>();
+                foreach (LayoutEntry entry in blocks)
+                {
+                    var block = pass.ById(entry.Id) as BuildingBlock;
+                    StructureRecord rec = _data.Structures.FirstOrDefault(r => r.Id == entry.Id);
+                    BuildingGrade.Enum grade;
+                    ulong skin;
+                    if (block == null || rec == null || !TargetGrade(entry, out grade, out skin))
+                        continue;
+                    if (rec.Grade != null && (block.grade.ToString() != rec.Grade || block.skinID != (rec.Skin ?? 0UL)))
+                        drift.Add($"{entry.Id} {block.grade} {block.skinID} (kept at {rec.Grade} {rec.Skin ?? 0UL})");
+                    else if (block.grade != grade || (block.skinID != skin && HasGradeSkin(block, grade, skin)))
+                        drift.Add($"{entry.Id} {block.grade} {block.skinID} (layout {grade} {skin}; farm.upgrade " +
+                                  "applies it)");
+                }
+                sb.AppendLine($"  {building}: {height}, blocks {StandingCount(blocks, pass)}, inserts " +
+                              $"{StandingCount(inserts, pass)}, other parts " +
+                              $"{StandingCount(members.Except(blocks).Except(inserts).ToList(), pass)}, {links} " +
+                              "socket links, grade and skin " +
+                              (drift.Count == 0 ? "as laid out" : $"differ on {string.Join(", ", drift)}"));
+            }
+        }
+
+        // Inserts (doors open or closed), decor, beds, static planters, and signs (painted and locked or not).
+        private void AppendParts(StringBuilder sb, UpkeepPass pass)
+        {
+            var lines = new List<string>();
+            List<LayoutEntry> inserts = _config.Layout.Entries
+                .Where(e => e.Role == RoleDoor || e.Role == RoleInsert).ToList();
+            if (inserts.Count > 0)
+                lines.Add("inserts: " + string.Join(", ", inserts.Select(e =>
+                {
+                    BaseEntity entity = pass.ById(e.Id);
+                    var door = entity as Door;
+                    return entity == null ? $"{e.Id} MISSING" : door != null && door.IsOpen() ? $"{e.Id} open" : e.Id;
+                })));
+            foreach (string role in new[] { RoleDecor, RoleBed, RolePlanterStatic })
+            {
+                List<LayoutEntry> entries = _config.Layout.Entries.Where(e => e.Role == role).ToList();
+                if (entries.Count > 0)
+                    lines.Add($"{role}: {StandingCount(entries, pass)}");
+            }
+            List<LayoutEntry> signs = _config.Layout.Entries.Where(e => e.Role == RoleSign).ToList();
+            if (signs.Count > 0)
+                lines.Add("signs: " + string.Join(", ", signs.Select(e =>
+                {
+                    var sign = pass.ById(e.Id) as Signage;
+                    if (sign == null)
+                        return $"{e.Id} MISSING";
+                    byte[] png = e.Image == null ? null : SignPng(e.Image);
+                    if (png == null)
+                        return $"{e.Id} blank";
+                    return $"{e.Id} " + (SignPainted(sign, png) ? "painted" : "NOT painted") +
+                           (SignLocked(sign, pass.Owner) ? " and locked" : ", NOT locked");
+                })));
+            foreach (string line in lines)
+                sb.AppendLine(line);
+        }
+
+        private static string StandingCount(List<LayoutEntry> entries, UpkeepPass pass)
+        {
+            List<string> missing = entries.Where(e => pass.ById(e.Id) == null).Select(e => e.Id).ToList();
+            string text = $"{entries.Count - missing.Count}/{entries.Count}";
+            if (missing.Count == 0)
+                return text;
+            return text + " (missing " + string.Join(", ", missing.Take(12)) +
+                   (missing.Count > 12 ? $" and {missing.Count - 12} more" : string.Empty) + ")";
+        }
+
+        // Socket links counted from this entity's side.
+        private static int LinkCount(BaseEntity entity) =>
+            entity.GetEntityLinks(false).Sum(link => link.connections.Count);
+
+        [ConsoleCommand("farm.links")]
+        private void LinksCommand(ConsoleSystem.Arg arg)
+        {
+            if (!Authorized(arg) || Refused(arg))
+                return;
+            string building = arg.GetString(0);
+            if (!_data.Built || string.IsNullOrEmpty(building))
+            {
+                arg.ReplyWith(_data.Built ? "usage: farm.links <building>" : "no farm built");
+                return;
+            }
+            arg.ReplyWith(Links(building));
+        }
+
+        // One JSON object per piece of the building, its socket links in the form of research/farm/v2/construction/
+        // data/sockets-grid-check.json: "<own socket after /sockets/> ~ [<other entry Id>] <other socket>".
+        private string Links(string building)
+        {
+            UpkeepPass pass = BeginPass();
+            Dictionary<string, LayoutEntry> byId = EntriesById();
+            List<LayoutEntry> members = Ordered(_config.Layout.Entries)
+                .Where(e => BuildingOf(e, byId) == building)
+                .ToList();
+            if (members.Count == 0)
+                return $"no layout entry is in building {building}";
+            var rows = new List<string>();
+            int standing = 0;
+            int links = 0;
+            foreach (LayoutEntry entry in members)
+            {
+                BaseEntity entity = pass.ById(entry.Id);
+                if (entity == null)
+                {
+                    rows.Add(JsonConvert.SerializeObject(new Dictionary<string, object>
+                    {
+                        ["id"] = entry.Id,
+                        ["missing"] = true,
+                    }));
+                    continue;
+                }
+                standing++;
+                var found = new List<string>();
+                foreach (EntityLink link in entity.GetEntityLinks(false))
+                    foreach (EntityLink other in link.connections)
+                    {
+                        string label = pass.Name(other.owner);
+                        if (label == null || !pass.Names.ContainsKey(IdOf(other.owner)))
+                            label = $"{other.owner?.ShortPrefabName} {IdOf(other.owner)}";
+                        found.Add($"{SocketTail(link.socket?.socketName)} ~ [{label}] {other.socket?.socketName}");
+                    }
+                found.Sort(StringComparer.Ordinal);
+                links += found.Count;
+                var stability = entity as StabilityEntity;
+                var block = entity as BuildingBlock;
+                var combat = entity as BaseCombatEntity;
+                var row = new Dictionary<string, object>
+                {
+                    ["id"] = entry.Id,
+                    ["netid"] = IdOf(entity),
+                    ["prefab"] = entity.ShortPrefabName,
+                    ["stability"] = stability != null ? (object)Math.Round(stability.cachedStability, 4) : null,
+                };
+                if (block != null)
+                {
+                    row["grade"] = block.grade.ToString();
+                    row["skin"] = block.skinID;
+                }
+                if (combat != null)
+                    row["health"] = $"{combat.Health():0}/{combat.MaxHealth():0}";
+                row["links"] = found;
+                rows.Add(JsonConvert.SerializeObject(row));
+            }
+            float t;
+            string height = _data.Buildings.TryGetValue(building, out t) ? $"T {t:0.00} m (stored)" : "T not set yet";
+            return $"building {building}: {height}, {standing}/{members.Count} pieces standing, {links} links\n" +
+                   string.Join("\n", rows);
+        }
+
+        private static string SocketTail(string socketName)
+        {
+            if (socketName == null)
+                return "-";
+            int i = socketName.IndexOf("/sockets/", StringComparison.Ordinal);
+            return i >= 0 ? socketName.Substring(i + 9) : socketName;
         }
 
         private void StatusSection(StringBuilder sb, string name, Action write)
