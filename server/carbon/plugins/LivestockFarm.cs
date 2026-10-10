@@ -2056,8 +2056,9 @@ namespace Oxide.Plugins
             cupboard.SendNetworkUpdate();
         }
 
-        // prepare checks the type and sets up the entity before it spawns; a problem destroys the unspawned
-        // instance, as Construction.CreateConstruction does.
+        // prepare checks the type and sets up the entity before it spawns (AttachToBuilding among it, as
+        // Construction.CreateConstruction does), so the occupant check runs first; a problem destroys the unspawned
+        // instance.
         private BaseEntity SpawnStructure(StructureRecord rec, Vector3 position, Quaternion rotation, ulong owner,
             Func<BaseEntity, string> prepare)
         {
@@ -2067,18 +2068,18 @@ namespace Oxide.Plugins
                 PlacementFailed(rec, $"prefab {rec.Prefab} did not create an entity");
                 return null;
             }
-            string problem = prepare?.Invoke(entity);
-            if (problem != null)
-            {
-                GameManager.Destroy(entity.gameObject);
-                PlacementFailed(rec, problem);
-                return null;
-            }
             string occupant = _deferOccupied ? Occupant(Footprint(entity)) : null;
             if (occupant != null)
             {
-                GameManager.Destroy(entity.gameObject);
+                DestroyUnspawned(entity);
                 rec.Waiting = occupant;
+                return null;
+            }
+            string problem = prepare?.Invoke(entity);
+            if (problem != null)
+            {
+                DestroyUnspawned(entity);
+                PlacementFailed(rec, problem);
                 return null;
             }
             ClearVegetation(entity);
@@ -2086,6 +2087,17 @@ namespace Oxide.Plugins
             entity.Spawn();
             Track(rec, entity);
             return entity;
+        }
+
+        // AttachToBuilding registers a DecayEntity with BuildingManager before it spawns, and a destroyed one is never
+        // dropped (Building.Remove* skip a null entity), so the next split or merge of its building would loop forever
+        // in ServerBuildingManager.Split or Merge.
+        private static void DestroyUnspawned(BaseEntity entity)
+        {
+            var decay = entity as DecayEntity;
+            if (decay != null)
+                BuildingManager.server.Remove(decay);
+            GameManager.Destroy(entity.gameObject);
         }
 
         private void Track(StructureRecord rec, BaseEntity entity)
@@ -2467,7 +2479,7 @@ namespace Oxide.Plugins
             if (animal == null)
             {
                 if (entity != null)
-                    GameManager.Destroy(entity.gameObject);
+                    DestroyUnspawned(entity);
                 Failure($"spawn:{prefab}", $"prefab {prefab} did not create a LivestockAnimal");
                 return null;
             }
@@ -3913,7 +3925,7 @@ namespace Oxide.Plugins
             if (plant == null)
             {
                 if (entity != null)
-                    GameManager.Destroy(entity.gameObject);
+                    DestroyUnspawned(entity);
                 Failure($"plantprefab:{path}", $"{clone.info.shortname} deploys {path}, which is not a GrowableEntity");
                 return null;
             }
