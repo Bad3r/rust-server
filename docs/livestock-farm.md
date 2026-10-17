@@ -241,10 +241,12 @@ Every 30 s the plugin runs these steps in order, each entity in its own guard, s
    the wait doubles up to 2 hours each time that repeats. Any entry waits while a player or an animal stands on its spot
    or while its support is missing; an entry the farm never placed waits for `farm.repair` or `farm.upgrade`, and one
    that either of them deferred is retried until it stands. The same step puts back the recorded grade and skin of every
-   farm block, with full health when the grade changed, logged per building at most hourly; checks each sign's image
-   every 300 s, repainting it when the image is gone and relocking it when the lock is; removes a part whose parent was
-   lost so that it comes back after the parent, except one holding items, plants, chickens, or hatching eggs, which
-   stays; and makes the farm bed private and the owner's again when it was made public, claimed, or handed over.
+   farm block, with full health when the grade changed, logged per building at most hourly, except a block whose entry
+   left the layout or no longer grades it, which players may upgrade and which keeps what they give it; checks each
+   sign's image every 300 s, repainting it when the image is gone and relocking it when the lock is; removes a part
+   whose parent was lost so that it comes back after the parent, except one holding items, plants, chickens, or
+   hatching eggs, which stays; and makes the farm bed private and the owner's again when it was made public, claimed,
+   or handed over.
 2. Wiring: re-make any missing link, except a pump link when the pump's water is not fresh, and skip links to an entry
    the farm never placed.
 3. Sweep: dropped dung and eggs within 75 m go into storage, eggs into a fridge first.

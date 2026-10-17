@@ -2149,10 +2149,11 @@ namespace Oxide.Plugins
                 {
                     ulong id = IdOf(block);
                     StructureRecord rec = _data.Structures.FirstOrDefault(r => r.NetId == id);
-                    string was = RestoreGrade(block, rec);
+                    LayoutEntry entry = rec == null ? null : EntryById(rec.Id);
+                    string was = RestoreGrade(block, rec, entry);
                     if (was == null)
                         return;
-                    string building = _config.Layout.Entries.FirstOrDefault(e => e.Id == rec.Id)?.Building ?? rec.Id;
+                    string building = entry?.Building ?? rec.Id;
                     LogRestores(new Dictionary<string, List<string>>
                     {
                         [building] = new List<string> { $"{rec.Id} (was {was})" },
@@ -4135,15 +4136,24 @@ namespace Oxide.Plugins
         }
 
         // Puts back the grade and skin the farm gave a block, which BuildingSkins and admin commands change with no
-        // hook to veto. Returns what it was, or null when nothing changed.
-        private string RestoreGrade(BuildingBlock block, StructureRecord rec = null)
+        // hook to veto. Returns what it was, or null when nothing changed. A block whose layout entry is gone or no
+        // longer grades it is open to players (IsGuarded), so the farm forgets its grade instead of reverting a paid
+        // upgrade.
+        private string RestoreGrade(BuildingBlock block, StructureRecord rec, LayoutEntry entry)
         {
-            ulong id = IdOf(block);
-            rec = rec ?? _data.Structures.FirstOrDefault(r => r.NetId == id);
             BuildingGrade.Enum grade;
-            if (rec == null || rec.Grade == null || !Enum.TryParse(rec.Grade, out grade))
+            ulong skin;
+            if (rec == null || rec.Grade == null)
                 return null;
-            ulong skin = rec.Skin ?? 0UL;
+            if (entry == null || !TargetGrade(entry, out grade, out skin))
+            {
+                rec.Grade = null;
+                rec.Skin = null;
+                return null;
+            }
+            if (!Enum.TryParse(rec.Grade, out grade))
+                return null;
+            skin = rec.Skin ?? 0UL;
             if (block.grade == grade && block.skinID == skin)
                 return null;
             string was = $"{block.grade} {block.skinID}";
@@ -5150,7 +5160,7 @@ namespace Oxide.Plugins
                 if (block != null && rec.Grade != null)
                     Guard("structures", rec.Id, () =>
                     {
-                        string was = RestoreGrade(block, rec);
+                        string was = RestoreGrade(block, rec, entry);
                         if (was == null)
                             return;
                         string building = entry?.Building ?? rec.Id;
