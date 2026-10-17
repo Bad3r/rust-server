@@ -215,8 +215,9 @@ plan without problems is what `confirm` does. `confirm` runs these steps in orde
 6. Stocks two starter clones per slot of each planter it placed, whatever the clone box holds, as the dry run lists them
    (from v1: corn 28, pumpkin 26, wheat 18).
 
-An Id that stays in the layout keeps its record where it stands, even when its layout pose, prefab, or role changed, and
-the plan reports it as kept: moving a part takes a new Id with `Replaces`. `confirm` refuses, changing nothing, while a
+An Id that stays in the layout keeps its record where it stands, even when its layout pose or prefab changed, and the
+plan reports it as kept: moving a part takes a new Id with `Replaces`. Its record takes the layout's role when the
+plugin loads. `confirm` refuses, changing nothing, while a
 problem blocks it: an entry or a move whose pose fails its checks, such as the ground check; a building whose base
 height is refused; a foundation that would bury something the upgrade does not lift, move, or retire; a deployable that
 is not the farm's standing on a block that retires or moves; a player or a live cow or sheep within 0.5 m of a new

@@ -1635,6 +1635,19 @@ namespace Oxide.Plugins
                       $"{EpochText(created)})");
                 return;
             }
+            // A kept Id takes its role from the layout; only a move needs farm.upgrade (a new Id with Replaces).
+            Dictionary<string, LayoutEntry> entries = EntriesById();
+            var roles = new List<string>();
+            foreach (StructureRecord rec in _data.Structures)
+            {
+                LayoutEntry entry;
+                if (rec.Id == null || !entries.TryGetValue(rec.Id, out entry) || entry.Role == rec.Role)
+                    continue;
+                roles.Add($"{rec.Id} {rec.Role} to {entry.Role}");
+                rec.Role = entry.Role;
+            }
+            if (roles.Count > 0)
+                Puts($"load: {roles.Count} records take their layout role: {string.Join(", ", roles)}");
             var missing = new List<string>();
             var back = new List<string>();
             var off = new List<string>();
@@ -8031,8 +8044,6 @@ namespace Oxide.Plugins
                 if (!string.Equals(rec.Prefab, entry.Prefab, StringComparison.OrdinalIgnoreCase))
                     why.Add($"it is a {entity.ShortPrefabName}, the layout names " +
                             Path.GetFileNameWithoutExtension(entry.Prefab ?? string.Empty));
-                if (rec.Role != entry.Role)
-                    why.Add($"its record keeps role {rec.Role}, the layout says {entry.Role}");
                 Vector3 spot = FarmPoint(entry.X, entry.Z);
                 Vector3 at = entity.transform.position;
                 float across = new Vector2(at.x - spot.x, at.z - spot.z).magnitude;
