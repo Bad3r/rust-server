@@ -4709,14 +4709,15 @@ namespace Oxide.Plugins
                 animal.SendNetworkUpdate();
         }
 
-        // Convex hull of the recorded fence and gate rail ends in world x/z, over the fence line that encloses the
-        // herd point: a garden or chicken run fenced off on its own (rail ends not meeting the pen's) stays out of
-        // it. A layout with one fence line has only the pen's.
+        // Convex hull of the recorded fence and gate rail ends in world x/z, over the rails that bound the fence face
+        // around the herd point. A garden or chicken run built against the pen shares rails and joints with it but
+        // not that face, so it stays out. When the rails close no face around the herd point (a gap), the hull falls
+        // back to the smallest fence line, joined at its rail ends, whose hull holds the herd point.
         private List<Vector2> PenHull()
         {
             if (_penHull != null)
                 return _penHull;
-            var lines = new List<List<Vector2>>();
+            var rails = new List<Vector2[]>();
             foreach (StructureRecord rec in _data.Structures)
             {
                 if (rec.Role != RoleFence && rec.Role != RoleGate)
@@ -4729,7 +4730,16 @@ namespace Oxide.Plugins
                 Vector2 along = new Vector2(Mathf.Sin(yaw), Mathf.Cos(yaw)) * RailHalfLength;
                 Vector3 at = planned != null ? FarmPoint(planned.X, planned.Z) : new Vector3(rec.X, 0f, rec.Z);
                 var centre = new Vector2(at.x, at.z);
-                var rail = new List<Vector2> { centre + along, centre - along };
+                rails.Add(new[] { centre + along, centre - along });
+            }
+            Vector3 herd = FarmPoint(_config.HerdPoint.X, _config.HerdPoint.Z);
+            List<int> face = FaceAround(rails, new Vector2(herd.x, herd.z));
+            if (face != null)
+                return _penHull = ConvexHull(face.SelectMany(i => rails[i]).ToList());
+            var lines = new List<List<Vector2>>();
+            foreach (Vector2[] ends in rails)
+            {
+                var rail = new List<Vector2>(ends);
                 List<List<Vector2>> joined = lines.Where(line => line.Any(p => rail.Any(q =>
                     (p - q).sqrMagnitude < RailJoin * RailJoin))).ToList();
                 foreach (List<Vector2> line in joined)
@@ -4739,11 +4749,128 @@ namespace Oxide.Plugins
                 }
                 lines.Add(rail);
             }
-            Vector3 herd = FarmPoint(_config.HerdPoint.X, _config.HerdPoint.Z);
             List<List<Vector2>> hulls = lines.Select(ConvexHull).ToList();
             List<Vector2> pen = hulls.Where(h => InsidePen(herd, h)).OrderBy(HullArea).FirstOrDefault();
             _penHull = pen ?? ConvexHull(lines.SelectMany(line => line).ToList());
             return _penHull;
+        }
+
+        // The rails bounding the fence face that holds the point, or null when they close none around it. Rail ends
+        // within RailJoin meet at one joint. The first rail a ray from the point towards +x crosses bounds the face;
+        // walking it with the point on the left and turning as far left as possible at every joint goes once around
+        // the face, past rails that branch off outwards (a garden's fence starting at a pen joint).
+        private static List<int> FaceAround(List<Vector2[]> rails, Vector2 point)
+        {
+            int count = rails.Count * 2;
+            var joint = new int[count];
+            for (int i = 0; i < count; i++)
+                joint[i] = i;
+            Func<int, int> find = i =>
+            {
+                while (joint[i] != i)
+                    i = joint[i] = joint[joint[i]];
+                return i;
+            };
+            for (int i = 0; i < count; i++)
+                for (int j = i + 1; j < count; j++)
+                    if ((rails[i / 2][i % 2] - rails[j / 2][j % 2]).sqrMagnitude < RailJoin * RailJoin)
+                        joint[find(i)] = find(j);
+            var sum = new Dictionary<int, Vector2>();
+            var ends = new Dictionary<int, int>();
+            for (int i = 0; i < count; i++)
+            {
+                int at = find(i);
+                Vector2 total;
+                int n;
+                sum.TryGetValue(at, out total);
+                ends.TryGetValue(at, out n);
+                sum[at] = total + rails[i / 2][i % 2];
+                ends[at] = n + 1;
+            }
+            var pos = sum.ToDictionary(p => p.Key, p => p.Value / ends[p.Key]);
+            var edges = new Dictionary<int, KeyValuePair<int, int>>();
+            var around = new Dictionary<int, List<int>>();
+            for (int k = 0; k < rails.Count; k++)
+            {
+                int a = find(2 * k), b = find(2 * k + 1);
+                if (a == b)
+                    continue;
+                edges[k] = new KeyValuePair<int, int>(a, b);
+                foreach (int end in new[] { a, b })
+                {
+                    List<int> list;
+                    if (!around.TryGetValue(end, out list))
+                        around[end] = list = new List<int>();
+                    list.Add(k);
+                }
+            }
+            int start = -1;
+            float nearest = float.MaxValue;
+            foreach (KeyValuePair<int, KeyValuePair<int, int>> edge in edges)
+            {
+                Vector2 pa = pos[edge.Value.Key], pb = pos[edge.Value.Value];
+                if ((pa.y > point.y) == (pb.y > point.y))
+                    continue;
+                float x = pa.x + (point.y - pa.y) / (pb.y - pa.y) * (pb.x - pa.x);
+                if (x > point.x && x < nearest)
+                {
+                    nearest = x;
+                    start = edge.Key;
+                }
+            }
+            if (start < 0)
+                return null;
+            int from = edges[start].Key, to = edges[start].Value;
+            if (Cross(pos[from], pos[to], point) < 0f)
+            {
+                from = edges[start].Value;
+                to = edges[start].Key;
+            }
+            var face = new List<int> { start };
+            var corners = new List<Vector2> { pos[from] };
+            int rail = start, came = from, here = to;
+            for (int step = 0; ; step++)
+            {
+                if (step > 4 * edges.Count)
+                    return null;
+                Vector2 heading = pos[here] - pos[came];
+                int next = -1, then = -1;
+                float best = float.MinValue;
+                foreach (int k in around[here])
+                {
+                    if (k == rail && around[here].Count > 1)
+                        continue;
+                    int other = edges[k].Key == here ? edges[k].Value : edges[k].Key;
+                    Vector2 leg = pos[other] - pos[here];
+                    float turn = Mathf.Atan2(heading.x * leg.y - heading.y * leg.x, Vector2.Dot(heading, leg));
+                    if (turn > best)
+                    {
+                        best = turn;
+                        next = k;
+                        then = other;
+                    }
+                }
+                corners.Add(pos[here]);
+                if (next == start && here == from)
+                    break;
+                face.Add(next);
+                rail = next;
+                came = here;
+                here = then;
+            }
+            corners.RemoveAt(corners.Count - 1);
+            float area = 0f;
+            int winding = 0;
+            for (int i = 0; i < corners.Count; i++)
+            {
+                Vector2 a = corners[i], b = corners[(i + 1) % corners.Count];
+                area += Cross(Vector2.zero, a, b);
+                if (a.y <= point.y && b.y > point.y && Cross(a, b, point) > 0f)
+                    winding++;
+                else if (b.y <= point.y && a.y > point.y && Cross(a, b, point) < 0f)
+                    winding--;
+            }
+            return area > 0f && winding != 0 ? face.Distinct().ToList() : null;
         }
 
         private static float HullArea(List<Vector2> hull)
