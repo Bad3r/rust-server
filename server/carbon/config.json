@@ -90,11 +90,14 @@
     "EnableProxy": true,
     "CompileTestMode": false,
     "UnloadOnFailure": false,
+    "GenerateInternalCallHookSourceOnFailure": true,
     "ConditionalCompilationSymbols": [
       "CARBON",
       "RUST",
       "OXIDE_PUBLICIZED"
     ]
   },
-  "Misc": {}
+  "Misc": {
+    "ShowConsoleInfo": true
+  }
 }
