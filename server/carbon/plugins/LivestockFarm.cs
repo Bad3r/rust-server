@@ -7608,10 +7608,12 @@ namespace Oxide.Plugins
                 plan.Shifting[IdOf(shift.Entity)] = shift.Entry;
             plan.Place.AddRange(missing.Where(e => plan.Shifts.All(s => s.Entry != e)));
             // A retiring record has no layout entry, so a block among them has the default layer of everything else:
-            // within a layer, blocks go last and later records (placed later, on top) first.
+            // within a layer, blocks go last and later records (placed later, on top) first. Static planters, which
+            // stand on terrain, go after everything: their harvest takes only the feed-box room the others leave.
             plan.Retire.AddRange(retiring
                 .Select((r, index) => new { r, index })
-                .OrderByDescending(p => LayerOfRecord(p.r.Rec))
+                .OrderBy(p => p.r.Entity is PlanterBoxStatic ? 1 : 0)
+                .ThenByDescending(p => LayerOfRecord(p.r.Rec))
                 .ThenBy(p => p.r.Entity is BuildingBlock ? 1 : 0)
                 .ThenByDescending(p => p.index)
                 .Select(p => p.r));
@@ -8197,6 +8199,8 @@ namespace Oxide.Plugins
                 }
                 var live = new UpgradePlan { Pass = BeginPass(), Live = true };
                 live.Retiring.UnionWith(plan.Retiring);
+                // A static planter's harvest goes through the pass's role containers, which skip retired records only.
+                live.Pass.Retired.UnionWith(plan.Retiring);
                 foreach (UpgradeRetire r in stop ? new List<UpgradeRetire>() : plan.Retire)
                 {
                     UpgradeRetire done = null;
@@ -8732,8 +8736,8 @@ namespace Oxide.Plugins
             foreach (BaseEntity entity in plan.Pass.Role(role))
             {
                 ulong id = IdOf(entity);
-                if (plan.Retiring.Contains(id) || plan.Shifting.ContainsKey(id) ||
-                    (plan.Live && plan.Pass.Retired.Contains(id)))
+                if (entity == null || entity.IsDestroyed || plan.Retiring.Contains(id) ||
+                    plan.Shifting.ContainsKey(id) || (plan.Live && plan.Pass.Retired.Contains(id)))
                     continue;
                 string name = plan.Pass.Name(entity);
                 BaseEntity standing = entity;
@@ -8903,11 +8907,13 @@ namespace Oxide.Plugins
             if (plan.Coops != null)
                 return plan.Coops;
             plan.Coops = new List<CoopRoom>();
+            // The confirm builds these lazily, so a retiring coop an earlier retirement killed (net id 0) is skipped
+            // by IsDestroyed, not by its id.
             foreach (ChickenCoop coop in plan.Pass.Role(RoleCoop).OfType<ChickenCoop>())
             {
                 ulong id = IdOf(coop);
-                if (!plan.Retiring.Contains(id) && !plan.Shifting.ContainsKey(id) &&
-                    !(plan.Live && plan.Pass.Retired.Contains(id)))
+                if (coop != null && !coop.IsDestroyed && !plan.Retiring.Contains(id) &&
+                    !plan.Shifting.ContainsKey(id) && !(plan.Live && plan.Pass.Retired.Contains(id)))
                     plan.Coops.Add(Room(plan.Pass.Name(coop), coop));
             }
             if (plan.Live)

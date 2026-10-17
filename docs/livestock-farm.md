@@ -204,11 +204,12 @@ plan without problems is what `confirm` does. `confirm` runs these steps in orde
    and the old one retires.
 4. Retires each record whose Id left the layout: its items go first to the entry that `Replaces` it with another prefab,
    then fridge items to the fridges, then to containers of its own role, then to the item's home box, and eggs never
-   into a coop's laying slot; a static planter's ripe crops go to the feed boxes first, and its other plants go with it;
-   its chickens and hatching eggs go to other coops, its replacement first, at most one hatching egg each; a battery's
-   charge goes to the battery replacing it, up to that one's capacity, which the dry run states; then it is killed,
-   deployables before the blocks they stand on. From v1 that retires 25: the other five boxes into the barn's barrels
-   and food box, battery-01 into the large battery-02, fence-01 to fence-18 once the new south line stands, and
+   into a coop's laying slot; a static planter's ripe crops go to the feed boxes that stay, and its other plants go with
+   it; its chickens and hatching eggs go to other coops, its replacement first, at most one hatching egg each; a
+   battery's charge goes to the battery replacing it, up to that one's capacity, which the dry run states; then it is
+   killed, deployables before the blocks they stand on, and static planters after everything else, so their crops take
+   only the feed-box room the other retirements leave. From v1 that retires 25: the other five boxes into the barn's
+   barrels and food box, battery-01 into the large battery-02, fence-01 to fence-18 once the new south line stands, and
    platform-01. A lifted part that stays, retired, goes back where it stood.
 5. Regrades standing blocks whose grade or skin differs from the layout's (foundation-01, from stone to Frontier wood),
    wires the layout's connections, and drops the links of moved and retired parts (from v1: 25 wired, 3 dropped).
