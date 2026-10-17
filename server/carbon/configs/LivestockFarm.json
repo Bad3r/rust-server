@@ -1,7 +1,7 @@
 {
   "Owner SteamID (0 = first owner in cfg/users.cfg)": 0,
   "Upkeep interval (seconds)": 30.0,
-  "Farm radius around the layout centre for sweeping and relinking (m)": 50.0,
+  "Farm radius around the layout centre for sweeping and relinking (m)": 75.0,
   "Swept dropped items (shortname to box role)": {
     "horsedung": "box_dung",
     "egg": "box_eggs"

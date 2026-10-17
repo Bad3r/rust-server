@@ -246,7 +246,7 @@ Every 30 s the plugin runs these steps in order, each entity in its own guard, s
    stays; and makes the farm bed private and the owner's again when it was made public, claimed, or handed over.
 2. Wiring: re-make any missing link, except a pump link when the pump's water is not fresh, and skip links to an entry
    the farm never placed.
-3. Sweep: dropped dung and eggs within 50 m go into storage, eggs into a fridge first.
+3. Sweep: dropped dung and eggs within 75 m go into storage, eggs into a fridge first.
 4. Herd: full trust (900 s) for the owner, the farm cupboard as home, milking and shearing straight into storage, and
    the needs net: fullness, hydration, or personal space below 0.5 is set to 0.8 and logged. A wild animal standing
    inside the pen, the fence loop around the herd point (0, 11), joins the herd while its species is under the cap; the
@@ -254,7 +254,7 @@ Every 30 s the plugin runs these steps in order, each entity in its own guard, s
    game sets for good once an animal can be led), so an animal bought from the Livestock Vendor or tamed by a player
    never joins, even after its trust fades. A farm animal outside the fence for 5 minutes and not on a lead or a vehicle
    goes back to the pen, from any distance, through the same move the game uses to unload an animal from a vehicle. One
-   a player leads or drives out past 50 m from the centre leaves the farm for good, and the plugin never touches it
+   a player leads or drives out past 75 m from the centre leaves the farm for good, and the plugin never touches it
    again.
 5. Sex safety: a species with no male or no female gets a juvenile of that sex, and a species with no animals gets its
    starter herd again, each at most every 10 minutes, doubling up to 2 hours while the reseeded animals die or when a
@@ -437,13 +437,13 @@ checked its record against it, every command but `farm.status` refuses and says 
 
 ## Config
 
-`server/carbon/configs/LivestockFarm.json` holds the owner, the upkeep interval (30 s), the farm radius (50 m), the
+`server/carbon/configs/LivestockFarm.json` holds the owner, the upkeep interval (30 s), the farm radius (75 m), the
 starter herd, the caps (9 and 9), the breeding fallback timing, the needs threshold (0.5) and restore value (0.8), the
 stock targets above, the water sources, the planter slot plan for the eight planters, the clone genes,
 `Auto repair missing structures` (true), `Building grade` (wood) and `Building skin` (10232), and the whole layout: 384
 entries with farm-local positions, plus 29 power and water connections. The plugin's built-in defaults equal these
-values and this layout. The farm radius bounds only the sweep, animal relinking, strays, and releases: 46 entries stand
-beyond it, the turbine farthest at 63.9 m.
+values and this layout. The farm radius bounds only the sweep, animal relinking, strays, and releases, and every entry
+stands inside it, the turbine farthest at 63.9 m, so an animal led to the farmhouse or the deck stays on the farm.
 
 Each layout entry has an `Id`, a `Role`, a `Prefab`, and farm-local `X`, `Z`, and `Yaw`; connections name `From`,
 `FromSlot`, `To`, `ToSlot`, and `Kind`. v2 adds these entry fields:

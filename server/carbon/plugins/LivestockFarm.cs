@@ -260,7 +260,7 @@ namespace Oxide.Plugins
             public float UpkeepSeconds = 30f;
 
             [JsonProperty("Farm radius around the layout centre for sweeping and relinking (m)")]
-            public float FarmRadius = 50f;
+            public float FarmRadius = 75f;
 
             [JsonProperty("Swept dropped items (shortname to box role)",
                 ObjectCreationHandling = ObjectCreationHandling.Replace)]
