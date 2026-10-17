@@ -549,7 +549,7 @@ namespace Oxide.Plugins
             },
         };
 
-        // research/farm/v2/design/config-v2.json as of 2026-10-10 16:28: 384 entries (buildings barn, deck, house,
+        // research/farm/v2/design/config-v2.json as of 2026-10-10 23:25: 384 entries (buildings barn, deck, house,
         // shelter, tower) and 29 connections. research/farm/v2/plugin/tools/make_defaults.py writes this method,
         // DefaultSlotPlan, and the setting defaults from that file; edit the file and rerun it.
         private static FarmLayout DefaultLayout()
@@ -674,7 +674,7 @@ namespace Oxide.Plugins
                 layer: 6));
             e.Add(Entry("shelter-gable-x0z0-N-h1", "block", wall, 0.0f, 1.5f, 270.0f, y: 1.5f, building: "shelter",
                 layer: 6));
-            e.Add(Entry("cupboard-01", "cupboard", CupboardPrefab, 0.0f, 0.0f, 0.0f));
+            e.Add(Entry("cupboard-01", "cupboard", CupboardPrefab, 0.0f, 0.0f, 0.0f, on: "foundation-01"));
             e.Add(Entry("trough-01", "trough", TroughPrefab, -13.05f, 0.0f, 0.0f));
             e.Add(Entry("trough-02", "trough", TroughPrefab, 13.05f, 0.0f, 0.0f));
             e.Add(Entry("catcher-01", "catcher_small", SmallCatcherPrefab, -15.7f, 1.3f, 0.0f));
@@ -4245,11 +4245,33 @@ namespace Oxide.Plugins
             Rest rest;
             if (!Locate(entry, false, 0, out position, out rotation, out rest, out problem))
                 return false;
+            problem = PrefabProblem(entry);
+            if (problem != null)
+                return false;
             float distance;
             if (adopt && FindAdoptable(entry.Prefab, position, AdoptWithin(entry), out distance) != null)
                 return true;
             problem = PlaceCheck(entry, false, position, rotation, rest, aside);
             return problem == null;
+        }
+
+        // What SpawnStructure and Prepare would refuse about the entry's prefab (none such, or the wrong type for its
+        // role), read from the prefab so the plan refuses it before confirm places anything.
+        private static string PrefabProblem(LayoutEntry entry)
+        {
+            GameObject go = string.IsNullOrEmpty(entry.Prefab) ? null : GameManager.server.FindPrefab(entry.Prefab);
+            BaseEntity prefab = go == null ? null : go.GetComponent<BaseEntity>();
+            if (prefab == null)
+                return $"prefab {entry.Prefab} did not create an entity";
+            if (IsBlockRole(entry.Role) && !(prefab is BuildingBlock))
+                return "prefab is not a BuildingBlock";
+            if ((entry.Role == RoleDoor || entry.Role == RoleInsert) && !(prefab is DecayEntity))
+                return "prefab is not a door or building insert";
+            if (entry.Role == RoleCupboard && !(prefab is BuildingPrivlidge))
+                return "prefab is not a BuildingPrivlidge";
+            if (entry.Role == RoleBed && !(prefab is SleepingBag))
+                return "a bed entry's prefab is not a SleepingBag";
+            return null;
         }
 
         // The box an entry's prefab fills at a pose: its BaseEntity bounds (a foundation's reach 2.8 m down from its
@@ -7857,6 +7879,7 @@ namespace Oxide.Plugins
         {
             foreach (UpgradeRetire r in plan.Retire.Where(r => r.Rec.Role == RoleCupboard))
                 plan.Problem($"the plan retires the herd's cupboard {r.Rec.Id}; the layout must keep its entry", true);
+            PlanDeployableSupport(plan);
             List<BuildingBlock> surfaces = plan.Retire.Select(r => r.Entity)
                 .Concat(plan.Shifts.Select(s => s.Entity))
                 .OfType<BuildingBlock>()
@@ -7907,6 +7930,36 @@ namespace Oxide.Plugins
                         !OnFootprint(local, IsTrianglePrefab(block.PrefabName)))
                         continue;
                     plan.Problem($"{NameOf(entity)}, which is not the farm's, stands on {NameOf(block)}, which " +
+                                 "retires or moves away; move it first, or it falls with what it holds", true);
+                }
+            }
+        }
+
+        // The same for a deployable set unparented on top of a farm deployable that retires or moves (a lantern on a
+        // box or the table): a kill or move leaves it on nothing.
+        private void PlanDeployableSupport(UpgradePlan plan)
+        {
+            foreach (BaseEntity support in plan.Retire.Select(r => r.Entity).Concat(plan.Shifts.Select(s => s.Entity)))
+            {
+                if (support == null || support.IsDestroyed || support is BuildingBlock)
+                    continue;
+                Bounds bounds = support.bounds;
+                var reach = new Bounds(bounds.center + Vector3.up * (StandsOnHeight / 2f),
+                    bounds.size + Vector3.up * StandsOnHeight);
+                var found = new List<BaseEntity>();
+                Vis.Entities(new OBB(support.transform.position, support.transform.rotation, reach), found,
+                    Rust.Layers.Mask.Deployed | Rust.Layers.Mask.Construction);
+                foreach (BaseEntity entity in found)
+                {
+                    if (entity == null || entity.IsDestroyed || entity == support || !(entity is DecayEntity) ||
+                        entity.GetParentEntity() != null || _structureIds.Contains(IdOf(entity)))
+                        continue;
+                    Vector3 local = support.transform.InverseTransformPoint(entity.transform.position);
+                    if (local.y < bounds.max.y - OnTolerance || local.y > bounds.max.y + StandsOnHeight ||
+                        Mathf.Abs(local.x - bounds.center.x) > bounds.extents.x ||
+                        Mathf.Abs(local.z - bounds.center.z) > bounds.extents.z)
+                        continue;
+                    plan.Problem($"{NameOf(entity)}, which is not the farm's, stands on {NameOf(support)}, which " +
                                  "retires or moves away; move it first, or it falls with what it holds", true);
                 }
             }

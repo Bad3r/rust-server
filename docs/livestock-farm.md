@@ -217,10 +217,11 @@ plan without problems is what `confirm` does. `confirm` runs these steps in orde
 
 An Id that stays in the layout keeps its record where it stands, even when its layout pose or prefab changed, and the
 plan reports it as kept: moving a part takes a new Id with `Replaces`. Its record takes the layout's role when the
-plugin loads. `confirm` refuses, changing nothing, while a
-problem blocks it: an entry or a move whose pose fails its checks, such as the ground check; a building whose base
-height is refused; a foundation that would bury something the upgrade does not lift, move, or retire; a deployable that
-is not the farm's standing on a block that retires or moves; a player or a live cow or sheep within 0.5 m of a new
+plugin loads. `confirm` refuses, changing nothing, while a problem blocks it: an entry or a move whose pose fails its
+checks, such as the ground check; an entry whose prefab does not exist or does not fit its role (a block, door, insert,
+cupboard, or bed role on another kind of prefab); a building whose base height is refused; a foundation that would bury
+something the upgrade does not lift, move, or retire; a deployable that is not the farm's standing on a block or a farm
+deployable that retires or moves; a player or a live cow or sheep within 0.5 m of a new
 footprint; a part the layout keeps reaching more than 0.2 m into one (fences and gates meeting each other, and parts of
 or on the same building, excepted); a plan that would retire the herd's cupboard or move or retire the block under it; a
 retiree that must stay standing inside a new footprint; or items or water with no room.

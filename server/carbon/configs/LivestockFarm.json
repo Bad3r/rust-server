@@ -639,7 +639,8 @@
         "Prefab": "assets/prefabs/deployable/tool cupboard/cupboard.tool.deployed.prefab",
         "X": 0.0,
         "Z": 0.0,
-        "Yaw": 0.0
+        "Yaw": 0.0,
+        "On": "foundation-01"
       },
       {
         "Id": "trough-01",
