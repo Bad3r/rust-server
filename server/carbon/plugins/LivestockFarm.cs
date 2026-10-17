@@ -2247,8 +2247,26 @@ namespace Oxide.Plugins
                 arg.ReplyWith(NoOwner);
                 return;
             }
+            if (!_recordChecked)
+                RecordWhereStanding();
             _recordChecked = true;
             arg.ReplyWith(Repair(owner));
+        }
+
+        // farm.repair vouches for a record whose structures VerifyRecord found standing away from it: each standing
+        // structure's record takes the spot where it stands, so the next load does not hold auto-repair off again.
+        private void RecordWhereStanding()
+        {
+            foreach (StructureRecord rec in _data.Structures)
+            {
+                BaseEntity standing = rec.NetId == 0 || rec.Missing ? null : ResolveStructure(rec);
+                if (standing == null)
+                    continue;
+                Vector3 at = standing.transform.position;
+                rec.X = at.x;
+                rec.Y = at.y;
+                rec.Z = at.z;
+            }
         }
 
         [ConsoleCommand("farm.remove")]
@@ -2775,10 +2793,19 @@ namespace Oxide.Plugins
             state.NextAt = now + state.Wait * 60f;
         }
 
+        // Why the configured auto-repair does not run (AutoRepair returns at once), or null while it does.
+        private string AutoRepairHold() =>
+            !_config.AutoRepair ? null
+            : !_recordChecked ? "auto-repair is held until farm.repair or farm.build vouches for the record"
+            : FarmOwner() == 0 ? "auto-repair is held while the farm has no owner"
+            : null;
+
+        private bool AutoRepairRuns => _config.AutoRepair && AutoRepairHold() == null;
+
         private string RepairHint(bool plural)
         {
             string what = plural ? "them" : "it";
-            return _config.AutoRepair
+            return AutoRepairRuns
                 ? $"auto-repair re-places {what} on the next pass"
                 : $"farm.repair respawns {what}";
         }
@@ -2789,7 +2816,7 @@ namespace Oxide.Plugins
             LayoutEntry entry = _config.Layout.Entries.FirstOrDefault(e => e.Id == rec.Id);
             if (entry == null)
                 return "it is no longer in the layout, so it stays gone";
-            return _config.AutoRepair && !NeverPlaced(entry, RecordsById())
+            return AutoRepairRuns && !NeverPlaced(entry, RecordsById())
                 ? "auto-repair re-places it on the next pass"
                 : "farm.repair respawns it";
         }
@@ -2797,7 +2824,7 @@ namespace Oxide.Plugins
         private string RepairWait(string id)
         {
             RepairState state;
-            if (!_config.AutoRepair || string.IsNullOrEmpty(id) || !_repairs.TryGetValue(id, out state))
+            if (!AutoRepairRuns || string.IsNullOrEmpty(id) || !_repairs.TryGetValue(id, out state))
                 return string.Empty;
             if (state.Waiting)
                 return IsSupportWait(state.WaitingFor) ? $", {state.WaitingFor}" : ", waiting for the spot to clear";
@@ -6974,6 +7001,8 @@ namespace Oxide.Plugins
             _penHull = null;
             _relinkWanted = false;
             _recordChecked = false;
+            // The first pass of a new record counts no time from the last pass of the old one.
+            _lastUpkeepAt = -1f;
         }
 
         private string NameOf(BaseEntity entity)
@@ -9824,8 +9853,11 @@ namespace Oxide.Plugins
                     .Where(r => (r.Missing || (r.Pending && r.NetId == 0)) &&
                                 entries.TryGetValue(r.Id, out layoutEntry) && !NeverPlaced(layoutEntry, records))
                     .ToList();
+                string hold = AutoRepairHold();
+                if (hold != null)
+                    sb.AppendLine(hold);
                 if (missing.Count > 0)
-                    sb.AppendLine("missing structures (" + (_config.AutoRepair
+                    sb.AppendLine("missing structures (" + (AutoRepairRuns
                                       ? "auto-repair re-places each on the next pass unless a wait is shown"
                                       : "farm.repair respawns them") + "): " +
                                   string.Join(", ", missing.Select(r => $"{r.Id} ({r.Role}{RepairWait(r.Id)})")));

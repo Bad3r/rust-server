@@ -429,7 +429,7 @@ under it. None of these refusals, nor Auto Doors on the farm's doors, has run wi
 | `farm.links <building>` | the building's base height and one JSON line per piece: network id, prefab, stability, grade, skin, health, and socket links |
 | `farm.tick` | run one upkeep pass now |
 | `farm.relink` | find farm animals again after something replaced them |
-| `farm.repair` | place every missing, failed, or never-placed layout entry, take over matching standing entities, rewire, and turn auto-repair back on after a record drift (Records) |
+| `farm.repair` | place every missing, failed, or never-placed layout entry, take over matching standing entities, rewire, and turn auto-repair back on after a record drift, recording where the drifted structures stand (Records) |
 | `farm.remove confirm` | drop every container's items as loot bags, list them, and remove the farm and its animals |
 
 Each needs RCON, the server console, or auth level 2. While the server is still loading the world, before the plugin has
@@ -481,8 +481,9 @@ ahead of the `.sav`. It stores each structure and animal by network id and prefa
 block's grade and skin, the records `farm.upgrade` left retired, and the world's save file name and creation time. Every
 lookup checks the prefab and owner, so an id the server reissued after a crash never counts as part of the farm. At
 load, structures standing more than 1 m from where the record has them mean the record runs ahead of the world (an older
-save restored, or a crash before the save): the plugin logs them and keeps auto-repair off until `farm.repair` or
-`farm.build`, and `farm.remove confirm` then `farm.build` starts afresh.
+save restored, or a crash before the save): the plugin logs them and keeps auto-repair off, which `farm.status` says,
+until `farm.repair` or `farm.build`, and `farm.remove confirm` then `farm.build` starts afresh. `farm.repair` records
+where those structures stand, so the next load trusts the record again.
 
 - A wipe (`OnNewSave`) or a record from another world archives the record as `<identity>.stale-<time>.json` and starts
   clean; the farm has to be built again with `farm.build`. On the same seed the E6 terrain stays the same.
