@@ -283,8 +283,8 @@ Every 30 s the plugin runs these steps in order, each entity in its own guard, s
    or handed over.
 2. Wiring and lighting: re-make any missing link, except a pump link when the pump's water is not fresh, and skip links to an entry
    the farm never placed. A link whose route anchor is missing is still made, drawn straight. Refresh a connected link's
-   drawing when its configured route differs, without disconnecting its sockets or interrupting its supply. Then set the dedicated lighting switch and managed lanterns for the time
-   of day; failures are isolated per lantern.
+   drawing when its configured route differs, without disconnecting its sockets or interrupting its supply. Then set
+   the dedicated lighting switch and managed lanterns for the time of day; failures are isolated per lantern.
 3. Sweep: dropped dung and eggs within 75 m go into storage, eggs into a fridge first.
 4. Herd: full trust (900 s) for the owner, the farm cupboard as home, milking and shearing into storage when the profile or absence care enables them, and
    the needs net: fullness, hydration, or personal space below 0.5 is set to 0.8 and logged. A wild animal standing
