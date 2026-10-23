@@ -260,16 +260,16 @@ namespace Oxide.Plugins
             public float UpkeepSeconds = 30f;
 
             [JsonProperty("Automatically milk cows")]
-            public bool AutoMilk = true;
+            public bool AutoMilk = false;
 
             [JsonProperty("Automatically shear sheep")]
-            public bool AutoShear = true;
+            public bool AutoShear = false;
 
             [JsonProperty("Automatically cull surplus livestock")]
             public bool AutoCull = true;
 
             [JsonProperty("Player-managed planter layout IDs", ObjectCreationHandling = ObjectCreationHandling.Replace)]
-            public List<string> ManualPlanterIds = new List<string>();
+            public List<string> ManualPlanterIds = new List<string> { "planter-07", "planter-08" };
 
             [JsonProperty("Assisted farming absence fallback after minutes (0 = disabled)")]
             public float AbsenceMinutes = 60f;
@@ -598,8 +598,8 @@ namespace Oxide.Plugins
             },
         };
 
-        // research/farm/v2/design/config-v2.json as of 2026-10-10 23:25: 384 entries (buildings barn, deck, house,
-        // shelter, tower) and 29 connections. research/farm/v2/plugin/tools/make_defaults.py writes this method,
+        // server/carbon/configs/LivestockFarm.json as of 2026-10-23 05:57: 394 entries (buildings barn, deck, house,
+        // shelter, tower) and 30 connections. research/farm/v2/plugin/tools/make_defaults.py writes this method,
         // DefaultSlotPlan, and the setting defaults from that file; edit the file and rerun it.
         private static FarmLayout DefaultLayout()
         {
@@ -620,8 +620,8 @@ namespace Oxide.Plugins
                 "assets/prefabs/building/door.double.hinged/door.double.hinged.wood.prefab";
             const string wallWindowBarsWood = "assets/prefabs/building/wall.window.bars/wall.window.bars.wood.prefab";
             const string signHugeWood = "assets/prefabs/deployable/signs/sign.huge.wood.prefab";
-            const string signSmallWood = "assets/prefabs/deployable/signs/sign.small.wood.prefab";
             const string signMediumWood = "assets/prefabs/deployable/signs/sign.medium.wood.prefab";
+            const string signSmallWood = "assets/prefabs/deployable/signs/sign.small.wood.prefab";
             const string componentBoxFoodLarge =
                 "assets/prefabs/deployable/large wood storage/skins/component_storage_boxes_dlc/box_food/" +
                 "component.box.food.large.prefab";
@@ -649,7 +649,6 @@ namespace Oxide.Plugins
                 "assets/prefabs/deployable/cookingworkbench/cookingworkbench.deployed.prefab";
             const string candlesetLargeOnStatic = "assets/bundled/prefabs/static/candleset_large_on.static.prefab";
             const string woodenBenchAMountable = "assets/content/props/wooden_bench/wooden_bench_a_mountable.prefab";
-            const string lanternDeployed = "assets/prefabs/deployable/lantern/lantern.deployed.prefab";
             const string scarecrowDeployed = "assets/prefabs/misc/halloween/scarecrow/scarecrow.deployed.prefab";
             const string electricalHeater =
                 "assets/prefabs/deployable/playerioents/electricheater/electrical.heater.prefab";
@@ -914,25 +913,24 @@ namespace Oxide.Plugins
                 parent: "barn-roof-x3z2-s2", roll: 45.0f, layer: 9, replaces: "solar-01"));
             e.Add(Entry("barn-sign", "sign", signHugeWood, 44.65f, 8.4f, 90.0f, y: 3.55f, building: "barn",
                 parent: "barn-gable-x4z1-E-s1", mount: true, layer: 9, image: "pandora-farm-sign.huge.wood-1024x256"));
-            e.Add(Entry("barn-guide", "sign", signMediumWood, 44.65f, 13.2f, 90.0f, y: 1.1f,
-                building: "barn", parent: "barn-wall-x4z3-E-s0", mount: true, layer: 10,
-                image: "farm-guide"));
-            e.Add(Entry("label-feed", "sign", signSmallWood, 31.7f, 14.25f, 180.0f, y: 2.3f,
-                building: "barn", parent: "barn-wall-x0z3-N-s0", mount: true, layer: 10, image: "farm-feed"));
-            e.Add(Entry("label-clones", "sign", signSmallWood, 34.87f, 14.25f, 180.0f, y: 2.3f,
-                building: "barn", parent: "barn-window-x1z3-N-s0", mount: true, layer: 10, image: "farm-clones"));
-            e.Add(Entry("label-dung", "sign", signSmallWood, 36.71f, 14.25f, 180.0f, y: 2.3f,
-                building: "barn", parent: "barn-wall-x2z3-N-s0", mount: true, layer: 10, image: "farm-compost"));
-            e.Add(Entry("label-wool", "sign", signSmallWood, 39.11f, 14.25f, 180.0f, y: 2.3f,
-                building: "barn", parent: "barn-window-x3z3-N-s0", mount: true, layer: 10, image: "farm-wool"));
-            e.Add(Entry("label-cold", "sign", signSmallWood, 30.9f, 2.55f, 0.0f, y: 2.3f,
-                building: "barn", parent: "barn-wall-x0z0-S-s0", mount: true, layer: 10, image: "farm-cold"));
-            e.Add(Entry("label-milk", "sign", signSmallWood, 32.76f, 2.55f, 0.0f, y: 2.3f,
-                building: "barn", parent: "barn-window-x1z0-S-s0", mount: true, layer: 10, image: "farm-milk"));
-            e.Add(Entry("label-eggs", "sign", signSmallWood, 34.58f, 2.55f, 0.0f, y: 2.3f,
-                building: "barn", parent: "barn-window-x1z0-S-s0", mount: true, layer: 10, image: "farm-eggs"));
-            e.Add(Entry("label-meat", "sign", signSmallWood, 38.83f, 2.55f, 0.0f, y: 2.3f,
-                building: "barn", parent: "barn-window-x3z0-S-s0", mount: true, layer: 10, image: "farm-meat"));
+            e.Add(Entry("barn-guide", "sign", signMediumWood, 44.65f, 13.2f, 90.0f, y: 1.1f, building: "barn",
+                parent: "barn-wall-x4z3-E-s0", mount: true, layer: 10, image: "farm-guide"));
+            e.Add(Entry("label-feed", "sign", signSmallWood, 31.7f, 14.25f, 180.0f, y: 2.3f, building: "barn",
+                parent: "barn-wall-x0z3-N-s0", mount: true, layer: 10, image: "farm-feed"));
+            e.Add(Entry("label-clones", "sign", signSmallWood, 34.87f, 14.25f, 180.0f, y: 2.3f, building: "barn",
+                parent: "barn-window-x1z3-N-s0", mount: true, layer: 10, image: "farm-clones"));
+            e.Add(Entry("label-dung", "sign", signSmallWood, 36.71f, 14.25f, 180.0f, y: 2.3f, building: "barn",
+                parent: "barn-wall-x2z3-N-s0", mount: true, layer: 10, image: "farm-compost"));
+            e.Add(Entry("label-wool", "sign", signSmallWood, 39.11f, 14.25f, 180.0f, y: 2.3f, building: "barn",
+                parent: "barn-window-x3z3-N-s0", mount: true, layer: 10, image: "farm-wool"));
+            e.Add(Entry("label-cold", "sign", signSmallWood, 30.9f, 2.55f, 0.0f, y: 2.3f, building: "barn",
+                parent: "barn-wall-x0z0-S-s0", mount: true, layer: 10, image: "farm-cold"));
+            e.Add(Entry("label-milk", "sign", signSmallWood, 32.76f, 2.55f, 0.0f, y: 2.3f, building: "barn",
+                parent: "barn-window-x1z0-S-s0", mount: true, layer: 10, image: "farm-milk"));
+            e.Add(Entry("label-eggs", "sign", signSmallWood, 34.58f, 2.55f, 0.0f, y: 2.3f, building: "barn",
+                parent: "barn-window-x1z0-S-s0", mount: true, layer: 10, image: "farm-eggs"));
+            e.Add(Entry("label-meat", "sign", signSmallWood, 38.83f, 2.55f, 0.0f, y: 2.3f, building: "barn",
+                parent: "barn-window-x3z0-S-s0", mount: true, layer: 10, image: "farm-meat"));
             e.Add(Entry("barn-feed-1", "box_feed", componentBoxFoodLarge, 30.695f, 13.725f, 180.0f, on: "barn-fnd-x0z3",
                 y: 0.099f, building: "barn", layer: 9, replaces: "box-feed"));
             e.Add(Entry("barn-feed-2", "box_feed", componentBoxFoodLarge, 32.785f, 13.725f, 180.0f, on: "barn-fnd-x1z3",
@@ -971,11 +969,10 @@ namespace Oxide.Plugins
                 parent: "barn-wall-x4z0-E-s0", layer: 9));
             e.Add(Entry("barn-splitter-02", "decor", splitter, 44.4f, 4.65f, 270.0f, y: 1.35f, building: "barn",
                 parent: "barn-wall-x4z0-E-s0", layer: 9));
-            e.Add(Entry("barn-light-switch", "decor",
-                "assets/prefabs/deployable/playerioents/simpleswitch/switch.prefab", 44.4f, 4.05f, 270.0f,
-                y: 2.0f, building: "barn", parent: "barn-wall-x4z0-E-s0", layer: 9));
-            e.Add(Entry("barn-light-01-timed", "decor", ceilinglightDeployed, 34.0f, 6.9f, 0.0f, y: 2.973f, building: "barn",
-                parent: "barn-floor-x1z1-s1", layer: 9, replaces: "barn-light-01"));
+            e.Add(Entry("barn-light-switch", "decor", LightSwitchPrefab, 44.4f, 4.05f, 270.0f, y: 2.0f,
+                building: "barn", parent: "barn-wall-x4z0-E-s0", layer: 9));
+            e.Add(Entry("barn-light-01-timed", "decor", ceilinglightDeployed, 34.0f, 6.9f, 0.0f, y: 2.973f,
+                building: "barn", parent: "barn-floor-x1z1-s1", layer: 9, replaces: "barn-light-01"));
             e.Add(Entry("barn-light-02", "decor", ceilinglightDeployed, 40.0f, 6.9f, 0.0f, y: 2.973f, building: "barn",
                 parent: "barn-floor-x3z1-s1", layer: 9));
             e.Add(Entry("barn-light-03", "decor", ceilinglightDeployed, 34.0f, 9.9f, 0.0f, y: 2.973f, building: "barn",
@@ -1110,9 +1107,9 @@ namespace Oxide.Plugins
                 on: "house-fnd-x2z0", y: 0.099f, building: "house", layer: 9));
             e.Add(Entry("house-bench-porch", "decor", woodenBenchAMountable, 47.95f, -10.5f, 90.0f,
                 on: "house-fnd-x2z2", y: 0.099f, building: "house", layer: 9));
-            e.Add(Entry("house-lantern-1-timed", "decor", lanternDeployed, 50.15f, -17.65f, 0.0f, on: "house-fnd-x2z0",
+            e.Add(Entry("house-lantern-1-timed", "decor", LanternPrefab, 50.15f, -17.65f, 0.0f, on: "house-fnd-x2z0",
                 y: 0.099f, building: "house", layer: 9, replaces: "house-lantern-1"));
-            e.Add(Entry("house-lantern-2-timed", "decor", lanternDeployed, 50.15f, -9.35f, 0.0f, on: "house-fnd-x2z2",
+            e.Add(Entry("house-lantern-2-timed", "decor", LanternPrefab, 50.15f, -9.35f, 0.0f, on: "house-fnd-x2z2",
                 y: 0.099f, building: "house", layer: 9, replaces: "house-lantern-2"));
             e.Add(Entry("house-torch-1", "decor", torchholderOnStatic, 47.6f, -12.55f, 90.0f, y: 1.9f,
                 building: "house", parent: "house-doorway-x1z1-E-s0", layer: 9));
@@ -1196,109 +1193,87 @@ namespace Oxide.Plugins
             e.Add(Entry("well-01", "decor", waterwellstatic, 51.5f, 7.6f, 0.0f, layer: 10));
             e.Add(Entry("bench-01", "decor", woodenBenchAMountable, 51.6f, 10.9f, 180.0f, layer: 10));
             e.Add(Entry("logpile-01", "decor", woodPile, 43.0f, -21.0f, 90.0f, layer: 10));
-            e.Add(Entry("lantern-01-timed", "decor", lanternDeployed, 50.6f, 1.6f, 0.0f, layer: 10,
+            e.Add(Entry("lantern-01-timed", "decor", LanternPrefab, 50.6f, 1.6f, 0.0f, layer: 10,
                 replaces: "lantern-01"));
-            e.Add(Entry("lantern-02-timed", "decor", lanternDeployed, 48.4f, 4.6f, 0.0f, layer: 10,
+            e.Add(Entry("lantern-02-timed", "decor", LanternPrefab, 48.4f, 4.6f, 0.0f, layer: 10,
                 replaces: "lantern-02"));
-            e.Add(Entry("lantern-03-timed", "decor", lanternDeployed, 48.6f, 13.3f, 0.0f, layer: 10,
+            e.Add(Entry("lantern-03-timed", "decor", LanternPrefab, 48.6f, 13.3f, 0.0f, layer: 10,
                 replaces: "lantern-03"));
-            e.Add(Entry("lantern-04-timed", "decor", lanternDeployed, 27.5f, 3.6f, 0.0f, layer: 10,
+            e.Add(Entry("lantern-04-timed", "decor", LanternPrefab, 27.5f, 3.6f, 0.0f, layer: 10,
                 replaces: "lantern-04"));
-            e.Add(Entry("lantern-05-timed", "decor", lanternDeployed, -3.2f, 22.0f, 0.0f, layer: 10,
+            e.Add(Entry("lantern-05-timed", "decor", LanternPrefab, -3.2f, 22.0f, 0.0f, layer: 10,
                 replaces: "lantern-05"));
-            e.Add(Entry("lantern-06-timed", "decor", lanternDeployed, 27.4f, -12.5f, 0.0f, layer: 10,
+            e.Add(Entry("lantern-06-timed", "decor", LanternPrefab, 27.4f, -12.5f, 0.0f, layer: 10,
                 replaces: "lantern-06"));
-            e.Add(Entry("lantern-07-timed", "decor", lanternDeployed, 40.5f, -13.6f, 0.0f, layer: 10,
+            e.Add(Entry("lantern-07-timed", "decor", LanternPrefab, 40.5f, -13.6f, 0.0f, layer: 10,
                 replaces: "lantern-07"));
-            e.Add(Entry("lantern-08-timed", "decor", lanternDeployed, 30.0f, -0.6f, 0.0f, layer: 10,
+            e.Add(Entry("lantern-08-timed", "decor", LanternPrefab, 30.0f, -0.6f, 0.0f, layer: 10,
                 replaces: "lantern-08"));
             e.Add(Entry("pump-01", "pump", PumpPrefab, 29.5f, 29.3f, 0.0f));
             List<LayoutConnection> c = layout.Connections;
-            c.Add(Link("windmill-01", 0, "barn-combiner-01", 0, "power",
-                GroundWire(61f, 19f), GroundWire(44.65f, 19f),
-                GroundWire(44.65f, 3f), BarnWire(44.35f, 0.08f, 3f)));
-            c.Add(Link("barn-solar-01", 0, "barn-combiner-01", 1, "power",
-                BarnWire(34f, 7.8f, 9.915f), BarnWire(44.35f, 7.8f, 9.915f),
-                BarnWire(44.35f, 4.865f, 12.85f), BarnWire(44.35f, 0.08f, 12.85f),
-                BarnWire(44.35f, 0.08f, 3f)));
-            c.Add(Link("barn-combiner-01", 0, "barn-combiner-02", 0, "power",
-                BarnWire(44.35f, 0.08f, 3f), BarnWire(44.35f, 0.08f, 3.45f)));
-            c.Add(Link("barn-solar-02", 0, "barn-combiner-02", 1, "power",
-                BarnWire(40f, 7.8f, 9.915f), BarnWire(44.35f, 7.8f, 9.915f),
-                BarnWire(44.35f, 4.865f, 12.85f), BarnWire(44.35f, 0.08f, 12.85f),
+            c.Add(Link("windmill-01", 0, "barn-combiner-01", 0, "power", GroundWire(61.0f, 19.0f),
+                GroundWire(44.65f, 19.0f), GroundWire(44.65f, 3.0f), BarnWire(44.35f, 0.08f, 3.0f)));
+            c.Add(Link("barn-solar-01", 0, "barn-combiner-01", 1, "power", BarnWire(34.0f, 7.8f, 9.915f),
+                BarnWire(44.35f, 7.8f, 9.915f), BarnWire(44.35f, 4.865f, 12.85f), BarnWire(44.35f, 0.08f, 12.85f),
+                BarnWire(44.35f, 0.08f, 3.0f)));
+            c.Add(Link("barn-combiner-01", 0, "barn-combiner-02", 0, "power", BarnWire(44.35f, 0.08f, 3.0f),
                 BarnWire(44.35f, 0.08f, 3.45f)));
-            c.Add(Link("barn-combiner-02", 0, "battery-02", 0, "power",
-                BarnWire(44.35f, 0.08f, 3.45f), BarnWire(44.35f, 0.08f, 3.2f),
-                BarnWire(42.485f, 0.08f, 3.2f)));
-            c.Add(Link("battery-02", 0, "barn-splitter-01", 0, "power",
-                BarnWire(42.485f, 0.08f, 3.2f), BarnWire(44.35f, 0.08f, 3.2f),
-                BarnWire(44.35f, 0.08f, 4.05f)));
-            c.Add(Link("barn-splitter-01", 0, "barn-splitter-02", 0, "power",
-                BarnWire(44.35f, 0.08f, 4.05f), BarnWire(44.35f, 0.08f, 4.65f)));
-            c.Add(Link("barn-splitter-02", 0, "fridge-02", 0, "power",
-                BarnWire(44.35f, 0.08f, 4.65f), BarnWire(44.35f, 0.08f, 2.6f),
-                BarnWire(30.295f, 0.08f, 2.6f), BarnWire(30.295f, 0.08f, 3.035f)));
-            c.Add(Link("barn-splitter-02", 1, "fridge-03", 0, "power",
-                BarnWire(44.35f, 0.08f, 4.65f), BarnWire(44.35f, 0.08f, 2.6f),
-                BarnWire(31.535f, 0.08f, 2.6f), BarnWire(31.535f, 0.08f, 3.035f)));
-            c.Add(Link("barn-splitter-01", 1, "barn-light-switch", 0, "power",
-                BarnWire(44.35f, 1.35f, 4.05f), BarnWire(44.35f, 2f, 4.05f)));
-            c.Add(Link("barn-light-switch", 0, "barn-light-01-timed", 0, "power",
-                BarnWire(44.35f, 2.96f, 4.05f), BarnWire(44.35f, 2.96f, 6.9f),
-                BarnWire(34f, 2.96f, 6.9f)));
-            c.Add(Link("barn-light-01-timed", 0, "barn-light-02", 0, "power",
-                BarnWire(34f, 2.96f, 6.9f), BarnWire(40f, 2.96f, 6.9f)));
-            c.Add(Link("barn-light-02", 0, "barn-light-03", 0, "power",
-                BarnWire(40f, 2.96f, 6.9f), BarnWire(40f, 2.96f, 9.9f),
-                BarnWire(34f, 2.96f, 9.9f)));
-            c.Add(Link("barn-light-03", 0, "barn-light-04", 0, "power",
-                BarnWire(34f, 2.96f, 9.9f), BarnWire(40f, 2.96f, 9.9f)));
-            c.Add(Link("barn-light-04", 0, "barn-light-05", 0, "power",
-                BarnWire(40f, 2.96f, 9.9f), BarnWire(37f, 2.96f, 9.9f),
-                BarnWire(37f, 2.96f, 3.9f)));
-            c.Add(Link("barn-light-05", 0, "barn-light-06", 0, "power",
-                BarnWire(37f, 2.96f, 3.9f), BarnWire(37f, 2.96f, 12.9f)));
-            c.Add(Link("barn-splitter-01", 2, "heater-01", 0, "power",
-                BarnWire(44.35f, 0.08f, 4.05f), BarnWire(44.35f, 0.08f, 14.1f),
-                GroundWire(44.65f, 14.6f), GroundWire(44.65f, 24.8f),
+            c.Add(Link("barn-solar-02", 0, "barn-combiner-02", 1, "power", BarnWire(40.0f, 7.8f, 9.915f),
+                BarnWire(44.35f, 7.8f, 9.915f), BarnWire(44.35f, 4.865f, 12.85f), BarnWire(44.35f, 0.08f, 12.85f),
+                BarnWire(44.35f, 0.08f, 3.45f)));
+            c.Add(Link("barn-combiner-02", 0, "battery-02", 0, "power", BarnWire(44.35f, 0.08f, 3.45f),
+                BarnWire(44.35f, 0.08f, 3.2f), BarnWire(42.485f, 0.08f, 3.2f)));
+            c.Add(Link("battery-02", 0, "barn-splitter-01", 0, "power", BarnWire(42.485f, 0.08f, 3.2f),
+                BarnWire(44.35f, 0.08f, 3.2f), BarnWire(44.35f, 0.08f, 4.05f)));
+            c.Add(Link("barn-splitter-01", 0, "barn-splitter-02", 0, "power", BarnWire(44.35f, 0.08f, 4.05f),
+                BarnWire(44.35f, 0.08f, 4.65f)));
+            c.Add(Link("barn-splitter-02", 0, "fridge-02", 0, "power", BarnWire(44.35f, 0.08f, 4.65f),
+                BarnWire(44.35f, 0.08f, 2.6f), BarnWire(30.295f, 0.08f, 2.6f), BarnWire(30.295f, 0.08f, 3.035f)));
+            c.Add(Link("barn-splitter-02", 1, "fridge-03", 0, "power", BarnWire(44.35f, 0.08f, 4.65f),
+                BarnWire(44.35f, 0.08f, 2.6f), BarnWire(31.535f, 0.08f, 2.6f), BarnWire(31.535f, 0.08f, 3.035f)));
+            c.Add(Link("barn-splitter-01", 1, "barn-light-switch", 0, "power", BarnWire(44.35f, 1.35f, 4.05f),
+                BarnWire(44.35f, 2.0f, 4.05f)));
+            c.Add(Link("barn-light-switch", 0, "barn-light-01-timed", 0, "power", BarnWire(44.35f, 2.96f, 4.05f),
+                BarnWire(44.35f, 2.96f, 6.9f), BarnWire(34.0f, 2.96f, 6.9f)));
+            c.Add(Link("barn-light-01-timed", 0, "barn-light-02", 0, "power", BarnWire(34.0f, 2.96f, 6.9f),
+                BarnWire(40.0f, 2.96f, 6.9f)));
+            c.Add(Link("barn-light-02", 0, "barn-light-03", 0, "power", BarnWire(40.0f, 2.96f, 6.9f),
+                BarnWire(40.0f, 2.96f, 9.9f), BarnWire(34.0f, 2.96f, 9.9f)));
+            c.Add(Link("barn-light-03", 0, "barn-light-04", 0, "power", BarnWire(34.0f, 2.96f, 9.9f),
+                BarnWire(40.0f, 2.96f, 9.9f)));
+            c.Add(Link("barn-light-04", 0, "barn-light-05", 0, "power", BarnWire(40.0f, 2.96f, 9.9f),
+                BarnWire(37.0f, 2.96f, 9.9f), BarnWire(37.0f, 2.96f, 3.9f)));
+            c.Add(Link("barn-light-05", 0, "barn-light-06", 0, "power", BarnWire(37.0f, 2.96f, 3.9f),
+                BarnWire(37.0f, 2.96f, 12.9f)));
+            c.Add(Link("barn-splitter-01", 2, "heater-01", 0, "power", BarnWire(44.35f, 0.08f, 4.05f),
+                BarnWire(44.35f, 0.08f, 14.1f), GroundWire(44.65f, 14.6f), GroundWire(44.65f, 24.8f),
                 GroundWire(50.2f, 24.8f), GroundWire(50.2f, 21.65f)));
-            c.Add(Link("heater-01", 0, "heater-02", 0, "power",
-                GroundWire(50.2f, 21.65f), GroundWire(51.95f, 21.65f),
+            c.Add(Link("heater-01", 0, "heater-02", 0, "power", GroundWire(50.2f, 21.65f), GroundWire(51.95f, 21.65f),
                 GroundWire(51.95f, 19.9f)));
-            c.Add(Link("heater-02", 0, "heater-03", 0, "power",
-                GroundWire(51.95f, 19.9f), GroundWire(51.95f, 18.15f),
+            c.Add(Link("heater-02", 0, "heater-03", 0, "power", GroundWire(51.95f, 19.9f), GroundWire(51.95f, 18.15f),
                 GroundWire(50.2f, 18.15f)));
-            c.Add(Link("heater-03", 0, "heater-04", 0, "power",
-                GroundWire(50.2f, 18.15f), GroundWire(48.45f, 18.15f),
+            c.Add(Link("heater-03", 0, "heater-04", 0, "power", GroundWire(50.2f, 18.15f), GroundWire(48.45f, 18.15f),
                 GroundWire(48.45f, 19.9f)));
-            c.Add(Link("heater-04", 0, "pump-01", 0, "power",
-                GroundWire(48.45f, 19.9f), GroundWire(45f, 19.9f),
-                GroundWire(45f, 25f), GroundWire(29.5f, 25f),
-                GroundWire(29.5f, 29.3f)));
-            c.Add(Link("pump-01", 0, "sprinkler-01", 0, "water",
-                GroundWire(29.5f, 29.3f), GroundWire(29.5f, 21.3f)));
-            c.Add(Link("sprinkler-01", 0, "sprinkler-02", 0, "water",
-                GroundWire(29.5f, 21.3f), GroundWire(32.9f, 21.3f)));
-            c.Add(Link("sprinkler-02", 0, "sprinkler-03", 0, "water",
-                GroundWire(32.9f, 21.3f), GroundWire(36.3f, 21.3f)));
-            c.Add(Link("sprinkler-03", 0, "sprinkler-04", 0, "water",
-                GroundWire(36.3f, 21.3f), GroundWire(39.7f, 21.3f)));
-            c.Add(Link("sprinkler-04", 0, "sprinkler-05", 0, "water",
-                GroundWire(39.7f, 21.3f), GroundWire(43f, 24.8f),
-                GroundWire(47.45f, 24.8f), GroundWire(47.45f, 22.7f)));
-            c.Add(Link("sprinkler-05", 0, "sprinkler-06", 0, "water",
-                GroundWire(47.45f, 22.7f), GroundWire(47.45f, 24.8f),
-                GroundWire(55.6f, 24.8f), GroundWire(55.6f, 17.1f),
+            c.Add(Link("heater-04", 0, "pump-01", 0, "power", GroundWire(48.45f, 19.9f), GroundWire(45.0f, 19.9f),
+                GroundWire(45.0f, 25.0f), GroundWire(29.5f, 25.0f), GroundWire(29.5f, 29.3f)));
+            c.Add(Link("pump-01", 0, "sprinkler-01", 0, "water", GroundWire(29.5f, 29.3f), GroundWire(29.5f, 21.3f)));
+            c.Add(Link("sprinkler-01", 0, "sprinkler-02", 0, "water", GroundWire(29.5f, 21.3f),
+                GroundWire(32.9f, 21.3f)));
+            c.Add(Link("sprinkler-02", 0, "sprinkler-03", 0, "water", GroundWire(32.9f, 21.3f),
+                GroundWire(36.3f, 21.3f)));
+            c.Add(Link("sprinkler-03", 0, "sprinkler-04", 0, "water", GroundWire(36.3f, 21.3f),
+                GroundWire(39.7f, 21.3f)));
+            c.Add(Link("sprinkler-04", 0, "sprinkler-05", 0, "water", GroundWire(39.7f, 21.3f),
+                GroundWire(43.0f, 24.8f), GroundWire(47.45f, 24.8f), GroundWire(47.45f, 22.7f)));
+            c.Add(Link("sprinkler-05", 0, "sprinkler-06", 0, "water", GroundWire(47.45f, 22.7f),
+                GroundWire(47.45f, 24.8f), GroundWire(55.6f, 24.8f), GroundWire(55.6f, 17.1f),
                 GroundWire(52.95f, 17.1f)));
-            c.Add(Link("catcher-05", 0, "tower-splitter", 0, "water",
-                TowerWire(1.4f, 6.05f, 25.65f), TowerWire(1.4f, 2f, 25.65f),
-                TowerWire(0f, 2f, 25.65f)));
-            c.Add(Link("tower-splitter", 0, "trough-01", 0, "water",
-                TowerWire(0f, 2f, 25.65f), TowerWire(-1.65f, 2f, 25.65f),
-                GroundWire(-1.65f, 25.65f), GroundWire(-13.05f, 0f)));
-            c.Add(Link("tower-splitter", 1, "trough-02", 0, "water",
-                TowerWire(0f, 2f, 25.65f), TowerWire(1.65f, 2f, 25.65f),
-                GroundWire(1.65f, 25.65f), GroundWire(13.05f, 0f)));
+            c.Add(Link("catcher-05", 0, "tower-splitter", 0, "water", TowerWire(1.4f, 6.05f, 25.65f),
+                TowerWire(1.4f, 2.0f, 25.65f), TowerWire(0.0f, 2.0f, 25.65f)));
+            c.Add(Link("tower-splitter", 0, "trough-01", 0, "water", TowerWire(0.0f, 2.0f, 25.65f),
+                TowerWire(-1.65f, 2.0f, 25.65f), GroundWire(-1.65f, 25.65f), GroundWire(-13.05f, 0.0f)));
+            c.Add(Link("tower-splitter", 1, "trough-02", 0, "water", TowerWire(0.0f, 2.0f, 25.65f),
+                TowerWire(1.65f, 2.0f, 25.65f), GroundWire(1.65f, 25.65f), GroundWire(13.05f, 0.0f)));
             return layout;
         }
 
