@@ -313,9 +313,11 @@ Every 30 s the plugin runs these steps in order, each entity in its own guard, s
 
 ## Assisted farming
 
-The tracked configuration reserves milking and shearing for players and makes `planter-07` and `planter-08` player
-beds: the heated beds east and south of the scarecrow. Existing crops stay in place when switching modes. The other
-six large beds and both static beds remain automatic. `/farm` reports ready cows, sheep with harvestable wool, ripe
+The tracked configuration runs fully automatic: upkeep milks, shears, and harvests and replants every bed whether or
+not a player is nearby, and `/farm` reports `Production: fully automatic`. The assisted profile is optional: it
+reserves milking and shearing for players and makes beds such as `planter-07` and `planter-08` (the heated beds east
+and south of the scarecrow) player beds, while the other beds remain automatic. Existing crops stay in place when
+switching modes. In the assisted profile, `/farm` reports ready cows, sheep with harvestable wool, ripe
 player crops, empty player-bed slots, production settings, and surplus livestock. `/farm help` explains the native
 interactions. Longer status output is sent in bounded chat messages; `farm.summary` previews the same content.
 
@@ -343,15 +345,15 @@ explains the hold. Existing pregnancies and natural aging continue.
 
 | Configuration key | Tracked profile | Effect |
 | --- | --- | --- |
-| `Automatically milk cows` | `false` | Reserve milk for players until absence care applies |
-| `Automatically shear sheep` | `false` | Reserve fleece for players until absence care applies |
+| `Automatically milk cows` | `true` | `false` reserves milk for players until absence care applies |
+| `Automatically shear sheep` | `true` | `false` reserves fleece for players until absence care applies |
 | `Automatically cull surplus livestock` | `true` | Apply existing guarded surplus culling |
-| `Player-managed planter layout IDs` | `["planter-07", "planter-08"]` | Beds excluded from automatic planting and normal harvesting |
-| `Assisted farming absence fallback after minutes (0 = disabled)` | `60` | Grace after the last nearby awake player |
+| `Player-managed planter layout IDs` | `[]` | Beds excluded from automatic planting and normal harvesting |
+| `Assisted farming absence fallback after minutes (0 = disabled)` | `60` | Grace after the last nearby awake player; unused while nothing is player-managed |
 
-For fully automatic production, set both production booleans to `true` and the player-bed list to `[]`. Built-in
-configuration defaults retain that fully automatic profile for older configurations without these keys. The tracked
-configuration opts into assisted farming explicitly. No layout upgrade is required for this mode change.
+For assisted farming, set either production boolean to `false` or list player beds, for example `["planter-07",
+"planter-08"]`. The built-in defaults are the fully automatic profile. No layout upgrade is required for this mode
+change.
 
 ## Bees and honey
 

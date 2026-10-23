@@ -49,7 +49,8 @@ Implementation reserves milking and shearing for players and designates the heat
 player-managed. Feeding, watering, soil care, and fertilizer remain automatic. A configurable 60-minute absence grace
 resumes milk, wool, and ripe-crop collection while leaving player planting choices and native crop lifecycles intact.
 The last visit persists across reloads. Automatic culling remains explicitly enabled in the tracked profile and can be
-disabled with a corresponding breeding hold. The previous fully automatic profile remains selectable.
+disabled with a corresponding breeding hold. The previous fully automatic profile remains selectable, and on
+2026-10-23 the tracked profile returned to it, so the farm runs automated even while a player is present.
 
 The accompanying bee fix initializes a missing starter colony once per physical hive and reports native production
 conditions. Honeycomb production and extraction remain native. Runtime validation is recorded in the farm guide.

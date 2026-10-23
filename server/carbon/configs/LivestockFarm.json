@@ -1,13 +1,10 @@
 {
   "Owner SteamID (0 = first owner in cfg/users.cfg)": 0,
   "Upkeep interval (seconds)": 30.0,
-  "Automatically milk cows": false,
-  "Automatically shear sheep": false,
+  "Automatically milk cows": true,
+  "Automatically shear sheep": true,
   "Automatically cull surplus livestock": true,
-  "Player-managed planter layout IDs": [
-    "planter-07",
-    "planter-08"
-  ],
+  "Player-managed planter layout IDs": [],
   "Assisted farming absence fallback after minutes (0 = disabled)": 60.0,
   "Schedule farm lighting at dusk and dawn": true,
   "Farm lights sunrise hour (0-24)": 7.5,

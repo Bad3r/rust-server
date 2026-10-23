@@ -260,16 +260,16 @@ namespace Oxide.Plugins
             public float UpkeepSeconds = 30f;
 
             [JsonProperty("Automatically milk cows")]
-            public bool AutoMilk = false;
+            public bool AutoMilk = true;
 
             [JsonProperty("Automatically shear sheep")]
-            public bool AutoShear = false;
+            public bool AutoShear = true;
 
             [JsonProperty("Automatically cull surplus livestock")]
             public bool AutoCull = true;
 
             [JsonProperty("Player-managed planter layout IDs", ObjectCreationHandling = ObjectCreationHandling.Replace)]
-            public List<string> ManualPlanterIds = new List<string> { "planter-07", "planter-08" };
+            public List<string> ManualPlanterIds = new List<string>();
 
             [JsonProperty("Assisted farming absence fallback after minutes (0 = disabled)")]
             public float AbsenceMinutes = 60f;
@@ -598,7 +598,7 @@ namespace Oxide.Plugins
             },
         };
 
-        // server/carbon/configs/LivestockFarm.json as of 2026-10-23 06:04: 394 entries (buildings barn, deck, house,
+        // server/carbon/configs/LivestockFarm.json as of 2026-10-23 06:29: 394 entries (buildings barn, deck, house,
         // shelter, tower) and 30 connections. scripts/farm-defaults.py writes this method, DefaultSlotPlan, and the
         // setting defaults from that file; edit the file and rerun it.
         private static FarmLayout DefaultLayout()
@@ -2384,12 +2384,13 @@ namespace Oxide.Plugins
             _farmStatusRequestedAt[player.userID] = now;
             if (args != null && args.Length > 0)
             {
-                SendReply(player, args[0] == "help"
-                    ? "Milk cows through their interaction prompt once they trust you; shear sheep with a cutting tool. " +
+                SendReply(player, args[0] != "help" ? "Use /farm for status or /farm help for farming instructions."
+                    : !PlayerJobs ? "The farm runs itself: upkeep milks the cows, shears the sheep, and harvests and " +
+                      "replants every bed into barn storage. Coordinate shared supplies with the owner."
+                    : "Milk cows through their interaction prompt once they trust you; shear sheep with a cutting tool. " +
                       "Player beds keep automatic watering and fertilizer. Plant and harvest them yourself. " +
                       "After the configured absence grace, milk, wool, and ripe crops go to barn storage; player beds " +
-                      "are not replanted. Other beds remain automatic. Coordinate shared supplies with the owner."
-                    : "Use /farm for status or /farm help for farming instructions.");
+                      "are not replanted. Other beds remain automatic. Coordinate shared supplies with the owner.");
                 return;
             }
             foreach (string message in FarmChatMessages(PlayerFarmSummary()))
@@ -2432,9 +2433,10 @@ namespace Oxide.Plugins
             UpkeepPass pass = BeginPass(false);
             var sb = new StringBuilder("PANDORA FARM\n");
             bool absence = AbsenceAutomationActive(pass);
-            sb.AppendLine($"Production: milking {(_config.AutoMilk ? "automatic" : "player managed")}; " +
-                          $"shearing {(_config.AutoShear ? "automatic" : "player managed")}. " +
-                          $"Absence fallback: {(absence ? "active" : "inactive")}.");
+            sb.AppendLine(!PlayerJobs ? "Production: fully automatic (milking, shearing, and every garden bed)."
+                : $"Production: milking {(_config.AutoMilk ? "automatic" : "player managed")}; " +
+                  $"shearing {(_config.AutoShear ? "automatic" : "player managed")}. " +
+                  $"Absence fallback: {(absence ? "active" : "inactive")}.");
             int readyCows = Herd(pass, Cattle).OfType<Cow>().Count(CowReadyToMilk);
             int readySheep = Herd(pass, SheepKind).OfType<Sheep>().Count(SheepReadyToShear);
             sb.AppendLine($"Ready: {readyCows} cows to milk; {readySheep} sheep to shear.");
@@ -6091,8 +6093,9 @@ namespace Oxide.Plugins
                 : "absence care ended: configured player jobs are reserved again");
         }
 
-        private bool AbsenceAutomationActive(UpkeepPass pass) =>
-            (!_config.AutoMilk || !_config.AutoShear || _config.ManualPlanterIds.Count > 0) && pass.AbsenceFallback;
+        private bool PlayerJobs => !_config.AutoMilk || !_config.AutoShear || _config.ManualPlanterIds.Count > 0;
+
+        private bool AbsenceAutomationActive(UpkeepPass pass) => PlayerJobs && pass.AbsenceFallback;
 
         private bool AutoMilkNow(UpkeepPass pass) => _config.AutoMilk || AbsenceAutomationActive(pass);
 
@@ -6104,8 +6107,10 @@ namespace Oxide.Plugins
             return $"milk {(_config.AutoMilk ? "automatic" : "manual")}, " +
                    $"shear {(_config.AutoShear ? "automatic" : "manual")}, " +
                    $"culling {(_config.AutoCull ? "enabled" : "disabled")}; " +
-                   $"player beds {string.Join(", ", _config.ManualPlanterIds)}; " +
-                   $"absence care {(AbsenceAutomationActive(pass) ? "active" : "inactive")}, grace {grace}, " +
+                   (PlayerJobs
+                       ? $"player beds {(_config.ManualPlanterIds.Count == 0 ? "none" : string.Join(", ", _config.ManualPlanterIds))}; " +
+                         $"absence care {(AbsenceAutomationActive(pass) ? "active" : "inactive")}, grace {grace}, "
+                       : "fully automatic, no absence care needed; ") +
                    $"farm occupied {pass.FarmOccupied}, last visit {_data.LastFarmVisit}";
         }
 
