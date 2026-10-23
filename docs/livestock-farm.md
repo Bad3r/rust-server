@@ -2,8 +2,8 @@
 
 `server/carbon/plugins/LivestockFarm.cs` is a local Carbon plugin that builds one farm per server identity and keeps essential
 care running, with configurable automatic or player-managed production. The layout in `server/carbon/configs/LivestockFarm.json`, which is also the plugin's
-built-in default (v2 with visitor and lighting additions, 394 entries), makes it a farmstead in Frontier timber: cattle and sheep in a fenced pen
-around a field shelter, a barn by the pen gate that holds the stores, a farmhouse, a water tower, a Wind Turbine, a
+built-in default (v2 with visitor, lighting, and market additions, 422 entries), makes it a farmstead in Frontier timber: cattle and sheep in a fenced pen
+around a field shelter, a barn by the pen gate that holds the stores, a public market by the barn entrance, a farmhouse, a water tower, a Wind Turbine, a
 fenced garden of eight planters, four of them heated, two self-replanting static planters, and a chicken run of four
 coops. The crops feed the animals, the animals' dung fertilizes the crops, rain and the river supply the water, the
 turbine and two roof panels power the fridges, lights, heaters, and pump through one battery, and the plugin creates
@@ -141,8 +141,8 @@ them in the morning.
 
 ### Lights and signs
 
-Ten controllable `lantern.deployed` fixtures (eight along the paths, two on the porch) and the six barn ceiling
-lights follow the farm's dusk/dawn schedule: on from 18:30 to 07:30 by default, checked every upkeep pass (30 s).
+Ten controllable `lantern.deployed` fixtures (eight along the paths, two on the porch), the six barn ceiling lights,
+and the market's two ceiling lights, which continue the same chain, follow the farm's dusk/dawn schedule: on from 18:30 to 07:30 by default, checked every upkeep pass (30 s).
 A dedicated switch on the barn lighting branch leaves the fridges, pump, and heaters supplied during daylight.
 Lanterns burn normal Low Grade Fuel; at night, upkeep adds one unit when a managed lantern has none and logs it as a
 `topup` event. Upkeep locks the managed lanterns' fuel slots, so players can neither take the created fuel nor add
@@ -155,12 +155,31 @@ Seven `torchholder_on.static` fixtures (barn 4, farmhouse 2, tower 1), the heart
 accents. Their static prefabs cannot be scheduled by toggling flags.
 
 The barn board (1024 by 256) and town sign (`sign.post.town.roof`, 512 by 256, yaw 106.6, beside the mailbox) carry
-PANDORA FARM images. An east-wall entrance guide explains directions, shared supplies, and `/farm`. Eight small signs
-label Feed, Clones, Manure, Wool, Cold Store, Milk, Eggs, and Meat above the barn's storage groups. All use the existing
+PANDORA FARM images. An east-wall entrance guide explains directions, the free market, shared storage, and `/farm`.
+Eight small signs label Feed, Clones, Manure, Wool, Cold Store, Milk, Eggs, and Meat above the barn's storage groups;
+the market carries a FARM MARKET sign on its fascia and a label over each stall. All use the existing
 locked, per-sign tagged image storage and periodic repair. `scripts/farm-signs.py` regenerates the visitor sign PNGs
 and embedded C# image table with Python 3.14, Pillow, and a DejaVu Sans bold font; run
 `uv run scripts/farm-signs.py --out /tmp/farm-signs` and replace the `ExperienceSignImages` table with the emitted
 fragment when changing the text. Pin the font with `--font` when reproducing byte-identical assets.
+
+### Market
+
+The market is an open two-cell pavilion (building `market`, X 49.2 to 55.2, Z 10.45 to 13.45) across the yard in
+front of the barn's east doors: a back wall on the north, open frames on the other sides, a flat canopy at 3 m, and a
+half-wall fascia carrying the market sign. Four stalls of role `market` stand against the back wall: `market-dairy`
+(fridge; milk and eggs), `market-wool` (barrel; wool and cloth), `market-crops` (large food box; potato, corn,
+pumpkin, and wheat), and `market-meat` (fridge; beef and mutton). A splitter on the back wall feeds the two fridges
+from the barn's second splitter. Crates, a table, and the moved bench (`bench-02`) dress the area.
+
+Every upkeep pass the market step, after spoiled produce and before culling, moves as much of each stall's goods as
+fits from the farm's fridges and boxes, freshest spoiling stacks first, but never takes a good's total across farm
+storage below its reserve: 640 wheat (one refill of the four troughs at 120 and the four coops at 40) and 4 eggs (a
+hatching egg per coop). A good may start new stacks in at most its share of a stall's slots, so one plentiful crop
+cannot crowd out the rest. Nothing else ever goes into a stall, and stalls never feed the farm, except that spoiled
+produce left in one goes to the coops and composter as from any other store. When `farm.upgrade` retires a stall, its
+goods go to another stall first. One `market` event every 10 minutes at most sums what moved; `farm.status` lists each
+stall's power, slots, and contents and the totals since load, and `/farm` lists what each stall holds.
 
 ### Applying the visitor and lighting additions
 
@@ -173,6 +192,10 @@ The path lantern near the chicken-run gate moves 2.5 m north to keep the gate's 
 Run `farm.upgrade` to inspect the placement plan, then `farm.upgrade confirm` to apply a plan without blockers. Lighting
 status reports an incomplete upgrade while the new switch or lanterns are absent. Preserve a current world and farm
 record backup before applying a layout migration.
+
+The market raised the layout to 422 entries and 35 connections. Upgrading the 394-entry farm places its 28 entries,
+moves `bench-01` out of the pavilion's footprint as `bench-02`, and wires 5 power links; on pve on 2026-10-23 it placed
+28 of 28, wired 5 of 5, and the next dry run reported nothing to do.
 
 ## Building it
 
@@ -419,7 +442,7 @@ missing link.
 The composter turns one dung into 10 fertilizer every 60 s, and the plugin feeds it only while the dung barrel has room
 for what it will make, since a full composter drops its output on the ground. Each plant takes one fertilizer.
 
-All power runs through the large battery in the barn, wired as the layout's 21 power connections:
+All power runs through the large battery in the barn, wired as the layout's 26 power connections:
 
 | From | To | Load |
 | --- | --- | --- |
@@ -427,18 +450,19 @@ All power runs through the large battery in the barn, wired as the layout's 21 p
 | combiner 1 and roof panel 2 | combiner 2, then the battery | |
 | battery | splitter 1 | |
 | splitter 1, output 0 | splitter 2, then fridge-02 and fridge-03 | 5 each |
-| splitter 1, output 1 | lighting switch, then six ceiling lights in a chain, each passing its input less 2 | 2 each at night |
+| splitter 2, output 2 | the market splitter, then the dairy and meat stall fridges | 5 each |
+| splitter 1, output 1 | lighting switch, then six barn and two market ceiling lights in a chain, each passing its input less 2 | 2 each at night |
 | splitter 1, output 2 | four heaters in a chain, each passing its input less 3, then the pump | 3 each, pump 5 |
 
 The 9 water connections run from the pump through sprinklers 1 to 6 and from the tower's catcher through the splitter to
-trough-01 and trough-02. The loads take 39 power at night and 27 during daylight: fridges 10, lights 12 when on, heaters 12, pump 5. The
+trough-01 and trough-02. The loads take 53 power at night and 37 during daylight: fridges 20, lights 16 when on, heaters 12, pump 5. The meat
+stall gets exactly the 5 a fridge needs, and every splitter output is in use. The
 battery stores 1,440,000 rW s, gives up to 100 power, and charges at up to 320 a second. The turbine gives 0 to 150,
 68.4 on average in a model of the server's own wind noise (33 or more 90% of the time, under 10 for 0.7% of it and never
 for more than 6.3 minutes), and no building rises into its wind line from any direction. Each roof panel gives 39,561
 (December) to 44,727 (April) rW s per 70-minute day, about 10.2 power on average, with nothing in its sun line.
-In a 21-day simulation of the original v2 continuous-lighting circuit, starting with a half-charged battery, every
-load stayed powered and the battery
-never fell more than 39 rW s below its start, full 83% of the time; from an empty battery at a fresh build each load
+In a 21-day simulation with the market and lights on around the clock, starting with a half-charged battery, every
+load stayed powered, the battery never fell below 49.4%, and it was full 57% of the time (83% before the market); from an empty battery at a fresh build each load
 waited about 1 s in a run of 3 in-game days (3.5 hours).
 
 The connections' `Route` lists run from output to input. Roof-panel cables follow the north roof plane and east gable;
@@ -489,6 +513,25 @@ and `farm.status` shows each species' hold and what its cull waits for.
 Aging is untouched: juveniles grow up, and adults die of old age, which goes through `Die` directly, so the damage block
 does not stop it. Neglect does not go through damage either; the needs net keeps contentment at 0.5 or more, where a
 condition below breeding's 0.6 pause cannot set in.
+
+## Access and helpers
+
+Every player may use the farm's storage, market, animals, and equipment; nothing refuses a visitor. Helpers are the
+players on the owner's current Rust team. While `Owner team members are farm helpers (cupboard authorization)` is true,
+the helpers step authorizes each team member on the farm cupboard, which gives building privilege at the farm, and
+remembers them; a remembered helper who leaves the team, or every helper when the setting is off, is deauthorized.
+Anyone who authorized at the cupboard themselves stays, and the owner is never removed. An online player gets a chat
+line on either change, and each change is logged as a `helpers` event.
+
+| Configuration key | Default | Effect |
+| --- | --- | --- |
+| `Stock the market stalls` | `true` | Run the market step |
+| `Market stall goods (layout id to shortnames)` | dairy milk, egg; wool wool, cloth; crops potato, corn, pumpkin, wheat; meat beefmeat, muttonmeat | What each stall offers |
+| `Market reserve kept in farm storage (shortname to items)` | `{"wheat": 640, "egg": 4}` | Stock the market never takes |
+| `Owner team members are farm helpers (cupboard authorization)` | `true` | Sync the farm cupboard with the owner's team |
+
+The config fails to load when a stall id names no `market` entry, a goods list is empty or repeats, a shortname is
+unknown, or a reserve is negative. A stall missing from the world is reported and skipped.
 
 ## Products and storage
 
@@ -544,6 +587,8 @@ under it. None of these refusals, nor Auto Doors on the farm's doors, has run wi
 Players can use `/farm` in chat for a read-only summary of herd and coop counts, trough water, garden dryness,
 refrigeration, lighting, and storage groups with no free slots. Parts `farm.upgrade` retired are left out. Missing equipment and full storage include suggested
 next steps. Occupied slots are distinguished from stack capacity, and existing container access remains public.
+An `Access` line names the owner and the helpers (the owner's team) and says everyone may use storage, animals, and
+equipment, and a `Market` line lists each stall's contents. `/farm help` mentions the market and helpers.
 The command has a five-second per-player cooldown. Directions on the guide and summary describe the default yaw-0
 farm. Administrative commands follow:
 
@@ -551,7 +596,7 @@ farm. Administrative commands follow:
 | --- | --- |
 | `farm.build [x z [yaw]]` | place the config's layout and schedule the starter herd |
 | `farm.upgrade [confirm]` | print the plan from the standing farm to the config's layout; with `confirm`, apply it |
-| `farm.status` | herd with each species' cull wait and mating hold, chickens, planters, pump, wiring, power with each fridge's supply, buildings, inserts, decor, signs, the pending upgrade, container contents, totals, missing, waiting, and retired parts, events |
+| `farm.status` | herd with each species' cull wait and mating hold, helpers, the market, chickens, planters, pump, wiring, power with each fridge's supply, buildings, inserts, decor, signs, the pending upgrade, container contents, totals, missing, waiting, and retired parts, events |
 | `farm.summary` | preview the compact player-facing `/farm` summary from the console |
 | `farm.links <building>` | the building's base height and one JSON line per piece: network id, prefab, stability, grade, skin, health, and socket links |
 | `farm.tick` | run one upkeep pass now |
@@ -567,8 +612,9 @@ checked its record against it, every command but `farm.status` refuses and says 
 `server/carbon/configs/LivestockFarm.json` holds the owner, the upkeep interval (30 s), the farm radius (75 m), the
 starter herd, the caps (9 and 9), the breeding fallback timing, the needs threshold (0.5) and restore value (0.8), the
 stock targets above, the lighting schedule and managed fixture IDs, the water sources, the planter slot plan for the eight planters, the clone genes,
-`Auto repair missing structures` (true), `Building grade` (wood) and `Building skin` (10232), and the whole layout: 394
-entries with farm-local positions, plus 30 power and water connections. The plugin's built-in layout defaults equal these
+the market and helper settings below, `Auto repair missing structures` (true), `Building grade` (wood) and
+`Building skin` (10232), and the whole layout: 422 entries with farm-local positions, plus 35 power and water
+connections. The plugin's built-in layout defaults equal these
 values and this layout. The farm radius bounds only the sweep, animal relinking, strays, and releases, and every entry
 stands inside it, the turbine farthest at 63.9 m, so an animal led to the farmhouse or the deck stays on the farm.
 
@@ -585,13 +631,13 @@ Each layout entry has an `Id`, a `Role`, a `Prefab`, and farm-local `X`, `Z`, an
 | `Pitch`, `Roll` | extra rotation, for the roof panels |
 | `Grade`, `Skin` | a block's grade and skin, in place of `Building grade` and `Building skin` |
 | `Layer` | build order: by default the foundation and platform roles 0, the cupboard 1, fences and gates 2, every other role 10; a `Parent` or `On` may be an entry earlier in the same layer |
-| `Image` | a sign's image, one of the two the plugin carries: `pandora-farm-sign.huge.wood-1024x256` and `pandora-farm-sign.post.town-512x256` |
+| `Image` | a sign's image, one the plugin carries: the two PANDORA FARM boards and the `farm-*` images of `ExperienceSignImages` |
 | `Replaces` | the Id of an old record the entry takes over in `farm.upgrade` |
 
 The v2 roles are `block` (a building block), `door` and `insert` (set into the opening of their `Parent`), `decor`
 (protected and re-placed, with no farm function: furniture, static lights, the scarecrow, and the IO-only combiners,
 splitters, ceiling lights, and heaters), `sign` (painted with its `Image`), `bed` (the owner as deployer),
-`planter_static` (harvest only), and `windmill` and `battery`, which only the status line reads, and `solar`, which has
+`planter_static` (harvest only), `market` (a public stall the market step fills), and `windmill` and `battery`, which only the status line reads, and `solar`, which has
 no behaviour of its own; power comes from the connections. A connection end may be any IO entity, whatever its role, or
 a trough, whose hose lands on its water storage. A config that does not parse or validate disables the plugin: it keeps
 the defaults in memory, never saves over the file, logs the reason every 10 minutes, and every `farm.*` command replies

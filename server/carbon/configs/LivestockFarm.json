@@ -33,6 +33,32 @@
     "beefmeat",
     "muttonmeat"
   ],
+  "Stock the market stalls": true,
+  "Market stall goods (layout id to shortnames)": {
+    "market-dairy": [
+      "milk",
+      "egg"
+    ],
+    "market-wool": [
+      "wool",
+      "cloth"
+    ],
+    "market-crops": [
+      "potato",
+      "corn",
+      "pumpkin",
+      "wheat"
+    ],
+    "market-meat": [
+      "beefmeat",
+      "muttonmeat"
+    ]
+  },
+  "Market reserve kept in farm storage (shortname to items)": {
+    "wheat": 640,
+    "egg": 4
+  },
+  "Owner team members are farm helpers (cupboard authorization)": true,
   "Herd spawn point (farm-local metres)": {
     "x": 0.0,
     "z": 11.0
@@ -4137,15 +4163,6 @@
         "Layer": 10
       },
       {
-        "Id": "bench-01",
-        "Role": "decor",
-        "Prefab": "assets/content/props/wooden_bench/wooden_bench_a_mountable.prefab",
-        "X": 51.6,
-        "Z": 10.9,
-        "Yaw": 180.0,
-        "Layer": 10
-      },
-      {
         "Id": "logpile-01",
         "Role": "decor",
         "Prefab": "assets/bundled/prefabs/autospawn/resource/wood_log_pile/wood-pile.prefab",
@@ -4241,6 +4258,331 @@
         "X": 29.5,
         "Z": 29.3,
         "Yaw": 0.0
+      },
+      {
+        "Id": "market-fnd-x0z0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 50.7,
+        "Z": 11.95,
+        "Yaw": 0.0,
+        "Building": "market",
+        "Layer": 0
+      },
+      {
+        "Id": "market-fnd-x1z0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/foundation/foundation.prefab",
+        "X": 53.7,
+        "Z": 11.95,
+        "Yaw": 0.0,
+        "Building": "market",
+        "Layer": 0
+      },
+      {
+        "Id": "market-wall-x0z0-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 50.7,
+        "Z": 13.45,
+        "Yaw": 270.0,
+        "Building": "market",
+        "Layer": 2
+      },
+      {
+        "Id": "market-wall-x1z0-N-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall/wall.prefab",
+        "X": 53.7,
+        "Z": 13.45,
+        "Yaw": 270.0,
+        "Building": "market",
+        "Layer": 2
+      },
+      {
+        "Id": "market-frame-x0z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 50.7,
+        "Z": 10.45,
+        "Yaw": 90.0,
+        "Building": "market",
+        "Layer": 2
+      },
+      {
+        "Id": "market-frame-x1z0-S-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 53.7,
+        "Z": 10.45,
+        "Yaw": 90.0,
+        "Building": "market",
+        "Layer": 2
+      },
+      {
+        "Id": "market-frame-x0z0-W-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 49.2,
+        "Z": 11.95,
+        "Yaw": 180.0,
+        "Building": "market",
+        "Layer": 2
+      },
+      {
+        "Id": "market-frame-x1z0-E-s0",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.frame/wall.frame.prefab",
+        "X": 55.2,
+        "Z": 11.95,
+        "Yaw": 0.0,
+        "Building": "market",
+        "Layer": 2
+      },
+      {
+        "Id": "market-floor-x0z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 50.7,
+        "Z": 11.95,
+        "Yaw": 0.0,
+        "Building": "market",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "market-floor-x1z0-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/floor/floor.prefab",
+        "X": 53.7,
+        "Z": 11.95,
+        "Yaw": 0.0,
+        "Building": "market",
+        "Y": 3.0,
+        "Layer": 3
+      },
+      {
+        "Id": "market-half-x0z0-S-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.half/wall.half.prefab",
+        "X": 50.7,
+        "Z": 10.45,
+        "Yaw": 90.0,
+        "Building": "market",
+        "Y": 3.0,
+        "Layer": 4
+      },
+      {
+        "Id": "market-half-x1z0-S-s1",
+        "Role": "block",
+        "Prefab": "assets/prefabs/building core/wall.half/wall.half.prefab",
+        "X": 53.7,
+        "Z": 10.45,
+        "Yaw": 90.0,
+        "Building": "market",
+        "Y": 3.0,
+        "Layer": 4
+      },
+      {
+        "Id": "market-dairy",
+        "Role": "market",
+        "Prefab": "assets/prefabs/deployable/fridge/fridge.deployed.prefab",
+        "X": 49.895,
+        "Z": 12.815,
+        "Yaw": 180.0,
+        "On": "market-fnd-x0z0",
+        "Building": "market",
+        "Y": 0.119,
+        "Layer": 9
+      },
+      {
+        "Id": "label-market-dairy",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 49.895,
+        "Z": 13.3,
+        "Yaw": 180.0,
+        "Building": "market",
+        "Y": 2.3,
+        "Parent": "market-wall-x0z0-N-s0",
+        "Mount": true,
+        "Layer": 9,
+        "Image": "farm-market-dairy"
+      },
+      {
+        "Id": "market-wool",
+        "Role": "market",
+        "Prefab": "assets/prefabs/misc/decor_dlc/storagebarrel/storage_barrel_b.prefab",
+        "X": 51.17,
+        "Z": 12.82,
+        "Yaw": 180.0,
+        "On": "market-fnd-x0z0",
+        "Building": "market",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "label-market-wool",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 51.17,
+        "Z": 13.3,
+        "Yaw": 180.0,
+        "Building": "market",
+        "Y": 2.3,
+        "Parent": "market-wall-x0z0-N-s0",
+        "Mount": true,
+        "Layer": 9,
+        "Image": "farm-market-wool"
+      },
+      {
+        "Id": "market-crops",
+        "Role": "market",
+        "Prefab": "assets/prefabs/deployable/large wood storage/skins/component_storage_boxes_dlc/box_food/component.box.food.large.prefab",
+        "X": 52.845,
+        "Z": 12.775,
+        "Yaw": 180.0,
+        "On": "market-fnd-x1z0",
+        "Building": "market",
+        "Y": 0.099,
+        "Layer": 9
+      },
+      {
+        "Id": "label-market-crops",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 52.845,
+        "Z": 13.3,
+        "Yaw": 180.0,
+        "Building": "market",
+        "Y": 2.3,
+        "Parent": "market-wall-x1z0-N-s0",
+        "Mount": true,
+        "Layer": 9,
+        "Image": "farm-market-crops"
+      },
+      {
+        "Id": "market-meat",
+        "Role": "market",
+        "Prefab": "assets/prefabs/deployable/fridge/fridge.deployed.prefab",
+        "X": 54.535,
+        "Z": 12.815,
+        "Yaw": 180.0,
+        "On": "market-fnd-x1z0",
+        "Building": "market",
+        "Y": 0.119,
+        "Layer": 9
+      },
+      {
+        "Id": "label-market-meat",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 54.535,
+        "Z": 13.3,
+        "Yaw": 180.0,
+        "Building": "market",
+        "Y": 2.3,
+        "Parent": "market-wall-x1z0-N-s0",
+        "Mount": true,
+        "Layer": 9,
+        "Image": "farm-market-meat"
+      },
+      {
+        "Id": "market-splitter",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/playerioents/splitter/splitter.prefab",
+        "X": 52.0,
+        "Z": 13.35,
+        "Yaw": 180.0,
+        "Building": "market",
+        "Y": 2.45,
+        "Parent": "market-wall-x0z0-N-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "market-light-01",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/ceiling light/ceilinglight.deployed.prefab",
+        "X": 50.7,
+        "Z": 11.95,
+        "Yaw": 0.0,
+        "Building": "market",
+        "Y": 2.973,
+        "Parent": "market-floor-x0z0-s1",
+        "Layer": 9
+      },
+      {
+        "Id": "market-light-02",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/ceiling light/ceilinglight.deployed.prefab",
+        "X": 53.7,
+        "Z": 11.95,
+        "Yaw": 0.0,
+        "Building": "market",
+        "Y": 2.973,
+        "Parent": "market-floor-x1z0-s1",
+        "Layer": 9
+      },
+      {
+        "Id": "market-sign",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.large.wood.prefab",
+        "X": 52.2,
+        "Z": 10.3,
+        "Yaw": 180.0,
+        "Building": "market",
+        "Y": 3.0,
+        "Parent": "market-half-x0z0-S-s1",
+        "Mount": true,
+        "Layer": 9,
+        "Image": "farm-market"
+      },
+      {
+        "Id": "market-crate-01",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/modding/events/twitch/wooden_crate_a.prefab",
+        "X": 48.2,
+        "Z": 10.6,
+        "Yaw": 0.0,
+        "Layer": 10
+      },
+      {
+        "Id": "market-crate-02",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/modding/events/twitch/wooden_crate_a.prefab",
+        "X": 48.2,
+        "Z": 10.6,
+        "Yaw": 20.0,
+        "Y": 1.02,
+        "Layer": 10
+      },
+      {
+        "Id": "market-table-01",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/static/tabledoor_a.static.prefab",
+        "X": 56.8,
+        "Z": 11.95,
+        "Yaw": 90.0,
+        "Layer": 10
+      },
+      {
+        "Id": "market-crate-03",
+        "Role": "decor",
+        "Prefab": "assets/bundled/prefabs/modding/events/twitch/wooden_crate_a.prefab",
+        "X": 56.8,
+        "Z": 10.1,
+        "Yaw": 35.0,
+        "Layer": 10
+      },
+      {
+        "Id": "bench-02",
+        "Role": "decor",
+        "Prefab": "assets/content/props/wooden_bench/wooden_bench_a_mountable.prefab",
+        "X": 58.0,
+        "Z": 11.95,
+        "Yaw": 90.0,
+        "Layer": 10,
+        "Replaces": "bench-01"
       }
     ],
     "Connections": [
@@ -5050,6 +5392,213 @@
           {
             "X": 13.05,
             "Y": 0.025,
+            "Z": 0.0
+          }
+        ]
+      },
+      {
+        "From": "barn-splitter-02",
+        "FromSlot": 2,
+        "To": "market-splitter",
+        "ToSlot": 0,
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 0.75
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 10.2000008
+          },
+          {
+            "X": 44.75,
+            "Y": 0.025,
+            "Z": 13.9
+          },
+          {
+            "X": 49.0,
+            "Y": 0.025,
+            "Z": 13.9
+          },
+          {
+            "X": 49.0,
+            "Y": 0.025,
+            "Z": 13.2
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": -1.29999924,
+            "Y": 0.08,
+            "Z": 1.25
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": -1.29999924,
+            "Y": 0.08,
+            "Z": 1.35000038
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": 1.29999924,
+            "Y": 0.08,
+            "Z": 1.35000038
+          }
+        ]
+      },
+      {
+        "From": "market-splitter",
+        "FromSlot": 0,
+        "To": "market-dairy",
+        "ToSlot": 0,
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": 1.29999924,
+            "Y": 0.08,
+            "Z": 1.35000038
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": -0.8050003,
+            "Y": 0.08,
+            "Z": 1.35000038
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": -0.8050003,
+            "Y": 0.08,
+            "Z": 0.8649998
+          }
+        ]
+      },
+      {
+        "From": "market-splitter",
+        "FromSlot": 1,
+        "To": "market-meat",
+        "ToSlot": 0,
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": 1.29999924,
+            "Y": 0.08,
+            "Z": 1.35000038
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": 3.834999,
+            "Y": 0.08,
+            "Z": 1.35000038
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": 3.834999,
+            "Y": 0.08,
+            "Z": 0.8649998
+          }
+        ]
+      },
+      {
+        "From": "barn-light-06",
+        "FromSlot": 0,
+        "To": "market-light-01",
+        "ToSlot": 0,
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 6.0,
+            "Y": 2.96,
+            "Z": 9.0
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 2.96,
+            "Z": 9.0
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 2.96,
+            "Z": 10.2000008
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 10.2000008
+          },
+          {
+            "X": 44.75,
+            "Y": 0.025,
+            "Z": 13.9
+          },
+          {
+            "X": 49.0,
+            "Y": 0.025,
+            "Z": 13.9
+          },
+          {
+            "X": 49.0,
+            "Y": 0.025,
+            "Z": 13.2
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": -1.29999924,
+            "Y": 0.08,
+            "Z": 1.25
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": -1.29999924,
+            "Y": 0.08,
+            "Z": 1.35000038
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": -1.29999924,
+            "Y": 2.96,
+            "Z": 1.35000038
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": 0.0,
+            "Y": 2.96,
+            "Z": 1.35000038
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": 0.0,
+            "Y": 2.96,
+            "Z": 0.0
+          }
+        ]
+      },
+      {
+        "From": "market-light-01",
+        "FromSlot": 0,
+        "To": "market-light-02",
+        "ToSlot": 0,
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": 0.0,
+            "Y": 2.96,
+            "Z": 0.0
+          },
+          {
+            "Anchor": "market-fnd-x0z0",
+            "X": 3.0,
+            "Y": 2.96,
             "Z": 0.0
           }
         ]

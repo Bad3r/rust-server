@@ -57,9 +57,12 @@ conditions. Honeycomb production and extraction remain native. Runtime validatio
 
 ## Phase 3: access and shared produce
 
-Define owner, helper, and visitor capabilities. Add an explicitly public produce container if desired. Apply rules
-consistently to storage, livestock, equipment, and building privilege, with clear interaction messages. Confirm the
-intended sharing policy before changing current access.
+Implemented and applied on 2026-10-23.
+
+The confirmed policy keeps storage, livestock, and equipment open to every player. Helpers are the owner's Rust team,
+which the farm cupboard authorizes for building privilege, with a chat line on each change. A four-stall market by the
+barn entrance (dairy, wool, crops, meat) is refilled every pass with surplus above the farm's feed and hatching
+reserves. `/farm`, `farm.status`, and the entrance guide describe access and the market.
 
 ## Phase 4: purposeful outdoor spaces
 

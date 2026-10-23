@@ -3,7 +3,7 @@
 # requires-python = ">=3.14"
 # dependencies = ["pillow==13.0.0"]
 # ///
-"""Render the farm's readable storage labels and entrance guide, and their C# image table."""
+"""Render the farm's readable storage and market labels, entrance guide, and market sign, and their C# image table."""
 
 import argparse
 import base64
@@ -22,10 +22,17 @@ SIGNS = {
     "farm-eggs": ["EGGS", "COOP PRODUCE"],
     "farm-meat": ["MEAT", "PRODUCE STORE"],
     "farm-guide": [
-        "PANDORA FARM", "Type /farm for live status", "Barn: labeled shared supplies",
-        "Pen: west   |   Garden: north", "House & coops: south", "Ask the owner before taking supplies",
+        "PANDORA FARM", "Type /farm for live status", "Barn: labeled storage, shared by all",
+        "Market by the entrance: free to take", "Pen: west   |   Garden: north", "House & coops: south",
     ],
+    "farm-market-dairy": ["MILK & EGGS", "MARKET: FREE"],
+    "farm-market-wool": ["WOOL & CLOTH", "MARKET: FREE"],
+    "farm-market-crops": ["CROPS", "MARKET: FREE"],
+    "farm-market-meat": ["MEAT", "MARKET: FREE"],
+    "farm-market": ["FARM MARKET", "Free produce: take what you need", "Stocked from the farm's surplus"],
 }
+# Signs on 512 x 256 boards (sign.medium.wood, sign.large.wood): (title size, line size, gap after the title)
+LARGE = {"farm-guide": (30, 19, 42), "farm-market": (46, 24, 66)}
 
 
 def main():
@@ -39,19 +46,20 @@ def main():
     table = ["        private static readonly Dictionary<string, string> ExperienceSignImages =",
              "            new Dictionary<string, string>", "            {"]
     for name, lines in SIGNS.items():
-        width, height = (512, 256) if name == "farm-guide" else (256, 128)
+        width, height = (512, 256) if name in LARGE else (256, 128)
+        title, line, gap = LARGE.get(name, (32, 16, 34))
         image = Image.new("RGB", (width, height), (218, 194, 151))
         draw = ImageDraw.Draw(image)
         draw.rectangle((5, 5, width - 6, height - 6), outline=(71, 53, 31), width=3)
-        top = 15 if name == "farm-guide" else 22
+        top = {"farm-guide": 15, "farm-market": 63}.get(name, 22)
         for i, text in enumerate(lines):
-            size = (30 if i == 0 else 19) if name == "farm-guide" else (32 if i == 0 else 16)
+            size = title if i == 0 else line
             face = ImageFont.truetype(str(font), size)
             while draw.textlength(text, font=face) > width - 26:
                 size -= 1
                 face = ImageFont.truetype(str(font), size)
             draw.text((width // 2, top), text, fill=(47, 36, 24), font=face, anchor="mt")
-            top += 42 if name == "farm-guide" and i == 0 else 34
+            top += gap if i == 0 else 34 if name not in LARGE or name == "farm-guide" else 40
         target = args.out / f"{name}.png"
         image.save(target, optimize=True)
         data = target.read_bytes()

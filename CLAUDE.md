@@ -376,20 +376,23 @@ version, channel, and Rust protocol.
   `docs/developer-and-admin-switches.md` starts with the client command and lists everything else the flag changes,
   the other client settings the server trusts (`global.god`, `player.infiniteammo`, and more), and creative mode.
 - Livestock farm: `LivestockFarm.cs` is local. `farm.build` over RCON places one farm per identity on Pandora's E6 river
-  meadow from the layout in `configs/LivestockFarm.json` (394 entries and 30 power and water links, the same as its
+  meadow from the layout in `configs/LivestockFarm.json` (422 entries and 35 power and water links, the same as its
   built-in default), every building block in Frontier timber (`Building grade` wood, `Building skin` 10232): a 71-fence
   pen with a gate, 4 Hitch & Troughs, and a field shelter over the herd's cupboard; a 5 x 4 barn by the pen gate holding
   12 boxes and barrels, 2 fridges, and a large battery that a Wind Turbine and 2 roof panels charge; a farmhouse with
   the owner's bed; a water tower whose large catcher feeds two troughs by hose; a fenced garden of 8 planters, 4 of them
   heated around a scarecrow deck, watered by the river pump; 2 static planters it only harvests; a 4-coop chicken run;
-  and painted PANDORA FARM signs, an entrance guide, and 8 storage labels. Its 10 deployed lanterns and the 6 barn
-  ceiling lights, behind a switch on the barn's battery branch, follow the farm's own 18:30 to 07:30 schedule, and the
+  a four-stall market pavilion by the barn entrance; and painted PANDORA FARM signs, an entrance guide, 8 storage
+  labels, and the market's sign and stall labels. Its 10 deployed lanterns and the 6 barn
+  ceiling lights and the market's 2, behind a switch on the barn's battery branch, follow the farm's own 18:30 to 07:30 schedule, and the
   plugin vetoes Night Lantern for those lanterns; the torches, candles, and hearth are always-lit statics. Every 30 s it
   bonds, houses, feeds, waters, milks, and shears the cattle and sheep, tends the coops, harvests, clones, and replants
   the crops, composts the dung, breeds as a fallback, culls adults above 9 cattle and 9 sheep (never a juvenile, whose
   corpse yields nothing), holds mating while the heads plus the young of current pregnancies reach the cap plus 2 or a
   due cull cannot run, returns strays, re-places missing structures, restores each block's grade and skin, and repaints
-  a sign whose image is gone. It creates wheat or water only below a stock's minimum and logs each top-up. Damage to the
+  a sign whose image is gone. It fills the market's stalls (2 fridges, a barrel, a food box) with all the milk, eggs,
+  wool, cloth, crops, and meat that fit above a reserve of 640 wheat and 4 eggs, and authorizes the owner's Rust team
+  on the farm cupboard as helpers; storage, animals, and equipment stay open to everyone. It creates wheat or water only below a stock's minimum and logs each top-up. Damage to the
   farm from anything but a real player is cancelled; no player upgrades, demolishes, rotates, wallpapers, or builds
   pieces onto its blocks (deployables still go in, so the owner can furnish the barn and farmhouse), spray-reskins a
   part, makes its bed public, or repaints its signs, and only the owner may put a lock or door closer on a part.
