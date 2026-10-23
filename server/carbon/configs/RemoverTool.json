@@ -213,72 +213,22 @@
         "Display Name": "Player Boat",
         "Building Grade": {}
       },
-      "Stairs L Shape": {
-        "Display Name": "Stairs L Shape",
+      "Floor": {
+        "Display Name": "Floor",
         "Building Grade": {
           "Twigs": {
             "Price": {
               "wood": {
-                "amount": 30,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Wood": {
-            "Price": {
-              "wood": {
-                "amount": 120,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Stone": {
-            "Price": {
-              "stones": {
-                "amount": 180,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Metal": {
-            "Price": {
-              "metal.fragments": {
-                "amount": 120,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "TopTier": {
-            "Price": {
-              "metal.refined": {
                 "amount": 15,
                 "skinId": -1
               }
             },
             "Refund": 100
-          }
-        }
-      },
-      "Floor Triangle Frame": {
-        "Display Name": "Floor Triangle Frame",
-        "Building Grade": {
-          "Twigs": {
-            "Price": {
-              "wood": {
-                "amount": 8,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
           },
           "Wood": {
             "Price": {
               "wood": {
-                "amount": 30,
+                "amount": 60,
                 "skinId": -1
               }
             },
@@ -287,7 +237,7 @@
           "Stone": {
             "Price": {
               "stones": {
-                "amount": 45,
+                "amount": 90,
                 "skinId": -1
               }
             },
@@ -296,7 +246,7 @@
           "Metal": {
             "Price": {
               "metal.fragments": {
-                "amount": 30,
+                "amount": 60,
                 "skinId": -1
               }
             },
@@ -305,7 +255,7 @@
           "TopTier": {
             "Price": {
               "metal.refined": {
-                "amount": 4,
+                "amount": 8,
                 "skinId": -1
               }
             },
@@ -363,76 +313,6 @@
           }
         }
       },
-      "Square Hull": {
-        "Display Name": "Square Hull",
-        "Building Grade": {
-          "Twigs": {
-            "Price": {
-              "wood": {
-                "amount": 180,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 9,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Wood": {
-            "Price": {
-              "wood": {
-                "amount": 180,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 9,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Stone": {
-            "Price": {
-              "wood": {
-                "amount": 180,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 9,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Metal": {
-            "Price": {
-              "wood": {
-                "amount": 180,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 9,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "TopTier": {
-            "Price": {
-              "wood": {
-                "amount": 180,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 9,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          }
-        }
-      },
       "U Shaped Stairs": {
         "Display Name": "U Shaped Stairs",
         "Building Grade": {
@@ -476,6 +356,276 @@
             "Price": {
               "metal.refined": {
                 "amount": 15,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          }
+        }
+      },
+      "Doorway": {
+        "Display Name": "Doorway",
+        "Building Grade": {
+          "Twigs": {
+            "Price": {
+              "wood": {
+                "amount": 21,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Wood": {
+            "Price": {
+              "wood": {
+                "amount": 84,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Stone": {
+            "Price": {
+              "stones": {
+                "amount": 126,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Metal": {
+            "Price": {
+              "metal.fragments": {
+                "amount": 84,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "TopTier": {
+            "Price": {
+              "metal.refined": {
+                "amount": 11,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          }
+        }
+      },
+      "Triangle Hull": {
+        "Display Name": "Triangle Hull",
+        "Building Grade": {
+          "Twigs": {
+            "Price": {
+              "wood": {
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Wood": {
+            "Price": {
+              "wood": {
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Stone": {
+            "Price": {
+              "wood": {
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Metal": {
+            "Price": {
+              "wood": {
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "TopTier": {
+            "Price": {
+              "wood": {
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          }
+        }
+      },
+      "Roof": {
+        "Display Name": "Roof",
+        "Building Grade": {
+          "Twigs": {
+            "Price": {
+              "wood": {
+                "amount": 15,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Wood": {
+            "Price": {
+              "wood": {
+                "amount": 60,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Stone": {
+            "Price": {
+              "stones": {
+                "amount": 90,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Metal": {
+            "Price": {
+              "metal.fragments": {
+                "amount": 60,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "TopTier": {
+            "Price": {
+              "metal.refined": {
+                "amount": 8,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          }
+        }
+      },
+      "Floor Triangle Frame": {
+        "Display Name": "Floor Triangle Frame",
+        "Building Grade": {
+          "Twigs": {
+            "Price": {
+              "wood": {
+                "amount": 8,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Wood": {
+            "Price": {
+              "wood": {
+                "amount": 30,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Stone": {
+            "Price": {
+              "stones": {
+                "amount": 45,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Metal": {
+            "Price": {
+              "metal.fragments": {
+                "amount": 30,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "TopTier": {
+            "Price": {
+              "metal.refined": {
+                "amount": 4,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          }
+        }
+      },
+      "Wall Frame": {
+        "Display Name": "Wall Frame",
+        "Building Grade": {
+          "Twigs": {
+            "Price": {
+              "wood": {
+                "amount": 15,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Wood": {
+            "Price": {
+              "wood": {
+                "amount": 60,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Stone": {
+            "Price": {
+              "stones": {
+                "amount": 90,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Metal": {
+            "Price": {
+              "metal.fragments": {
+                "amount": 60,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "TopTier": {
+            "Price": {
+              "metal.refined": {
+                "amount": 8,
                 "skinId": -1
               }
             },
@@ -533,13 +683,13 @@
           }
         }
       },
-      "Triangle Foundation": {
-        "Display Name": "Triangle Foundation",
+      "Stairs L Shape": {
+        "Display Name": "Stairs L Shape",
         "Building Grade": {
           "Twigs": {
             "Price": {
               "wood": {
-                "amount": 15,
+                "amount": 30,
                 "skinId": -1
               }
             },
@@ -548,7 +698,7 @@
           "Wood": {
             "Price": {
               "wood": {
-                "amount": 60,
+                "amount": 120,
                 "skinId": -1
               }
             },
@@ -557,7 +707,7 @@
           "Stone": {
             "Price": {
               "stones": {
-                "amount": 90,
+                "amount": 180,
                 "skinId": -1
               }
             },
@@ -566,7 +716,7 @@
           "Metal": {
             "Price": {
               "metal.fragments": {
-                "amount": 60,
+                "amount": 120,
                 "skinId": -1
               }
             },
@@ -575,7 +725,7 @@
           "TopTier": {
             "Price": {
               "metal.refined": {
-                "amount": 8,
+                "amount": 15,
                 "skinId": -1
               }
             },
@@ -633,8 +783,8 @@
           }
         }
       },
-      "Wall Frame": {
-        "Display Name": "Wall Frame",
+      "Steps": {
+        "Display Name": "Steps",
         "Building Grade": {
           "Twigs": {
             "Price": {
@@ -733,17 +883,17 @@
           }
         }
       },
-      "Low Wall": {
-        "Display Name": "Low Wall",
+      "Square Hull": {
+        "Display Name": "Square Hull",
         "Building Grade": {
           "Twigs": {
             "Price": {
               "wood": {
-                "amount": 90,
+                "amount": 180,
                 "skinId": -1
               },
               "lowgradefuel": {
-                "amount": 5,
+                "amount": 9,
                 "skinId": -1
               }
             },
@@ -752,11 +902,11 @@
           "Wood": {
             "Price": {
               "wood": {
-                "amount": 90,
+                "amount": 180,
                 "skinId": -1
               },
               "lowgradefuel": {
-                "amount": 5,
+                "amount": 9,
                 "skinId": -1
               }
             },
@@ -765,11 +915,11 @@
           "Stone": {
             "Price": {
               "wood": {
-                "amount": 90,
+                "amount": 180,
                 "skinId": -1
               },
               "lowgradefuel": {
-                "amount": 5,
+                "amount": 9,
                 "skinId": -1
               }
             },
@@ -778,11 +928,11 @@
           "Metal": {
             "Price": {
               "wood": {
-                "amount": 90,
+                "amount": 180,
                 "skinId": -1
               },
               "lowgradefuel": {
-                "amount": 5,
+                "amount": 9,
                 "skinId": -1
               }
             },
@@ -791,11 +941,11 @@
           "TopTier": {
             "Price": {
               "wood": {
-                "amount": 90,
+                "amount": 180,
                 "skinId": -1
               },
               "lowgradefuel": {
-                "amount": 5,
+                "amount": 9,
                 "skinId": -1
               }
             },
@@ -803,13 +953,17 @@
           }
         }
       },
-      "Steps": {
-        "Display Name": "Steps",
+      "Low Wall Barrier": {
+        "Display Name": "Low Wall Barrier",
         "Building Grade": {
           "Twigs": {
             "Price": {
               "wood": {
-                "amount": 15,
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
                 "skinId": -1
               }
             },
@@ -818,7 +972,11 @@
           "Wood": {
             "Price": {
               "wood": {
-                "amount": 60,
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
                 "skinId": -1
               }
             },
@@ -826,8 +984,12 @@
           },
           "Stone": {
             "Price": {
-              "stones": {
+              "wood": {
                 "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
                 "skinId": -1
               }
             },
@@ -835,8 +997,12 @@
           },
           "Metal": {
             "Price": {
-              "metal.fragments": {
-                "amount": 60,
+              "wood": {
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
                 "skinId": -1
               }
             },
@@ -844,8 +1010,12 @@
           },
           "TopTier": {
             "Price": {
-              "metal.refined": {
-                "amount": 8,
+              "wood": {
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
                 "skinId": -1
               }
             },
@@ -896,6 +1066,126 @@
             "Price": {
               "metal.refined": {
                 "amount": 15,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          }
+        }
+      },
+      "Boat Stairs": {
+        "Display Name": "Boat Stairs",
+        "Building Grade": {
+          "Twigs": {
+            "Price": {
+              "wood": {
+                "amount": 180,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 9,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Wood": {
+            "Price": {
+              "wood": {
+                "amount": 180,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 9,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Stone": {
+            "Price": {
+              "wood": {
+                "amount": 180,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 9,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Metal": {
+            "Price": {
+              "wood": {
+                "amount": 180,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 9,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "TopTier": {
+            "Price": {
+              "wood": {
+                "amount": 180,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 9,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          }
+        }
+      },
+      "Triangle Foundation": {
+        "Display Name": "Triangle Foundation",
+        "Building Grade": {
+          "Twigs": {
+            "Price": {
+              "wood": {
+                "amount": 15,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Wood": {
+            "Price": {
+              "wood": {
+                "amount": 60,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Stone": {
+            "Price": {
+              "stones": {
+                "amount": 90,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "Metal": {
+            "Price": {
+              "metal.fragments": {
+                "amount": 60,
+                "skinId": -1
+              }
+            },
+            "Refund": 100
+          },
+          "TopTier": {
+            "Price": {
+              "metal.refined": {
+                "amount": 8,
                 "skinId": -1
               }
             },
@@ -1023,63 +1313,17 @@
           }
         }
       },
-      "Roof Triangle": {
-        "Display Name": "Roof Triangle",
+      "Low Wall": {
+        "Display Name": "Low Wall",
         "Building Grade": {
           "Twigs": {
             "Price": {
               "wood": {
-                "amount": 15,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Wood": {
-            "Price": {
-              "wood": {
-                "amount": 60,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Stone": {
-            "Price": {
-              "stones": {
                 "amount": 90,
                 "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Metal": {
-            "Price": {
-              "metal.fragments": {
-                "amount": 60,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "TopTier": {
-            "Price": {
-              "metal.refined": {
-                "amount": 8,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          }
-        }
-      },
-      "Doorway": {
-        "Display Name": "Doorway",
-        "Building Grade": {
-          "Twigs": {
-            "Price": {
-              "wood": {
-                "amount": 21,
+              },
+              "lowgradefuel": {
+                "amount": 5,
                 "skinId": -1
               }
             },
@@ -1088,7 +1332,11 @@
           "Wood": {
             "Price": {
               "wood": {
-                "amount": 84,
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
                 "skinId": -1
               }
             },
@@ -1096,8 +1344,12 @@
           },
           "Stone": {
             "Price": {
-              "stones": {
-                "amount": 126,
+              "wood": {
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
                 "skinId": -1
               }
             },
@@ -1105,8 +1357,12 @@
           },
           "Metal": {
             "Price": {
-              "metal.fragments": {
-                "amount": 84,
+              "wood": {
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
                 "skinId": -1
               }
             },
@@ -1114,8 +1370,12 @@
           },
           "TopTier": {
             "Price": {
-              "metal.refined": {
-                "amount": 11,
+              "wood": {
+                "amount": 90,
+                "skinId": -1
+              },
+              "lowgradefuel": {
+                "amount": 5,
                 "skinId": -1
               }
             },
@@ -1123,8 +1383,8 @@
           }
         }
       },
-      "Roof": {
-        "Display Name": "Roof",
+      "Roof Triangle": {
+        "Display Name": "Roof Triangle",
         "Building Grade": {
           "Twigs": {
             "Price": {
@@ -1223,268 +1483,8 @@
           }
         }
       },
-      "Floor": {
-        "Display Name": "Floor",
-        "Building Grade": {
-          "Twigs": {
-            "Price": {
-              "wood": {
-                "amount": 15,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Wood": {
-            "Price": {
-              "wood": {
-                "amount": 60,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Stone": {
-            "Price": {
-              "stones": {
-                "amount": 90,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Metal": {
-            "Price": {
-              "metal.fragments": {
-                "amount": 60,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "TopTier": {
-            "Price": {
-              "metal.refined": {
-                "amount": 8,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          }
-        }
-      },
-      "Low Wall Barrier": {
-        "Display Name": "Low Wall Barrier",
-        "Building Grade": {
-          "Twigs": {
-            "Price": {
-              "wood": {
-                "amount": 90,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 5,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Wood": {
-            "Price": {
-              "wood": {
-                "amount": 90,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 5,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Stone": {
-            "Price": {
-              "wood": {
-                "amount": 90,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 5,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Metal": {
-            "Price": {
-              "wood": {
-                "amount": 90,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 5,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "TopTier": {
-            "Price": {
-              "wood": {
-                "amount": 90,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 5,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          }
-        }
-      },
-      "Triangle Hull": {
-        "Display Name": "Triangle Hull",
-        "Building Grade": {
-          "Twigs": {
-            "Price": {
-              "wood": {
-                "amount": 90,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 5,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Wood": {
-            "Price": {
-              "wood": {
-                "amount": 90,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 5,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Stone": {
-            "Price": {
-              "wood": {
-                "amount": 90,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 5,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Metal": {
-            "Price": {
-              "wood": {
-                "amount": 90,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 5,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "TopTier": {
-            "Price": {
-              "wood": {
-                "amount": 90,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 5,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          }
-        }
-      },
-      "Boat Stairs": {
-        "Display Name": "Boat Stairs",
-        "Building Grade": {
-          "Twigs": {
-            "Price": {
-              "wood": {
-                "amount": 180,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 9,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Wood": {
-            "Price": {
-              "wood": {
-                "amount": 180,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 9,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Stone": {
-            "Price": {
-              "wood": {
-                "amount": 180,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 9,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "Metal": {
-            "Price": {
-              "wood": {
-                "amount": 180,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 9,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          },
-          "TopTier": {
-            "Price": {
-              "wood": {
-                "amount": 180,
-                "skinId": -1
-              },
-              "lowgradefuel": {
-                "amount": 9,
-                "skinId": -1
-              }
-            },
-            "Refund": 100
-          }
-        }
-      },
-      "Stairs Spiral": {
-        "Display Name": "Stairs Spiral",
+      "Stairs Spiral Triangle": {
+        "Display Name": "Stairs Spiral Triangle",
         "Building Grade": {
           "Twigs": {
             "Price": {
@@ -1533,8 +1533,8 @@
           }
         }
       },
-      "Stairs Spiral Triangle": {
-        "Display Name": "Stairs Spiral Triangle",
+      "Stairs Spiral": {
+        "Display Name": "Stairs Spiral",
         "Building Grade": {
           "Twigs": {
             "Price": {
@@ -7286,6 +7286,50 @@
         "Price": {},
         "Refund": {
           "generator.biofuel": {
+            "amount": 1,
+            "skinId": -1
+          }
+        }
+      },
+      "discordzombieplushie_deployed": {
+        "Remove Allowed": true,
+        "Display Name": "Zombie Wumpus Plush",
+        "Price": {},
+        "Refund": {
+          "discord.zombie.plushie": {
+            "amount": 1,
+            "skinId": -1
+          }
+        }
+      },
+      "halloween.stringlights.deployed": {
+        "Remove Allowed": true,
+        "Display Name": "Halloween String Lights",
+        "Price": {},
+        "Refund": {
+          "halloween.string.lights": {
+            "amount": 1,
+            "skinId": -1
+          }
+        }
+      },
+      "halloween.wreath.deployed": {
+        "Remove Allowed": true,
+        "Display Name": "Halloween Wreath",
+        "Price": {},
+        "Refund": {
+          "halloweenwreath": {
+            "amount": 1,
+            "skinId": -1
+          }
+        }
+      },
+      "tunalight.skull.deployed": {
+        "Remove Allowed": true,
+        "Display Name": "Skull Wall Lamp",
+        "Price": {},
+        "Refund": {
+          "tunalight.skull": {
             "amount": 1,
             "skinId": -1
           }
