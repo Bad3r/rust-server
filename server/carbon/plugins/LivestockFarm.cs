@@ -598,9 +598,9 @@ namespace Oxide.Plugins
             },
         };
 
-        // server/carbon/configs/LivestockFarm.json as of 2026-10-23 05:57: 394 entries (buildings barn, deck, house,
-        // shelter, tower) and 30 connections. research/farm/v2/plugin/tools/make_defaults.py writes this method,
-        // DefaultSlotPlan, and the setting defaults from that file; edit the file and rerun it.
+        // server/carbon/configs/LivestockFarm.json as of 2026-10-23 06:04: 394 entries (buildings barn, deck, house,
+        // shelter, tower) and 30 connections. scripts/farm-defaults.py writes this method, DefaultSlotPlan, and the
+        // setting defaults from that file; edit the file and rerun it.
         private static FarmLayout DefaultLayout()
         {
             const string wallHalf = "assets/prefabs/building core/wall.half/wall.half.prefab";

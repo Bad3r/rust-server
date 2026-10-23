@@ -68,6 +68,15 @@
             files = lib.concatStringsSep "|" guardedPathPatterns;
           };
 
+          farm-defaults = {
+            enable = true;
+            name = "farm-defaults";
+            description = "Refuse a LivestockFarm.cs whose built-in defaults differ from its shipped config.";
+            entry = "${pkgs.python3}/bin/python3 scripts/farm-defaults.py server/carbon/configs/LivestockFarm.json server/carbon/plugins/LivestockFarm.cs --check";
+            files = "^(server/carbon/plugins/LivestockFarm\\.cs|server/carbon/configs/LivestockFarm\\.json|scripts/farm-defaults\\.py)$";
+            pass_filenames = false;
+          };
+
           # Temporary: drop once an upstream Building Skins release removes this line (see CLAUDE.md).
           building-skins-owned-skip = {
             enable = true;

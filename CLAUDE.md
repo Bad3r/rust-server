@@ -56,6 +56,12 @@ on in-game edits, so `git diff` shows what changed.
   `events.set_event_min_delay` only has to name a registered command (`Variable = false`), whose arguments it does
   not check. It reads the local install unless `MANAGED_DIR` points elsewhere, and checks names, not what a convar
   now does.
+- `scripts/farm-defaults.py server/carbon/configs/LivestockFarm.json server/carbon/plugins/LivestockFarm.cs`: write
+  `LivestockFarm.cs`'s built-in defaults (`DefaultLayout()` with every wire route, `DefaultSlotPlan()`, and the scalar
+  and string-list settings) from the shipped config, then compile the `Configuration` region with Mono and exit 2
+  naming any table setting, such as the starter herd, that still differs and needs a hand edit. Run it after every
+  change to the config's layout or defaults. `--check` (the `farm-defaults` hook) compares text only, `--verify` only
+  serializes and compares, and `--out <file>` writes elsewhere. Writing the live plugin hot-loads it.
 - `uv run --with UnityPy python3 scripts/game-modes.py`: print each game mode in `GameModeManifest` (the values
   `server.gamemode` takes) with its shortname, convar overrides, feature list, and settings that differ from
   `vanilla`, then the map generation overrides in `RustDedicated_Data/resources.assets`, in about 20 s.
@@ -517,8 +523,9 @@ host and also works in CI. The examples run from the repo root with `m=server/Ru
 `flake.nix` pins nixpkgs and git-hooks.nix in `flake.lock` (refresh with `nix flake update`). Once `nix develop` has
 installed them, the hooks run on every commit: shellcheck, actionlint, check-json (the Carbon configs must parse),
 nixfmt, gitleaks on the staged content, `forbidden-paths`, which refuses secrets, saves, databases, logs,
-`home/`, `steamcmd/`, `backups/`, and `seedscan/` even when force-added, and `building-skins-owned-skip` (see
-Carbon). Keep
+`home/`, `steamcmd/`, `backups/`, and `seedscan/` even when force-added, `building-skins-owned-skip` (see Carbon),
+and `farm-defaults`, which refuses a `LivestockFarm.cs` whose built-in defaults differ from
+`configs/LivestockFarm.json` (`scripts/farm-defaults.py --check`). Keep
 `guardedPathPatterns` in `flake.nix` in step with the secret files named in this document.
 
 Flake commands read this checkout through the default git fetch, which copies only tracked files, so a new file
