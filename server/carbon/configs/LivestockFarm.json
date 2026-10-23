@@ -1,6 +1,30 @@
 {
   "Owner SteamID (0 = first owner in cfg/users.cfg)": 0,
   "Upkeep interval (seconds)": 30.0,
+  "Automatically milk cows": false,
+  "Automatically shear sheep": false,
+  "Automatically cull surplus livestock": true,
+  "Player-managed planter layout IDs": [
+    "planter-07",
+    "planter-08"
+  ],
+  "Assisted farming absence fallback after minutes (0 = disabled)": 60.0,
+  "Schedule farm lighting at dusk and dawn": true,
+  "Farm lights sunrise hour (0-24)": 7.5,
+  "Farm lights sunset hour (0-24)": 18.5,
+  "Farm lighting switch layout ID": "barn-light-switch",
+  "Scheduled decorative light layout IDs": [
+    "lantern-01-timed",
+    "lantern-02-timed",
+    "lantern-03-timed",
+    "lantern-04-timed",
+    "lantern-05-timed",
+    "lantern-06-timed",
+    "lantern-07-timed",
+    "lantern-08-timed",
+    "house-lantern-1-timed",
+    "house-lantern-2-timed"
+  ],
   "Farm radius around the layout centre for sweeping and relinking (m)": 75.0,
   "Swept dropped items (shortname to box role)": {
     "horsedung": "box_dung",
@@ -2230,6 +2254,132 @@
         "Image": "pandora-farm-sign.huge.wood-1024x256"
       },
       {
+        "Id": "barn-guide",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.medium.wood.prefab",
+        "X": 44.65,
+        "Z": 13.2,
+        "Yaw": 90.0,
+        "Building": "barn",
+        "Y": 1.1,
+        "Parent": "barn-wall-x4z3-E-s0",
+        "Mount": true,
+        "Layer": 10,
+        "Image": "farm-guide"
+      },
+      {
+        "Id": "label-feed",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 31.7,
+        "Z": 14.25,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 2.3,
+        "Parent": "barn-wall-x0z3-N-s0",
+        "Mount": true,
+        "Layer": 10,
+        "Image": "farm-feed"
+      },
+      {
+        "Id": "label-clones",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 34.87,
+        "Z": 14.25,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 2.3,
+        "Parent": "barn-window-x1z3-N-s0",
+        "Mount": true,
+        "Layer": 10,
+        "Image": "farm-clones"
+      },
+      {
+        "Id": "label-dung",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 36.71,
+        "Z": 14.25,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 2.3,
+        "Parent": "barn-wall-x2z3-N-s0",
+        "Mount": true,
+        "Layer": 10,
+        "Image": "farm-compost"
+      },
+      {
+        "Id": "label-wool",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 39.11,
+        "Z": 14.25,
+        "Yaw": 180.0,
+        "Building": "barn",
+        "Y": 2.3,
+        "Parent": "barn-window-x3z3-N-s0",
+        "Mount": true,
+        "Layer": 10,
+        "Image": "farm-wool"
+      },
+      {
+        "Id": "label-cold",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 30.9,
+        "Z": 2.55,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 2.3,
+        "Parent": "barn-wall-x0z0-S-s0",
+        "Mount": true,
+        "Layer": 10,
+        "Image": "farm-cold"
+      },
+      {
+        "Id": "label-milk",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 32.76,
+        "Z": 2.55,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 2.3,
+        "Parent": "barn-window-x1z0-S-s0",
+        "Mount": true,
+        "Layer": 10,
+        "Image": "farm-milk"
+      },
+      {
+        "Id": "label-eggs",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 34.58,
+        "Z": 2.55,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 2.3,
+        "Parent": "barn-window-x1z0-S-s0",
+        "Mount": true,
+        "Layer": 10,
+        "Image": "farm-eggs"
+      },
+      {
+        "Id": "label-meat",
+        "Role": "sign",
+        "Prefab": "assets/prefabs/deployable/signs/sign.small.wood.prefab",
+        "X": 38.83,
+        "Z": 2.55,
+        "Yaw": 0.0,
+        "Building": "barn",
+        "Y": 2.3,
+        "Parent": "barn-window-x3z0-S-s0",
+        "Mount": true,
+        "Layer": 10,
+        "Image": "farm-meat"
+      },
+      {
         "Id": "barn-feed-1",
         "Role": "box_feed",
         "Prefab": "assets/prefabs/deployable/large wood storage/skins/component_storage_boxes_dlc/box_food/component.box.food.large.prefab",
@@ -2467,7 +2617,19 @@
         "Layer": 9
       },
       {
-        "Id": "barn-light-01",
+        "Id": "barn-light-switch",
+        "Role": "decor",
+        "Prefab": "assets/prefabs/deployable/playerioents/simpleswitch/switch.prefab",
+        "X": 44.4,
+        "Z": 4.05,
+        "Yaw": 270.0,
+        "Building": "barn",
+        "Y": 2.0,
+        "Parent": "barn-wall-x4z0-E-s0",
+        "Layer": 9
+      },
+      {
+        "Id": "barn-light-01-timed",
         "Role": "decor",
         "Prefab": "assets/prefabs/deployable/ceiling light/ceilinglight.deployed.prefab",
         "X": 34.0,
@@ -2476,7 +2638,8 @@
         "Building": "barn",
         "Y": 2.973,
         "Parent": "barn-floor-x1z1-s1",
-        "Layer": 9
+        "Layer": 9,
+        "Replaces": "barn-light-01"
       },
       {
         "Id": "barn-light-02",
@@ -3312,28 +3475,30 @@
         "Layer": 9
       },
       {
-        "Id": "house-lantern-1",
+        "Id": "house-lantern-1-timed",
         "Role": "decor",
-        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "Prefab": "assets/prefabs/deployable/lantern/lantern.deployed.prefab",
         "X": 50.15,
         "Z": -17.65,
         "Yaw": 0.0,
         "On": "house-fnd-x2z0",
         "Building": "house",
         "Y": 0.099,
-        "Layer": 9
+        "Layer": 9,
+        "Replaces": "house-lantern-1"
       },
       {
-        "Id": "house-lantern-2",
+        "Id": "house-lantern-2-timed",
         "Role": "decor",
-        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "Prefab": "assets/prefabs/deployable/lantern/lantern.deployed.prefab",
         "X": 50.15,
         "Z": -9.35,
         "Yaw": 0.0,
         "On": "house-fnd-x2z2",
         "Building": "house",
         "Y": 0.099,
-        "Layer": 9
+        "Layer": 9,
+        "Replaces": "house-lantern-2"
       },
       {
         "Id": "house-torch-1",
@@ -3993,76 +4158,84 @@
         "Layer": 10
       },
       {
-        "Id": "lantern-01",
+        "Id": "lantern-01-timed",
         "Role": "decor",
-        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "Prefab": "assets/prefabs/deployable/lantern/lantern.deployed.prefab",
         "X": 50.6,
         "Z": 1.6,
         "Yaw": 0.0,
-        "Layer": 10
+        "Layer": 10,
+        "Replaces": "lantern-01"
       },
       {
-        "Id": "lantern-02",
+        "Id": "lantern-02-timed",
         "Role": "decor",
-        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "Prefab": "assets/prefabs/deployable/lantern/lantern.deployed.prefab",
         "X": 48.4,
         "Z": 4.6,
         "Yaw": 0.0,
-        "Layer": 10
+        "Layer": 10,
+        "Replaces": "lantern-02"
       },
       {
-        "Id": "lantern-03",
+        "Id": "lantern-03-timed",
         "Role": "decor",
-        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "Prefab": "assets/prefabs/deployable/lantern/lantern.deployed.prefab",
         "X": 48.6,
         "Z": 13.3,
         "Yaw": 0.0,
-        "Layer": 10
+        "Layer": 10,
+        "Replaces": "lantern-03"
       },
       {
-        "Id": "lantern-04",
+        "Id": "lantern-04-timed",
         "Role": "decor",
-        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "Prefab": "assets/prefabs/deployable/lantern/lantern.deployed.prefab",
         "X": 27.5,
         "Z": 3.6,
         "Yaw": 0.0,
-        "Layer": 10
+        "Layer": 10,
+        "Replaces": "lantern-04"
       },
       {
-        "Id": "lantern-05",
+        "Id": "lantern-05-timed",
         "Role": "decor",
-        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "Prefab": "assets/prefabs/deployable/lantern/lantern.deployed.prefab",
         "X": -3.2,
         "Z": 22.0,
         "Yaw": 0.0,
-        "Layer": 10
+        "Layer": 10,
+        "Replaces": "lantern-05"
       },
       {
-        "Id": "lantern-06",
+        "Id": "lantern-06-timed",
         "Role": "decor",
-        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "Prefab": "assets/prefabs/deployable/lantern/lantern.deployed.prefab",
         "X": 27.4,
-        "Z": -15.0,
+        "Z": -12.5,
         "Yaw": 0.0,
-        "Layer": 10
+        "Layer": 10,
+        "Replaces": "lantern-06"
       },
       {
-        "Id": "lantern-07",
+        "Id": "lantern-07-timed",
         "Role": "decor",
-        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "Prefab": "assets/prefabs/deployable/lantern/lantern.deployed.prefab",
         "X": 40.5,
         "Z": -13.6,
         "Yaw": 0.0,
-        "Layer": 10
+        "Layer": 10,
+        "Replaces": "lantern-07"
       },
       {
-        "Id": "lantern-08",
+        "Id": "lantern-08-timed",
         "Role": "decor",
-        "Prefab": "assets/bundled/prefabs/static/lantern_on.static.prefab",
+        "Prefab": "assets/prefabs/deployable/lantern/lantern.deployed.prefab",
         "X": 30.0,
         "Z": -0.6,
         "Yaw": 0.0,
-        "Layer": 10
+        "Layer": 10,
+        "Replaces": "lantern-08"
       },
       {
         "Id": "pump-01",
@@ -4079,203 +4252,810 @@
         "FromSlot": 0,
         "To": "barn-combiner-01",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "X": 61.0,
+            "Y": 0.025,
+            "Z": 19.0
+          },
+          {
+            "X": 44.65,
+            "Y": 0.025,
+            "Z": 19.0
+          },
+          {
+            "X": 44.65,
+            "Y": 0.025,
+            "Z": 3.0
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": -0.9000001
+          }
+        ]
       },
       {
         "From": "barn-solar-01",
         "FromSlot": 0,
         "To": "barn-combiner-01",
         "ToSlot": 1,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 3.0,
+            "Y": 7.8,
+            "Z": 6.015
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 7.8,
+            "Z": 6.015
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 4.865,
+            "Z": 8.950001
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 8.950001
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": -0.9000001
+          }
+        ]
       },
       {
         "From": "barn-combiner-01",
         "FromSlot": 0,
         "To": "barn-combiner-02",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": -0.9000001
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": -0.450000048
+          }
+        ]
       },
       {
         "From": "barn-solar-02",
         "FromSlot": 0,
         "To": "barn-combiner-02",
         "ToSlot": 1,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 9.0,
+            "Y": 7.8,
+            "Z": 6.015
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 7.8,
+            "Z": 6.015
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 4.865,
+            "Z": 8.950001
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 8.950001
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": -0.450000048
+          }
+        ]
       },
       {
         "From": "barn-combiner-02",
         "FromSlot": 0,
         "To": "battery-02",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": -0.450000048
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": -0.700000048
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 11.4850006,
+            "Y": 0.08,
+            "Z": -0.700000048
+          }
+        ]
       },
       {
         "From": "battery-02",
         "FromSlot": 0,
         "To": "barn-splitter-01",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 11.4850006,
+            "Y": 0.08,
+            "Z": -0.700000048
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": -0.700000048
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 0.1500001
+          }
+        ]
       },
       {
         "From": "barn-splitter-01",
         "FromSlot": 0,
         "To": "barn-splitter-02",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 0.1500001
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 0.75
+          }
+        ]
       },
       {
         "From": "barn-splitter-02",
         "FromSlot": 0,
         "To": "fridge-02",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 0.75
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": -1.30000019
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": -0.7049999,
+            "Y": 0.08,
+            "Z": -1.30000019
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": -0.7049999,
+            "Y": 0.08,
+            "Z": -0.865
+          }
+        ]
       },
       {
         "From": "barn-splitter-02",
         "FromSlot": 1,
         "To": "fridge-03",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 0.75
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": -1.30000019
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 0.534999847,
+            "Y": 0.08,
+            "Z": -1.30000019
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 0.534999847,
+            "Y": 0.08,
+            "Z": -0.865
+          }
+        ]
       },
       {
         "From": "barn-splitter-01",
         "FromSlot": 1,
-        "To": "barn-light-01",
+        "To": "barn-light-switch",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 1.35,
+            "Z": 0.1500001
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 2.0,
+            "Z": 0.1500001
+          }
+        ]
       },
       {
-        "From": "barn-light-01",
+        "From": "barn-light-switch",
+        "FromSlot": 0,
+        "To": "barn-light-01-timed",
+        "ToSlot": 0,
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 2.96,
+            "Z": 0.1500001
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 2.96,
+            "Z": 3.0
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 3.0,
+            "Y": 2.96,
+            "Z": 3.0
+          }
+        ]
+      },
+      {
+        "From": "barn-light-01-timed",
         "FromSlot": 0,
         "To": "barn-light-02",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 3.0,
+            "Y": 2.96,
+            "Z": 3.0
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 9.0,
+            "Y": 2.96,
+            "Z": 3.0
+          }
+        ]
       },
       {
         "From": "barn-light-02",
         "FromSlot": 0,
         "To": "barn-light-03",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 9.0,
+            "Y": 2.96,
+            "Z": 3.0
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 9.0,
+            "Y": 2.96,
+            "Z": 5.99999952
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 3.0,
+            "Y": 2.96,
+            "Z": 5.99999952
+          }
+        ]
       },
       {
         "From": "barn-light-03",
         "FromSlot": 0,
         "To": "barn-light-04",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 3.0,
+            "Y": 2.96,
+            "Z": 5.99999952
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 9.0,
+            "Y": 2.96,
+            "Z": 5.99999952
+          }
+        ]
       },
       {
         "From": "barn-light-04",
         "FromSlot": 0,
         "To": "barn-light-05",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 9.0,
+            "Y": 2.96,
+            "Z": 5.99999952
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 6.0,
+            "Y": 2.96,
+            "Z": 5.99999952
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 6.0,
+            "Y": 2.96,
+            "Z": 0.0
+          }
+        ]
       },
       {
         "From": "barn-light-05",
         "FromSlot": 0,
         "To": "barn-light-06",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 6.0,
+            "Y": 2.96,
+            "Z": 0.0
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 6.0,
+            "Y": 2.96,
+            "Z": 9.0
+          }
+        ]
       },
       {
         "From": "barn-splitter-01",
         "FromSlot": 2,
         "To": "heater-01",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 0.1500001
+          },
+          {
+            "Anchor": "barn-fnd-x0z0",
+            "X": 13.3499985,
+            "Y": 0.08,
+            "Z": 10.2000008
+          },
+          {
+            "X": 44.65,
+            "Y": 0.025,
+            "Z": 14.6
+          },
+          {
+            "X": 44.65,
+            "Y": 0.025,
+            "Z": 24.8
+          },
+          {
+            "X": 50.2,
+            "Y": 0.025,
+            "Z": 24.8
+          },
+          {
+            "X": 50.2,
+            "Y": 0.025,
+            "Z": 21.65
+          }
+        ]
       },
       {
         "From": "heater-01",
         "FromSlot": 0,
         "To": "heater-02",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "X": 50.2,
+            "Y": 0.025,
+            "Z": 21.65
+          },
+          {
+            "X": 51.95,
+            "Y": 0.025,
+            "Z": 21.65
+          },
+          {
+            "X": 51.95,
+            "Y": 0.025,
+            "Z": 19.9
+          }
+        ]
       },
       {
         "From": "heater-02",
         "FromSlot": 0,
         "To": "heater-03",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "X": 51.95,
+            "Y": 0.025,
+            "Z": 19.9
+          },
+          {
+            "X": 51.95,
+            "Y": 0.025,
+            "Z": 18.15
+          },
+          {
+            "X": 50.2,
+            "Y": 0.025,
+            "Z": 18.15
+          }
+        ]
       },
       {
         "From": "heater-03",
         "FromSlot": 0,
         "To": "heater-04",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "X": 50.2,
+            "Y": 0.025,
+            "Z": 18.15
+          },
+          {
+            "X": 48.45,
+            "Y": 0.025,
+            "Z": 18.15
+          },
+          {
+            "X": 48.45,
+            "Y": 0.025,
+            "Z": 19.9
+          }
+        ]
       },
       {
         "From": "heater-04",
         "FromSlot": 0,
         "To": "pump-01",
         "ToSlot": 0,
-        "Kind": "power"
+        "Kind": "power",
+        "Route": [
+          {
+            "X": 48.45,
+            "Y": 0.025,
+            "Z": 19.9
+          },
+          {
+            "X": 45.0,
+            "Y": 0.025,
+            "Z": 19.9
+          },
+          {
+            "X": 45.0,
+            "Y": 0.025,
+            "Z": 25.0
+          },
+          {
+            "X": 29.5,
+            "Y": 0.025,
+            "Z": 25.0
+          },
+          {
+            "X": 29.5,
+            "Y": 0.025,
+            "Z": 29.3
+          }
+        ]
       },
       {
         "From": "pump-01",
         "FromSlot": 0,
         "To": "sprinkler-01",
         "ToSlot": 0,
-        "Kind": "water"
+        "Kind": "water",
+        "Route": [
+          {
+            "X": 29.5,
+            "Y": 0.025,
+            "Z": 29.3
+          },
+          {
+            "X": 29.5,
+            "Y": 0.025,
+            "Z": 21.3
+          }
+        ]
       },
       {
         "From": "sprinkler-01",
         "FromSlot": 0,
         "To": "sprinkler-02",
         "ToSlot": 0,
-        "Kind": "water"
+        "Kind": "water",
+        "Route": [
+          {
+            "X": 29.5,
+            "Y": 0.025,
+            "Z": 21.3
+          },
+          {
+            "X": 32.9,
+            "Y": 0.025,
+            "Z": 21.3
+          }
+        ]
       },
       {
         "From": "sprinkler-02",
         "FromSlot": 0,
         "To": "sprinkler-03",
         "ToSlot": 0,
-        "Kind": "water"
+        "Kind": "water",
+        "Route": [
+          {
+            "X": 32.9,
+            "Y": 0.025,
+            "Z": 21.3
+          },
+          {
+            "X": 36.3,
+            "Y": 0.025,
+            "Z": 21.3
+          }
+        ]
       },
       {
         "From": "sprinkler-03",
         "FromSlot": 0,
         "To": "sprinkler-04",
         "ToSlot": 0,
-        "Kind": "water"
+        "Kind": "water",
+        "Route": [
+          {
+            "X": 36.3,
+            "Y": 0.025,
+            "Z": 21.3
+          },
+          {
+            "X": 39.7,
+            "Y": 0.025,
+            "Z": 21.3
+          }
+        ]
       },
       {
         "From": "sprinkler-04",
         "FromSlot": 0,
         "To": "sprinkler-05",
         "ToSlot": 0,
-        "Kind": "water"
+        "Kind": "water",
+        "Route": [
+          {
+            "X": 39.7,
+            "Y": 0.025,
+            "Z": 21.3
+          },
+          {
+            "X": 43.0,
+            "Y": 0.025,
+            "Z": 24.8
+          },
+          {
+            "X": 47.45,
+            "Y": 0.025,
+            "Z": 24.8
+          },
+          {
+            "X": 47.45,
+            "Y": 0.025,
+            "Z": 22.7
+          }
+        ]
       },
       {
         "From": "sprinkler-05",
         "FromSlot": 0,
         "To": "sprinkler-06",
         "ToSlot": 0,
-        "Kind": "water"
+        "Kind": "water",
+        "Route": [
+          {
+            "X": 47.45,
+            "Y": 0.025,
+            "Z": 22.7
+          },
+          {
+            "X": 47.45,
+            "Y": 0.025,
+            "Z": 24.8
+          },
+          {
+            "X": 55.6,
+            "Y": 0.025,
+            "Z": 24.8
+          },
+          {
+            "X": 55.6,
+            "Y": 0.025,
+            "Z": 17.1
+          },
+          {
+            "X": 52.95,
+            "Y": 0.025,
+            "Z": 17.1
+          }
+        ]
       },
       {
         "From": "catcher-05",
         "FromSlot": 0,
         "To": "tower-splitter",
         "ToSlot": 0,
-        "Kind": "water"
+        "Kind": "water",
+        "Route": [
+          {
+            "Anchor": "tower-fnd-x0z0",
+            "X": 1.4,
+            "Y": 6.05,
+            "Z": 1.39999962
+          },
+          {
+            "Anchor": "tower-fnd-x0z0",
+            "X": 1.4,
+            "Y": 2.0,
+            "Z": 1.39999962
+          },
+          {
+            "Anchor": "tower-fnd-x0z0",
+            "X": 0.0,
+            "Y": 2.0,
+            "Z": 1.39999962
+          }
+        ]
       },
       {
         "From": "tower-splitter",
         "FromSlot": 0,
         "To": "trough-01",
         "ToSlot": 0,
-        "Kind": "water"
+        "Kind": "water",
+        "Route": [
+          {
+            "Anchor": "tower-fnd-x0z0",
+            "X": 0.0,
+            "Y": 2.0,
+            "Z": 1.39999962
+          },
+          {
+            "Anchor": "tower-fnd-x0z0",
+            "X": -1.65,
+            "Y": 2.0,
+            "Z": 1.39999962
+          },
+          {
+            "X": -1.65,
+            "Y": 0.025,
+            "Z": 25.65
+          },
+          {
+            "X": -13.05,
+            "Y": 0.025,
+            "Z": 0.0
+          }
+        ]
       },
       {
         "From": "tower-splitter",
         "FromSlot": 1,
         "To": "trough-02",
         "ToSlot": 0,
-        "Kind": "water"
+        "Kind": "water",
+        "Route": [
+          {
+            "Anchor": "tower-fnd-x0z0",
+            "X": 0.0,
+            "Y": 2.0,
+            "Z": 1.39999962
+          },
+          {
+            "Anchor": "tower-fnd-x0z0",
+            "X": 1.65,
+            "Y": 2.0,
+            "Z": 1.39999962
+          },
+          {
+            "X": 1.65,
+            "Y": 0.025,
+            "Z": 25.65
+          },
+          {
+            "X": 13.05,
+            "Y": 0.025,
+            "Z": 0.0
+          }
+        ]
       }
     ]
   }

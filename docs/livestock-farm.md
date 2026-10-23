@@ -1,17 +1,22 @@
 # Livestock farm
 
-`server/carbon/plugins/LivestockFarm.cs` is a local Carbon plugin that builds one farm per server identity and keeps it
-running without player upkeep. The layout in `server/carbon/configs/LivestockFarm.json`, which is also the plugin's
-built-in default (v2 below, 384 entries), makes it a farmstead in Frontier timber: cattle and sheep in a fenced pen
+`server/carbon/plugins/LivestockFarm.cs` is a local Carbon plugin that builds one farm per server identity and keeps essential
+care running, with configurable automatic or player-managed production. The layout in `server/carbon/configs/LivestockFarm.json`, which is also the plugin's
+built-in default (v2 with visitor and lighting additions, 394 entries), makes it a farmstead in Frontier timber: cattle and sheep in a fenced pen
 around a field shelter, a barn by the pen gate that holds the stores, a farmhouse, a water tower, a Wind Turbine, a
 fenced garden of eight planters, four of them heated, two self-replanting static planters, and a chicken run of four
 coops. The crops feed the animals, the animals' dung fertilizes the crops, rain and the river supply the water, the
 turbine and two roof panels power the fridges, lights, heaters, and pump through one battery, and the plugin creates
-feed or water only when a stock runs low, logging every such top-up. `farm.upgrade` turns a standing farm of the first
+feed, water, or lantern fuel only when a stock runs low, logging every such top-up. `farm.upgrade` turns a standing farm of the first
 layout (v1 below, 94 entries) into v2 in place. v2 was tested on Rust buildid 25823813 with Carbon 2.1.1287;
 [livestock.md](livestock.md) covers the game mechanics it builds on.
 
 ## Site and layout
+
+![North-up plan of the configured farm, showing the pen, barn, garden, farmhouse, chicken run, and utilities](livestock-farm-layout.svg)
+
+The plan follows the configured building footprints and equipment positions. The river edge, paths, rock outline,
+and animal positions are illustrative; equipment symbols are enlarged for readability.
 
 The layout centre is the herd's cupboard on the E6 river meadow of Pandora (seed 1739235182, worldsize 4500), world
 (-1542.9, 1227.3), about 2.5 m above sea level, at farm yaw 0; positions below are farm-local metres, X east and Z north
@@ -32,7 +37,7 @@ wind line.
 | Group | Entries | Parts | Where |
 | --- | --- | --- | --- |
 | Pen | 88 | 71 animal fences and a gate; 4 Hitch & Troughs, each with a small water catcher; the field shelter (7 blocks) over the herd's cupboard | 18 by 18 segments, 52.2 by 52.2 m, X -26.1 to 26.1, Z -31.9 to 20.3; gate on the east side at (26.1, 7.2) |
-| Barn | 132 | 90 blocks; 5 double doors, a hatch, and 4 window bars; 12 boxes and barrels, 2 fridges, a large battery, 2 roof panels, 6 ceiling lights, 2 combiners, 2 splitters, 4 torches, the barn board | X 29.5 to 44.5, Z 2.4 to 14.4; west doors 3.4 m from the pen gate |
+| Barn | 142 | 90 blocks; 5 double doors, a hatch, and 4 window bars; 12 boxes and barrels, 2 fridges, a large battery, 2 roof panels, 6 ceiling lights, 2 combiners, 2 splitters, 4 torches, the barn board, an entrance guide, 8 storage labels, and a lighting switch | X 29.5 to 44.5, Z 2.4 to 14.4; west doors 3.4 m from the pen gate |
 | Garden | 44 | 19 fences and 2 gates; 8 large planters and 6 sprinklers; the scarecrow deck with 4 electric heaters; a composter, a beehive, and the water pump | north of the barn, X 26.1 to 56.2, Z 14.5 to 25.5; the pump in the river at (29.5, 29.3) |
 | Chicken run | 18 | 13 fences and a gate; 4 chicken coops | X 28.0 to 39.6, Z -25.0 to -16.3, south of the slab |
 | Farmhouse | 70 | 39 blocks; 2 doors, 6 shutters, and 6 glass windows; 17 furnishings and lights, the owner's bed among them | X 41.5 to 50.5, Z -18.0 to -9.0, porch facing east |
@@ -136,11 +141,38 @@ them in the morning.
 
 ### Lights and signs
 
-Ten `lantern_on.static` (eight along the paths, two on the porch), seven `torchholder_on.static` (barn 4, farmhouse 2,
-tower 1), the hearth, and two candle sets are static props that burn day and night with no fuel; nothing switches them,
-Night Lantern included, since it handles only its own deployable types. The barn's six ceiling lights burn whenever
-powered, which is around the clock. The barn board (1024 by 256) and the town sign (`sign.post.town.roof`, 512 by 256,
-yaw 106.6, on Road 20's 50 m line beside the mailbox) carry PANDORA FARM images the plugin holds.
+Ten controllable `lantern.deployed` fixtures (eight along the paths, two on the porch) and the six barn ceiling
+lights follow the farm's dusk/dawn schedule: on from 18:30 to 07:30 by default, checked every upkeep pass (30 s).
+A dedicated switch on the barn lighting branch leaves the fridges, pump, and heaters supplied during daylight.
+Lanterns burn normal Low Grade Fuel; at night, upkeep adds one unit when a managed lantern has none and logs it as a
+`topup` event. Upkeep locks the managed lanterns' fuel slots, so players can neither take the created fuel nor add
+their own. Night Lantern is vetoed only for these farm-managed lanterns, so the plugins do not compete. Disabling the
+farm schedule, or unloading the plugin, unlocks them and returns them to normal controls and Night Lantern behavior.
+The config fails to load when the lighting switch ID or a scheduled light ID names no layout entry of the matching
+prefab (`switch.prefab`, `lantern.deployed.prefab`), or when a `lantern.deployed` entry is left off the schedule.
+
+Seven `torchholder_on.static` fixtures (barn 4, farmhouse 2, tower 1), the hearth, and two candle sets remain always-on
+accents. Their static prefabs cannot be scheduled by toggling flags.
+
+The barn board (1024 by 256) and town sign (`sign.post.town.roof`, 512 by 256, yaw 106.6, beside the mailbox) carry
+PANDORA FARM images. An east-wall entrance guide explains directions, shared supplies, and `/farm`. Eight small signs
+label Feed, Clones, Manure, Wool, Cold Store, Milk, Eggs, and Meat above the barn's storage groups. All use the existing
+locked, per-sign tagged image storage and periodic repair. `scripts/farm-signs.py` regenerates the visitor sign PNGs
+and embedded C# image table with Python 3.14, Pillow, and a DejaVu Sans bold font; run
+`uv run scripts/farm-signs.py --out /tmp/farm-signs` and replace the `ExperienceSignImages` table with the emitted
+fragment when changing the text. Pin the font with `--font` when reproducing byte-identical assets.
+
+### Applying the visitor and lighting additions
+
+The current layout has 394 entries and 30 connections. Upgrading the 384-entry farm places nine signs, a switch, and
+ten deployed lanterns; the ten empty static lanterns retire through their `Replaces` links. The first ceiling light
+is re-keyed to `barn-light-01-timed` at the same pose with the same network ID, so the upgrade's existing unwiring path
+frees the old direct lighting link before inserting the switch. Its five other ceiling lights, livestock, crops,
+stores, fridges, and battery remain in place. Reloading the plugin alone does not migrate the fixtures.
+The path lantern near the chicken-run gate moves 2.5 m north to keep the gate's operating space clear.
+Run `farm.upgrade` to inspect the placement plan, then `farm.upgrade confirm` to apply a plan without blockers. Lighting
+status reports an incomplete upgrade while the new switch or lanterns are absent. Preserve a current world and farm
+record backup before applying a layout migration.
 
 ## Building it
 
@@ -175,7 +207,7 @@ The build:
   terrain, and the roof panels in the roof plane;
 - gives every entity the owner's SteamID, so Auto Doors closes a door, hatch, shutter, or gate 5 s after a player opens
   it, and makes the owner the bed's deployer;
-- wires the 29 connections, puts two GGYYYY clones per planter slot into the clone box (144 for the eight planters), and
+- wires the 30 connections, puts two GGYYYY clones per planter slot into the clone box (144 for the eight planters), and
   15 s later spawns the starter herd 11 m north of the cupboard: 2 cows, a bull, and a female calf; 3 ewes, a ram, and a
   male lamb;
 - ends with a world save (`server.save`), which writes the record with the world.
@@ -249,10 +281,12 @@ Every 30 s the plugin runs these steps in order, each entity in its own guard, s
    whose parent was lost so that it comes back after the parent, except one holding items, plants, chickens, or
    hatching eggs, which stays; and makes the farm bed private and the owner's again when it was made public, claimed,
    or handed over.
-2. Wiring: re-make any missing link, except a pump link when the pump's water is not fresh, and skip links to an entry
-   the farm never placed.
+2. Wiring and lighting: re-make any missing link, except a pump link when the pump's water is not fresh, and skip links to an entry
+   the farm never placed. A link whose route anchor is missing is still made, drawn straight. Refresh a connected link's
+   drawing when its configured route differs, without disconnecting its sockets or interrupting its supply. Then set the dedicated lighting switch and managed lanterns for the time
+   of day; failures are isolated per lantern.
 3. Sweep: dropped dung and eggs within 75 m go into storage, eggs into a fridge first.
-4. Herd: full trust (900 s) for the owner, the farm cupboard as home, milking and shearing straight into storage, and
+4. Herd: full trust (900 s) for the owner, the farm cupboard as home, milking and shearing into storage when the profile or absence care enables them, and
    the needs net: fullness, hydration, or personal space below 0.5 is set to 0.8 and logged. A wild animal standing
    inside the pen, the fence loop around the herd point (0, 11), joins the herd while its species is under the cap; the
    garden and the chicken run are outside it. Wild means no player has ever bonded it (`DecayStarted` false, which the
@@ -266,14 +300,75 @@ Every 30 s the plugin runs these steps in order, each entity in its own guard, s
    release left the gap.
 6. Breeding: hold mating while the hold rules apply (Herd); after 60 minutes without a new pregnancy while under the
    cap, an eligible female is made pregnant by an eligible male, retried every 10 minutes.
-7. Crops: hold soil water at the planter's ideal 60%, fertilize, harvest ripe plants, take clones from saplings while
+7. Crops: hold soil water at the planter's ideal 60% and fertilize. In automatic beds, harvest ripe plants and take
+   clones from saplings while
    the clone stock is short, clear dying plants, and replant empty slots. The static planters are only harvested: ripe
    plants into the feed boxes, dying ones cleared so that the game replants the slot.
-8. Compost: dung into the composter, fertilizer out to the dung barrel.
+8. Compost and bees: dung into the composter, fertilizer out to the dung barrel; initialize an empty, unseeded hive
+   once, leaving native honeycomb production and manual collection intact.
 9. Chickens: eggs out, feed, water, and petting; a coop short of chickens hatches a stored egg.
 10. Troughs: feed and water.
 11. Spoiled produce: to the coops first (chickens eat it), then the composter.
-12. Cull: while a species is over its cap, one adult is killed and butchered into storage (Herd); a juvenile never is.
+12. Cull: when automatic culling is enabled and a species is over its cap, one adult is killed and butchered into storage (Herd); a juvenile never is.
+
+## Assisted farming
+
+The tracked configuration reserves milking and shearing for players and makes `planter-07` and `planter-08` player
+beds: the heated beds east and south of the scarecrow. Existing crops stay in place when switching modes. The other
+six large beds and both static beds remain automatic. `/farm` reports ready cows, sheep with harvestable wool, ripe
+player crops, empty player-bed slots, production settings, and surplus livestock. `/farm help` explains the native
+interactions. Longer status output is sent in bounded chat messages; `farm.summary` previews the same content.
+
+Milk a cow using its native interaction prompt after it trusts the player. The farm owner already receives the
+plugin's bond; visitors still need native trust. Shear sheep with a suitable shearing tool. Production goes directly
+to the player through normal game interactions; no new permissions or visitor policy are introduced.
+
+Player beds retain automatic soil-water and fertilizer care. While attended, upkeep does not harvest, clone, clear,
+or replant their plants. Choose crops and collect them normally. Player beds are excluded from automatic clone-stock
+quotas, and stored clones are never removed when changing the setting.
+
+An awake, connected, living player within the configured farm radius refreshes attendance each upkeep pass. Sleeping,
+disconnected, dead, and NPC players do not count. After 60 minutes without such a visit, absence care resumes automatic
+milking and shearing and collects ripe player crops into the feed stores when they have room. It preserves the crop's
+native harvest counter and lifecycle, including repeat harvests; player beds are never replanted or cloned. Already
+dying plants remain for players. This does not freeze plant age or guarantee produce against a full store. Feed,
+water, essential animal needs, and the remaining automatic beds continue in either mode. The saved last-visit epoch
+survives reloads. Reading status does not refresh attendance. Set the absence interval to `0` to keep manual jobs
+reserved indefinitely.
+
+Automatic culling is explicitly enabled in the tracked profile, retaining the existing protected breeder and juvenile
+rules. Turning it off prevents new culls; existing pending corpse handling completes. Without automatic culling,
+breeding holds when counted animals plus the maximum young from current pregnancies reach the species cap, and status
+explains the hold. Existing pregnancies and natural aging continue.
+
+| Configuration key | Tracked profile | Effect |
+| --- | --- | --- |
+| `Automatically milk cows` | `false` | Reserve milk for players until absence care applies |
+| `Automatically shear sheep` | `false` | Reserve fleece for players until absence care applies |
+| `Automatically cull surplus livestock` | `true` | Apply existing guarded surplus culling |
+| `Player-managed planter layout IDs` | `["planter-07", "planter-08"]` | Beds excluded from automatic planting and normal harvesting |
+| `Assisted farming absence fallback after minutes (0 = disabled)` | `60` | Grace after the last nearby awake player |
+
+For fully automatic production, set both production booleans to `true` and the player-bed list to `[]`. Built-in
+configuration defaults retain that fully automatic profile for older configurations without these keys. The tracked
+configuration opts into assisted farming explicitly. No layout upgrade is required for this mode change.
+
+## Bees and honey
+
+The garden hive needs a bee nucleus in its first inventory slot before the native honeycomb cycle can run. The farm
+initializes an empty hive with one native starter nucleus once per physical hive. An existing nucleus, its experience,
+and its progress are preserved. Removing the nucleus does not generate another for the same hive; place one manually
+to restart it. A repaired replacement hive receives its initial colony when its network identity changes.
+
+Honeycomb remains in the hive for manual collection. Leave the nucleus in place, take the comb, and use its native
+Extract action to obtain honey or a chance of another nucleus. The farm does not manufacture honey or accelerate
+colony experience. Outdoors, temperature, rain, nucleus grade, and available inventory space govern native production.
+At a starter growth rate of `0.05` in heavy rain, the native 120-second cycle adds about `0.1` comb progress per tick,
+so the first comb takes roughly 20 minutes. The visible bee effect starts only after honeycomb exists; an initially
+quiet hive can still have an active colony.
+
+`/farm` reports available honeycomb, progress toward the next comb, and basic colony conditions. `farm.status` also shows nucleus grade, temperature,
+rain, and the native growth rate. A missing colony or indoor/full hive is reported explicitly.
 
 ## Feed, water, and power
 
@@ -285,8 +380,9 @@ Every 30 s the plugin runs these steps in order, each entity in its own guard, s
 | Coop water (ml) | 1,000 | 200 | the catchers, fullest first; the pump, below the minimum only; created water |
 
 Each of the 4 troughs and 4 coops has these targets. Besides the plugin's top-ups, the tower's large catcher (50 L,
-about 39.8 L a day in clear weather) feeds trough-01 and trough-02 by hose through the fluid splitter: 29.1 and 28.3 m
-of hose, with trough-01's inlet 0.83 m above the splitter's outlet, within the 1 m an unpowered source can lift. The 18
+about 39.8 L a day in clear weather) feeds trough-01 and trough-02 by hose through the fluid splitter, with the hoses
+following the tower and ground. Trough-01's inlet is 0.83 m above the splitter's outlet, within the 1 m an unpowered
+source can lift. The 18
 animals and 16 chickens drink about 2.3 L a real day, and each small catcher collects about 13.7 L a day in clear
 weather.
 
@@ -321,7 +417,7 @@ missing link.
 The composter turns one dung into 10 fertilizer every 60 s, and the plugin feeds it only while the dung barrel has room
 for what it will make, since a full composter drops its output on the ground. Each plant takes one fertilizer.
 
-All power runs through the large battery in the barn, wired as the layout's 20 power connections:
+All power runs through the large battery in the barn, wired as the layout's 21 power connections:
 
 | From | To | Load |
 | --- | --- | --- |
@@ -329,18 +425,35 @@ All power runs through the large battery in the barn, wired as the layout's 20 p
 | combiner 1 and roof panel 2 | combiner 2, then the battery | |
 | battery | splitter 1 | |
 | splitter 1, output 0 | splitter 2, then fridge-02 and fridge-03 | 5 each |
-| splitter 1, output 1 | six ceiling lights in a chain, each passing its input less 2 | 2 each |
+| splitter 1, output 1 | lighting switch, then six ceiling lights in a chain, each passing its input less 2 | 2 each at night |
 | splitter 1, output 2 | four heaters in a chain, each passing its input less 3, then the pump | 3 each, pump 5 |
 
 The 9 water connections run from the pump through sprinklers 1 to 6 and from the tower's catcher through the splitter to
-trough-01 and trough-02. The loads take 39 power around the clock: fridges 10, lights 12, heaters 12, pump 5. The
+trough-01 and trough-02. The loads take 39 power at night and 27 during daylight: fridges 10, lights 12 when on, heaters 12, pump 5. The
 battery stores 1,440,000 rW s, gives up to 100 power, and charges at up to 320 a second. The turbine gives 0 to 150,
 68.4 on average in a model of the server's own wind noise (33 or more 90% of the time, under 10 for 0.7% of it and never
 for more than 6.3 minutes), and no building rises into its wind line from any direction. Each roof panel gives 39,561
 (December) to 44,727 (April) rW s per 70-minute day, about 10.2 power on average, with nothing in its sun line.
-Simulated second by second over 21 days of uptime from a half-charged battery, every load stayed powered and the battery
+In a 21-day simulation of the original v2 continuous-lighting circuit, starting with a half-charged battery, every
+load stayed powered and the battery
 never fell more than 39 rW s below its start, full 83% of the time; from an empty battery at a fresh build each load
-waited about 1 s in a run of 3 in-game days (3.5 hours). Wires run at most 23.1 m (turbine to combiner 1).
+waited about 1 s in a run of 3 in-game days (3.5 hours).
+
+The connections' `Route` lists run from output to input. Roof-panel cables follow the north roof plane and east gable;
+barn wiring follows floor edges or the underside of the hayloft, and outdoor cables and hoses lie on whatever is under
+them: terrain, rocks, foundations, the scarecrow deck, or planters.
+The tower hose descends beside a frame post. Each route point has `X`, `Y`, and `Z`: with `Anchor`, they are metres in
+that layout entity's local space; without it, `X` and `Z` are farm-local coordinates and `Y` is height above the
+surface under the point (the highest block, deployable, rock, or terrain, never the link's own two ends). Ground runs
+sample that surface at intervals of at most 2 m, including the stretches from each end down to the first and last
+ground waypoint. Each route may contain up to 64 waypoints; their coordinates must be finite and anchors must name
+layout entries. A missing anchor reports the problem: a connected link keeps its drawing, an unconnected one is wired
+straight, and both take the route again once the anchor is back. Omitting `Route` preserves the straight drawing used by older
+layouts. Routed lengths can exceed the wire tool's manual placement limit; these are plugin-managed connections.
+`farm.status` reports whether each link matches its route, its drawing point count, and its routed length. The first
+wiring pass after a reload updates an existing farm. Later passes, and `farm.status`, reuse a connected link's computed
+drawing until one of its ends or anchors moves or is replaced; a collider placed under a ground run is picked up then
+or at the next reload.
 
 ## Herd
 
@@ -388,7 +501,7 @@ condition below breeding's 0.6 pause cannot set in.
 | box_feed (harvests) | 2 food boxes | 96 | 5.5 h |
 | box_clones | 1 large box | 48 | clones only |
 
-The times come from upper bounds at 9 cattle, 9 sheep, and 4 coops: about 54 milk, 187 eggs, 141 beef, 85 mutton, 657
+The times are fully automatic profile upper bounds at 9 cattle, 9 sheep, and 4 coops: about 54 milk, 187 eggs, 141 beef, 85 mutton, 657
 wool, and 66 dung an hour, plus corpse goods and about 700 crop items. Milk, eggs, and raw meat go into the fridges,
 whose prefab stops spoilage while powered, and into their boxes when both are full. Wool, dung, leather, fat, bones, and
 cloth go into their boxes. The containers of one role fill in layout order: the first with room takes the items. The
@@ -426,11 +539,18 @@ under it. None of these refusals, nor Auto Doors on the farm's doors, has run wi
 
 ## Commands
 
+Players can use `/farm` in chat for a read-only summary of herd and coop counts, trough water, garden dryness,
+refrigeration, lighting, and storage groups with no free slots. Parts `farm.upgrade` retired are left out. Missing equipment and full storage include suggested
+next steps. Occupied slots are distinguished from stack capacity, and existing container access remains public.
+The command has a five-second per-player cooldown. Directions on the guide and summary describe the default yaw-0
+farm. Administrative commands follow:
+
 | Command | Effect |
 | --- | --- |
 | `farm.build [x z [yaw]]` | place the config's layout and schedule the starter herd |
 | `farm.upgrade [confirm]` | print the plan from the standing farm to the config's layout; with `confirm`, apply it |
 | `farm.status` | herd with each species' cull wait and mating hold, chickens, planters, pump, wiring, power with each fridge's supply, buildings, inserts, decor, signs, the pending upgrade, container contents, totals, missing, waiting, and retired parts, events |
+| `farm.summary` | preview the compact player-facing `/farm` summary from the console |
 | `farm.links <building>` | the building's base height and one JSON line per piece: network id, prefab, stability, grade, skin, health, and socket links |
 | `farm.tick` | run one upkeep pass now |
 | `farm.relink` | find farm animals again after something replaced them |
@@ -444,9 +564,9 @@ checked its record against it, every command but `farm.status` refuses and says 
 
 `server/carbon/configs/LivestockFarm.json` holds the owner, the upkeep interval (30 s), the farm radius (75 m), the
 starter herd, the caps (9 and 9), the breeding fallback timing, the needs threshold (0.5) and restore value (0.8), the
-stock targets above, the water sources, the planter slot plan for the eight planters, the clone genes,
-`Auto repair missing structures` (true), `Building grade` (wood) and `Building skin` (10232), and the whole layout: 384
-entries with farm-local positions, plus 29 power and water connections. The plugin's built-in defaults equal these
+stock targets above, the lighting schedule and managed fixture IDs, the water sources, the planter slot plan for the eight planters, the clone genes,
+`Auto repair missing structures` (true), `Building grade` (wood) and `Building skin` (10232), and the whole layout: 394
+entries with farm-local positions, plus 30 power and water connections. The plugin's built-in layout defaults equal these
 values and this layout. The farm radius bounds only the sweep, animal relinking, strays, and releases, and every entry
 stands inside it, the turbine farthest at 63.9 m, so an animal led to the farmhouse or the deck stays on the farm.
 
@@ -504,7 +624,8 @@ where those structures stand, so the next load trusts the record again.
 ## Limits
 
 - One farm per identity. The layout was checked at the default spot only.
-- Lights do not follow the clock: the static ones always burn, and the ceiling lights take 12 power day and night.
+- The seven static torch holders, hearth, and candles always burn. Scheduled lights follow the clock within one
+  upkeep interval; the schedule does not control unrelated player lights.
 - Corn, pumpkin, and wheat on planters 3 and 4 grow below full temperature quality, which lowers their yield; only the
   four planters around the deck are heated.
 - Which face of the town sign shows its image is not known.
@@ -524,6 +645,32 @@ where those structures stand, so the next load trusts the record again.
 - The farm holds no SteamID in its config by default; the owner comes from `cfg/users.cfg`.
 
 ## Verification
+
+On 2026-10-23 the assisted-farming and bee changes passed isolated compilation against the installed Rust and Carbon
+assemblies and 47 focused checks: legacy JSON defaults, absence boundaries and production gates, manual-bed clone
+quotas, malformed settings, bounded chat messages, and persisted attendance. The complete combined implementation
+received independent review. No layout entries or wire routes changed.
+
+Live status showed manual milking and shearing, both player beds present with 18 ripe crops preserved, automatic
+soil care, and powered refrigeration. The beehive diagnostic established an empty inventory and missing nucleus
+before the fix; afterward it held one native starter nucleus and the hive's native production was active. Cold and
+heavy rain reduced the measured growth rate to 0.005; its normal timer advanced comb progress from 0 to 0.01
+without a forced production call. Repeated upkeep and a plugin reload retained the single starter colony. Bee and
+attendance records persist through normal world saves.
+The public milk/shear interactions and chat rendering still require a game-client check; policy boundaries were
+checked in isolation rather than forcing production on players' animals.
+
+On 2026-10-23 the visitor and lighting additions passed isolated plugin compilation against the installed Rust and
+Carbon assemblies. A focused reflection harness passed 33 checks covering default and custom day/night boundaries,
+malformed lighting settings, and the nine embedded sign images through the game's `ImageProcessing.IsValidPNG`.
+Independent review checked the combined implementation and migration. Repository pre-commit checks passed.
+
+The live upgrade placed 20 entries without failure, re-keyed the first ceiling light while preserving network ID
+471114, retired the ten replaced static lanterns, and connected all three new lighting links. All nine added signs
+reported painted and locked. A daytime upkeep pass reported 0/10 yard lanterns and 0/6 barn lights on; a temporary
+farm-only night schedule reported 10/10 and 6/6 on. Both fridges remained powered in both states. The normal 07:30 and
+18:30 settings were restored, without changing world time. The compact summary was read back through `farm.summary`.
+Client appearance, sign readability at walking distance, and chat presentation still need a game-client check.
 
 On 2026-10-10 the plugin ran on the farmtest harness, a throwaway identity on the pve map with its own Carbon root
 (CLAUDE.md, Validating changes), driven over RCON, with the sample barn's and the shelter's `farm.links` dumps compared

@@ -1,0 +1,334 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1060" viewBox="0 0 1500 1060" role="img" aria-labelledby="title desc">
+<title id="title">Pandora Farm: configured v2 layout</title><desc id="desc">North-up plan from LivestockFarm.json. Large western livestock pen, water tower north, barn east, garden north of barn, chicken run and farmhouse south. Terrain, paths and animal positions are illustrative.</desc>
+<style>text{font-family:DejaVu Sans,Arial,sans-serif} .small{font-size:13px}</style>
+<rect width="1500" height="1060" fill="#f7f5ee"/>
+<text x="54" y="52" font-size="30" fill="#263b30" text-anchor="start" font-weight="800">PANDORA FARM</text>
+<text x="54" y="81" font-size="16" fill="#607366" text-anchor="start" font-weight="400">Configured v2 layout  /  E6 river meadow  /  North up</text>
+<rect x="54" y="110" width="1020" height="750" rx="18" fill="#e8edda"/>
+<path d="M54 134 Q290 109 450 145 T780 151 T1074 130 L1074 181 Q900 173 770 183 T450 180 T54 182 Z" fill="#a8d6de"/>
+<text x="130" y="155" font-size="16" fill="#376f80" text-anchor="start" font-weight="700">RIVER</text>
+<path d="M165,190 L165,830" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M265,190 L265,830" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M365,190 L365,830" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M465,190 L465,830" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M565,190 L565,830" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M665,190 L665,830" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M765,190 L765,830" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M865,190 L865,830" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M965,190 L965,830" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M65,750 L1045,750" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M65,650 L1045,650" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M65,550 L1045,550" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M65,450 L1045,450" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M65,350 L1045,350" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M65,250 L1045,250" fill="none" stroke="#d9e1cb" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<rect x="104.0" y="247.0" width="522.0" height="522.0" rx="4" fill="#d2dfb3" stroke="none" stroke-width="1"/>
+<rect x="626.0" y="195.0" width="301.0" height="110" rx="3" fill="#bbcf9c" stroke="none" stroke-width="1"/>
+<rect x="645" y="613.0" width="116.0" height="87.0" rx="3" fill="#dcd4b6" stroke="none" stroke-width="1"/>
+<path d="M626.0,378.0 L660.0,378.0" fill="none" stroke="#c6b796" stroke-width="17" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M646.0,378.0 L646.0,620" fill="none" stroke="#c6b796" stroke-width="12" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M810.0,380 L905,380" fill="none" stroke="#c6b796" stroke-width="17" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M905,380 L905,640" fill="none" stroke="#c6b796" stroke-width="17" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M905,585.0 L845,585.0" fill="none" stroke="#c6b796" stroke-width="12" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M668 491 L685 463 L738 452 L773 479 L778 518 L750 548 L705 550 L677 528 Z" fill="#b2b5a8" stroke="#969c90" stroke-width="2"/>
+<text x="718.0" y="510" font-size="12" fill="#515b52" text-anchor="middle" font-weight="600">ROCK SLAB</text>
+<rect x="660.0" y="306.0" width="150" height="120" rx="3" fill="#ad654b" stroke="#744737" stroke-width="2"/>
+<path d="M660.0,366.0 L810.0,366.0" fill="none" stroke="#d3946f" stroke-width="3" stroke-dasharray="" stroke-linecap="round"/>
+<rect x="780.0" y="540" width="60" height="90" rx="3" fill="#cf9d69" stroke="#88613f" stroke-width="2"/>
+<rect x="840.0" y="540" width="30" height="90" rx="2" fill="#e6c8a1" stroke="#88613f" stroke-width="1"/>
+<path d="M780.0,585.0 L840.0,585.0" fill="none" stroke="#edc798" stroke-width="2" stroke-dasharray="" stroke-linecap="round"/>
+<text x="810.0" y="570" font-size="12" fill="#493b2e" text-anchor="middle" font-weight="600">HOUSE</text>
+<text x="855" y="585.0" font-size="9" fill="#493b2e" text-anchor="middle" font-weight="600">PORCH</text>
+<path d="M626.0,624.0 L626.0,653.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,595.0 L626.0,624.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,566.0 L626.0,595.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,537.0 L626.0,566.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,508.0 L626.0,537.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,479.0 L626.0,508.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,450.0 L626.0,479.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,421.0 L626.0,450.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,392.0 L626.0,421.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,363.5 L626.0,392.5" fill="none" stroke="#9a542d" stroke-width="5" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,334.0 L626.0,363.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,305.0 L626.0,334.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,276.0 L626.0,305.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,247.0 L626.0,276.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M597.0,247.0 L626.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M568.0,247.0 L597.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M539.0,247.0 L568.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M510.0,247.0 L539.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M481.0,247.0 L510.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M452.0,247.0 L481.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M423.0,247.0 L452.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M394.0,247.0 L423.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M365.0,247.0 L394.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M336.0,247.0 L365.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M307.0,247.0 L336.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M278.0,247.0 L307.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M249.0,247.0 L278.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M220.0,247.0 L249.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M191.0,247.0 L220.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M162.0,247.0 L190.99999999999997,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M133.0,247.0 L162.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,247.0 L133.0,247.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,247.0 L104.0,276.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,276.0 L104.0,305.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,305.0 L104.0,334.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,334.0 L104.0,363.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,363.0 L104.0,392.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,392.0 L104.0,421.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,421.0 L104.0,450.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,450.0 L104.0,479.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,479.0 L104.0,508.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,508.0 L104.0,537.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,537.0 L104.0,566.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,566.0 L104.0,595.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,595.0 L104.0,624.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,624.0 L104.0,653.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<rect x="222.5" y="445.5" width="24.0" height="9.0" rx="3" fill="#79b5c5" stroke="#497887" stroke-width="1.5"/>
+<text x="234.5" y="475.0" font-size="12" fill="#263b30" text-anchor="middle" font-weight="600">T01</text>
+<rect x="483.5" y="445.5" width="24.0" height="9.0" rx="3" fill="#79b5c5" stroke="#497887" stroke-width="1.5"/>
+<text x="495.5" y="475.0" font-size="12" fill="#263b30" text-anchor="middle" font-weight="600">T02</text>
+<circle cx="208.0" cy="437.0" r="5" fill="#91bec9" stroke="#5e8f9d" stroke-width="2"/>
+<circle cx="471.5" cy="450.0" r="5" fill="#91bec9" stroke="#5e8f9d" stroke-width="2"/>
+<path d="M626.0,653.0 L626.0,682.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,682.0 L626.0,711.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,711.0 L626.0,740.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,740.0 L626.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M597.0,769.0 L626.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M568.0,769.0 L597.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M539.0,769.0 L568.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M510.0,769.0 L539.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M481.0,769.0 L510.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M452.0,769.0 L481.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M423.0,769.0 L452.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M394.0,769.0 L423.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M365.0,769.0 L394.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M336.0,769.0 L365.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M307.0,769.0 L336.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M278.0,769.0 L307.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M249.0,769.0 L278.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M220.0,769.0 L249.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M191.0,769.0 L220.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M162.0,769.0 L190.99999999999997,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M133.0,769.0 L162.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,769.0 L133.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,740.0 L104.0,769.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,711.0 L104.0,740.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,682.0 L104.0,711.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M104.0,653.0 L104.0,682.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<rect x="222.5" y="705.5" width="24.0" height="9.0" rx="3" fill="#79b5c5" stroke="#497887" stroke-width="1.5"/>
+<text x="234.5" y="735.0" font-size="12" fill="#263b30" text-anchor="middle" font-weight="600">T03</text>
+<rect x="510.5" y="705.5" width="24.0" height="9.0" rx="3" fill="#79b5c5" stroke="#497887" stroke-width="1.5"/>
+<text x="522.5" y="735.0" font-size="12" fill="#263b30" text-anchor="middle" font-weight="600">T04</text>
+<circle cx="208.0" cy="697.0" r="5" fill="#91bec9" stroke="#5e8f9d" stroke-width="2"/>
+<circle cx="498.5" cy="710.0" r="5" fill="#91bec9" stroke="#5e8f9d" stroke-width="2"/>
+<rect x="695.0" y="344.852" width="20" height="12.0" rx="1" fill="#264f72" stroke="#abc7d5" stroke-width="1"/>
+<rect x="755.0" y="344.852" width="20" height="12.0" rx="1" fill="#264f72" stroke="#abc7d5" stroke-width="1"/>
+<path d="M626.0,305.0 L655.0,305.0" fill="none" stroke="#9a542d" stroke-width="5" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,219.5 L626.0,248.49999999999997" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.0,193.5 L626.0,222.5" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M626.55,195.0 L655.55,195.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M656.65,195.0 L685.65,195.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M686.75,195.0 L715.75,195.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M716.8499999999999,195.0 L745.85,195.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M746.95,195.0 L775.95,195.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M777.05,195.0 L806.0500000000001,195.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M807.15,195.0 L836.1500000000001,195.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M837.25,195.0 L866.25,195.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M867.35,195.0 L896.35,195.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M897.4499999999999,195.0 L926.45,195.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M927.0,194.25 L927.0,223.25" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M927.0,221.75 L927.0,250.75" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M927.0,249.25 L927.0,278.25" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M927.0,276.75 L927.0,305.75" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M898.0,305.0 L927.0,305.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M869.0,305.0 L898.0,305.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M840.0,305.0 L869.0,305.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M811.0,305.0 L840.0,305.0" fill="none" stroke="#9a542d" stroke-width="5" stroke-dasharray="" stroke-linecap="round"/>
+<rect x="646.5" y="245.49999999999997" width="27.0" height="27.0" rx="2" fill="#79654a" stroke="#e4d2ac" stroke-width="2"/>
+<circle cx="652.5" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="652.5" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="652.5" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="660.0" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="660.0" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="660.0" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="667.5" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="667.5" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="667.5" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<rect x="680.5" y="245.49999999999997" width="27.0" height="27.0" rx="2" fill="#79654a" stroke="#e4d2ac" stroke-width="2"/>
+<circle cx="686.5" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="686.5" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="686.5" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="694.0" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="694.0" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="694.0" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="701.5" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="701.5" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="701.5" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<rect x="714.5" y="245.49999999999997" width="27.0" height="27.0" rx="2" fill="#79654a" stroke="#e4d2ac" stroke-width="2"/>
+<circle cx="720.5" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="720.5" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="720.5" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="728.0" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="728.0" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="728.0" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="735.5" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="735.5" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="735.5" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<rect x="748.5" y="245.49999999999997" width="27.0" height="27.0" rx="2" fill="#79654a" stroke="#e4d2ac" stroke-width="2"/>
+<circle cx="754.5" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="754.5" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="754.5" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="762.0" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="762.0" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="762.0" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="769.5" cy="266.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="769.5" cy="259.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="769.5" cy="251.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<rect x="819.2" y="237.5" width="27.0" height="27.0" rx="2" fill="#79654a" stroke="#e4d2ac" stroke-width="2"/>
+<circle cx="825.2" cy="258.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="825.2" cy="251.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="825.2" cy="243.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="832.7" cy="258.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="832.7" cy="251.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="832.7" cy="243.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="840.2" cy="258.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="840.2" cy="251.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="840.2" cy="243.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<rect x="853.5" y="203.2" width="27.0" height="27.0" rx="2" fill="#79654a" stroke="#e4d2ac" stroke-width="2"/>
+<circle cx="859.5" cy="224.20000000000002" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="859.5" cy="216.70000000000002" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="859.5" cy="209.20000000000002" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="867.0" cy="224.20000000000002" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="867.0" cy="216.70000000000002" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="867.0" cy="209.20000000000002" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="874.5" cy="224.20000000000002" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="874.5" cy="216.70000000000002" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="874.5" cy="209.20000000000002" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<rect x="887.8" y="237.5" width="27.0" height="27.0" rx="2" fill="#79654a" stroke="#e4d2ac" stroke-width="2"/>
+<circle cx="893.8000000000001" cy="258.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="893.8000000000001" cy="251.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="893.8000000000001" cy="243.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="901.3000000000001" cy="258.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="901.3000000000001" cy="251.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="901.3000000000001" cy="243.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="908.8000000000001" cy="258.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="908.8000000000001" cy="251.0" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="908.8000000000001" cy="243.5" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<rect x="853.5" y="271.8" width="27.0" height="27.0" rx="2" fill="#79654a" stroke="#e4d2ac" stroke-width="2"/>
+<circle cx="859.5" cy="292.8" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="859.5" cy="285.3" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="859.5" cy="277.8" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="867.0" cy="292.8" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="867.0" cy="285.3" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="867.0" cy="277.8" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="874.5" cy="292.8" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="874.5" cy="285.3" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<circle cx="874.5" cy="277.8" r="2.2" fill="#a9cd75" stroke="none" stroke-width="2"/>
+<path d="M645.0,613.0 L674.0,613.0" fill="none" stroke="#9a542d" stroke-width="5" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M674.0,613.0 L703.0,613.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M703.0,613.0 L732.0,613.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M732.0,613.0 L761.0,613.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M761.0,613.0 L761.0,642.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M761.0,642.0 L761.0,671.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M761.0,671.0 L761.0,700.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M732.0,700.0 L761.0,700.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M703.0,700.0 L732.0,700.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M674.0,700.0 L703.0,700.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M645.0,700.0 L674.0,700.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M645.0,671.0 L645.0,700.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M645.0,642.0 L645.0,671.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M645.0,613.0 L645.0,642.0" fill="none" stroke="#756b4f" stroke-width="2.4" stroke-dasharray="" stroke-linecap="round"/>
+<rect x="691.0" y="626.5" width="20" height="20" rx="3" fill="#a16c42" stroke="#664b34" stroke-width="1.5"/>
+<path d="M691.0,636.5 L711.0,636.5" fill="none" stroke="#d2a871" stroke-width="2" stroke-dasharray="" stroke-linecap="round"/>
+<rect x="731.0" y="626.5" width="20" height="20" rx="3" fill="#a16c42" stroke="#664b34" stroke-width="1.5"/>
+<path d="M731.0,636.5 L751.0,636.5" fill="none" stroke="#d2a871" stroke-width="2" stroke-dasharray="" stroke-linecap="round"/>
+<rect x="691.0" y="666.5" width="20" height="20" rx="3" fill="#a16c42" stroke="#664b34" stroke-width="1.5"/>
+<path d="M691.0,676.5 L711.0,676.5" fill="none" stroke="#d2a871" stroke-width="2" stroke-dasharray="" stroke-linecap="round"/>
+<rect x="731.0" y="666.5" width="20" height="20" rx="3" fill="#a16c42" stroke="#664b34" stroke-width="1.5"/>
+<path d="M731.0,676.5 L751.0,676.5" fill="none" stroke="#d2a871" stroke-width="2" stroke-dasharray="" stroke-linecap="round"/>
+<rect x="802.0" y="503.0" width="16.0" height="16.0" rx="2" fill="#617d3c" stroke="#8b704c" stroke-width="2"/>
+<rect x="821.0" y="410.0" width="16.0" height="16.0" rx="2" fill="#617d3c" stroke="#8b704c" stroke-width="2"/>
+<rect x="852.0" y="236.0" width="30" height="30" rx="2" fill="#c8a667" stroke="#806c40" stroke-width="1"/>
+<circle cx="846.0" cy="251.0" r="3" fill="#d38443" stroke="none" stroke-width="2"/>
+<circle cx="888.0" cy="251.0" r="3" fill="#d38443" stroke="none" stroke-width="2"/>
+<circle cx="867.0" cy="230" r="3" fill="#d38443" stroke="none" stroke-width="2"/>
+<circle cx="867.0" cy="272.0" r="3" fill="#d38443" stroke="none" stroke-width="2"/>
+<rect x="350.0" y="435.0" width="30" height="30" rx="2" fill="#b89060" stroke="#715a40" stroke-width="2"/>
+<circle cx="365" cy="450" r="3" fill="#553b2d" stroke="none" stroke-width="2"/>
+<path d="M365,450 L365,500" fill="none" stroke="#796c51" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<text x="365" y="520" font-size="14" fill="#263b30" text-anchor="middle" font-weight="600">FIELD SHELTER</text>
+<text x="365" y="540" font-size="12" fill="#60704e" text-anchor="middle" font-weight="400">Herd cupboard inside</text>
+<circle cx="365" cy="207.5" r="16" fill="#c09b68" stroke="#775e3e" stroke-width="2"/>
+<circle cx="365" cy="207.5" r="10" fill="#9dc4cf" stroke="#648b94" stroke-width="2"/>
+<path d="M350.0,207.5 L305,175.0" fill="none" stroke="#667b69" stroke-width="1" stroke-dasharray="" stroke-linecap="round"/>
+<text x="245" y="170" font-size="13" fill="#263b30" text-anchor="middle" font-weight="600">WATER TOWER</text>
+<text x="355" y="300" font-size="25" fill="#415837" text-anchor="middle" font-weight="800">GRAZING PEN</text>
+<text x="355" y="335.0" font-size="16" fill="#566b47" text-anchor="middle" font-weight="400">52.2 x 52.2 m</text>
+<text x="355" y="630" font-size="18" fill="#415837" text-anchor="middle" font-weight="600">Cattle + sheep</text>
+<text x="355" y="660" font-size="13" fill="#566b47" text-anchor="middle" font-weight="400">Capacity: 9 cattle + 9 sheep</text>
+<text x="735" y="383.0" font-size="18" fill="#fff0da" text-anchor="middle" font-weight="800">BARN</text>
+<text x="735" y="405.0" font-size="11" fill="#ffdfc0" text-anchor="middle" font-weight="400">15 x 12 m</text>
+<text x="735" y="180" font-size="15" fill="#263b30" text-anchor="middle" font-weight="600">GARDEN</text>
+<text x="865" y="180" font-size="12" fill="#263b30" text-anchor="middle" font-weight="600">4 HEATED BEDS</text>
+<text x="705" y="730" font-size="13" fill="#263b30" text-anchor="middle" font-weight="600">CHICKEN RUN</text>
+<text x="705" y="750" font-size="12" fill="#60704e" text-anchor="middle" font-weight="400">4 coops</text>
+<text x="835" y="660" font-size="12" fill="#60704e" text-anchor="middle" font-weight="400">9 x 9 m incl. porch</text>
+<text x="643.0" y="340" font-size="10" fill="#9a542d" text-anchor="middle" font-weight="600">GATE</text>
+<circle cx="660.0" cy="157.0" r="7" fill="#487f94" stroke="#eaf7f8" stroke-width="2"/>
+<text x="695" y="130" font-size="11" fill="#376f80" text-anchor="middle" font-weight="600">PUMP</text>
+<circle cx="975" cy="260" r="5" fill="#536b64" stroke="none" stroke-width="2"/>
+<path d="M975,260 L975,230" fill="none" stroke="#536b64" stroke-width="4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M975,260 L949.0,275.0" fill="none" stroke="#536b64" stroke-width="4" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M975,260 L1001.0,275.0" fill="none" stroke="#536b64" stroke-width="4" stroke-dasharray="" stroke-linecap="round"/>
+<text x="975" y="310" font-size="12" fill="#263b30" text-anchor="middle" font-weight="600">WIND</text>
+<text x="975" y="330" font-size="12" fill="#263b30" text-anchor="middle" font-weight="600">TURBINE</text>
+<ellipse cx="185" cy="390" rx="12" ry="7" fill="#8a6650" stroke="#6c7156"/>
+<circle cx="195" cy="390" r="3" fill="#5e5748" stroke="none" stroke-width="2"/>
+<ellipse cx="255" cy="370" rx="12" ry="7" fill="#8a6650" stroke="#6c7156"/>
+<circle cx="265" cy="370" r="3" fill="#5e5748" stroke="none" stroke-width="2"/>
+<ellipse cx="465" cy="350" rx="12" ry="7" fill="#8a6650" stroke="#6c7156"/>
+<circle cx="475" cy="350" r="3" fill="#5e5748" stroke="none" stroke-width="2"/>
+<ellipse cx="165" cy="570" rx="9" ry="6" fill="#faf6e9" stroke="#6c7156"/>
+<circle cx="175" cy="570" r="3" fill="#5e5748" stroke="none" stroke-width="2"/>
+<ellipse cx="245" cy="600" rx="9" ry="6" fill="#faf6e9" stroke="#6c7156"/>
+<circle cx="255" cy="600" r="3" fill="#5e5748" stroke="none" stroke-width="2"/>
+<ellipse cx="465" cy="570" rx="9" ry="6" fill="#faf6e9" stroke="#6c7156"/>
+<circle cx="475" cy="570" r="3" fill="#5e5748" stroke="none" stroke-width="2"/>
+<ellipse cx="535" cy="610" rx="9" ry="6" fill="#faf6e9" stroke="#6c7156"/>
+<circle cx="545" cy="610" r="3" fill="#5e5748" stroke="none" stroke-width="2"/>
+<text x="1035" y="222" font-size="18" fill="#263b30" text-anchor="middle" font-weight="700">N</text>
+<path d="M1035 232 L1028 251 L1035 247 L1042 251 Z" fill="#415f4c"/>
+<path d="M125,820 L225,820" fill="none" stroke="#415f4c" stroke-width="3" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M125,816.0 L125,824.0" fill="none" stroke="#415f4c" stroke-width="2" stroke-dasharray="" stroke-linecap="round"/>
+<path d="M225,816.0 L225,824.0" fill="none" stroke="#415f4c" stroke-width="2" stroke-dasharray="" stroke-linecap="round"/>
+<text x="175" y="805.0" font-size="12" fill="#263b30" text-anchor="middle" font-weight="600">10 m</text>
+<text x="1110" y="145" font-size="19" fill="#263b30" text-anchor="start" font-weight="800">A WORKING FARMSTEAD</text>
+<text x="1110" y="185" font-size="15" fill="#263b30" text-anchor="start" font-weight="700">01  LIVESTOCK PEN</text>
+<text x="1110" y="211" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Four feed / water troughs (T1-T4).</text>
+<text x="1110" y="232" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">A small rain catcher at each trough.</text>
+<text x="1110" y="253" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Open field shelter at the centre.</text>
+<text x="1110" y="302" font-size="15" fill="#263b30" text-anchor="start" font-weight="700">02  BARN + HAYLOFT</text>
+<text x="1110" y="328" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Frontier timber with a gabled roof.</text>
+<text x="1110" y="349" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Feed, clones, wool and dung stores;</text>
+<text x="1110" y="370" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">milk / egg barrels, meat boxes,</text>
+<text x="1110" y="391" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">two fridges and a large battery.</text>
+<text x="1110" y="412" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Two solar panels on the north roof.</text>
+<text x="1110" y="461" font-size="15" fill="#263b30" text-anchor="start" font-weight="700">03  RIVERSIDE GARDEN</text>
+<text x="1110" y="487" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Eight large crop planters.</text>
+<text x="1110" y="508" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Four surround a heated scarecrow deck.</text>
+<text x="1110" y="529" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Six sprinklers, composter and beehive.</text>
+<text x="1110" y="578" font-size="15" fill="#263b30" text-anchor="start" font-weight="700">04  HOME + CHICKENS</text>
+<text x="1110" y="604" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Furnished farmhouse with east porch.</text>
+<text x="1110" y="625" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Four coops in their own fenced run.</text>
+<text x="1110" y="646" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Potato and corn beds beside the yard.</text>
+<text x="1110" y="695" font-size="15" fill="#263b30" text-anchor="start" font-weight="700">05  WATER + POWER</text>
+<text x="1110" y="721" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">River pump and rain collection.</text>
+<text x="1110" y="742" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Wind turbine plus rooftop solar.</text>
+<text x="1110" y="763" font-size="13" fill="#596d60" text-anchor="start" font-weight="400">Battery supplies the powered systems.</text>
+<text x="54" y="912" font-size="15" fill="#263b30" text-anchor="start" font-weight="800">HOW TO READ THIS PLAN</text>
+<text x="54" y="941" font-size="16" fill="#596d60" text-anchor="start" font-weight="400">Building footprints and equipment centres follow the 394-entry configuration at farm yaw 0.</text>
+<text x="54" y="969" font-size="15" fill="#596d60" text-anchor="start" font-weight="400">River edge, paths, rock outline and livestock placement are illustrative; icons are enlarged for readability.</text>
+<text x="54" y="1011" font-size="13" fill="#728174" text-anchor="start" font-weight="400">Source: server/carbon/configs/LivestockFarm.json + docs/livestock-farm.md  |  World centre: X -1542.9, Z 1227.3</text>
+</svg>

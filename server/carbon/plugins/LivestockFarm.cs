@@ -259,6 +259,41 @@ namespace Oxide.Plugins
             [JsonProperty("Upkeep interval (seconds)")]
             public float UpkeepSeconds = 30f;
 
+            [JsonProperty("Automatically milk cows")]
+            public bool AutoMilk = true;
+
+            [JsonProperty("Automatically shear sheep")]
+            public bool AutoShear = true;
+
+            [JsonProperty("Automatically cull surplus livestock")]
+            public bool AutoCull = true;
+
+            [JsonProperty("Player-managed planter layout IDs", ObjectCreationHandling = ObjectCreationHandling.Replace)]
+            public List<string> ManualPlanterIds = new List<string>();
+
+            [JsonProperty("Assisted farming absence fallback after minutes (0 = disabled)")]
+            public float AbsenceMinutes = 60f;
+
+            [JsonProperty("Schedule farm lighting at dusk and dawn")]
+            public bool ScheduleLighting = true;
+
+            [JsonProperty("Farm lights sunrise hour (0-24)")]
+            public float LightSunrise = 7.5f;
+
+            [JsonProperty("Farm lights sunset hour (0-24)")]
+            public float LightSunset = 18.5f;
+
+            [JsonProperty("Farm lighting switch layout ID")]
+            public string LightSwitchId = "barn-light-switch";
+
+            [JsonProperty("Scheduled decorative light layout IDs", ObjectCreationHandling = ObjectCreationHandling.Replace)]
+            public List<string> ScheduledLightIds = new List<string>
+            {
+                "lantern-01-timed", "lantern-02-timed", "lantern-03-timed", "lantern-04-timed",
+                "lantern-05-timed", "lantern-06-timed", "lantern-07-timed", "lantern-08-timed",
+                "house-lantern-1-timed", "house-lantern-2-timed",
+            };
+
             [JsonProperty("Farm radius around the layout centre for sweeping and relinking (m)")]
             public float FarmRadius = 75f;
 
@@ -516,7 +551,21 @@ namespace Oxide.Plugins
             [JsonProperty("Kind")]
             public string Kind;
 
+            [JsonProperty("Route", NullValueHandling = NullValueHandling.Ignore,
+                ObjectCreationHandling = ObjectCreationHandling.Replace)]
+            public List<WirePoint> Route;
+
             public override string ToString() => $"{From} out {FromSlot} to {To} in {ToSlot} ({Kind})";
+        }
+
+        private class WirePoint
+        {
+            [JsonProperty("Anchor", NullValueHandling = NullValueHandling.Ignore)]
+            public string Anchor;
+
+            public float X;
+            public float Y;
+            public float Z;
         }
 
         private static List<HerdEntry> DefaultHerd() => new List<HerdEntry>
@@ -571,6 +620,8 @@ namespace Oxide.Plugins
                 "assets/prefabs/building/door.double.hinged/door.double.hinged.wood.prefab";
             const string wallWindowBarsWood = "assets/prefabs/building/wall.window.bars/wall.window.bars.wood.prefab";
             const string signHugeWood = "assets/prefabs/deployable/signs/sign.huge.wood.prefab";
+            const string signSmallWood = "assets/prefabs/deployable/signs/sign.small.wood.prefab";
+            const string signMediumWood = "assets/prefabs/deployable/signs/sign.medium.wood.prefab";
             const string componentBoxFoodLarge =
                 "assets/prefabs/deployable/large wood storage/skins/component_storage_boxes_dlc/box_food/" +
                 "component.box.food.large.prefab";
@@ -863,6 +914,25 @@ namespace Oxide.Plugins
                 parent: "barn-roof-x3z2-s2", roll: 45.0f, layer: 9, replaces: "solar-01"));
             e.Add(Entry("barn-sign", "sign", signHugeWood, 44.65f, 8.4f, 90.0f, y: 3.55f, building: "barn",
                 parent: "barn-gable-x4z1-E-s1", mount: true, layer: 9, image: "pandora-farm-sign.huge.wood-1024x256"));
+            e.Add(Entry("barn-guide", "sign", signMediumWood, 44.65f, 13.2f, 90.0f, y: 1.1f,
+                building: "barn", parent: "barn-wall-x4z3-E-s0", mount: true, layer: 10,
+                image: "farm-guide"));
+            e.Add(Entry("label-feed", "sign", signSmallWood, 31.7f, 14.25f, 180.0f, y: 2.3f,
+                building: "barn", parent: "barn-wall-x0z3-N-s0", mount: true, layer: 10, image: "farm-feed"));
+            e.Add(Entry("label-clones", "sign", signSmallWood, 34.87f, 14.25f, 180.0f, y: 2.3f,
+                building: "barn", parent: "barn-window-x1z3-N-s0", mount: true, layer: 10, image: "farm-clones"));
+            e.Add(Entry("label-dung", "sign", signSmallWood, 36.71f, 14.25f, 180.0f, y: 2.3f,
+                building: "barn", parent: "barn-wall-x2z3-N-s0", mount: true, layer: 10, image: "farm-compost"));
+            e.Add(Entry("label-wool", "sign", signSmallWood, 39.11f, 14.25f, 180.0f, y: 2.3f,
+                building: "barn", parent: "barn-window-x3z3-N-s0", mount: true, layer: 10, image: "farm-wool"));
+            e.Add(Entry("label-cold", "sign", signSmallWood, 30.9f, 2.55f, 0.0f, y: 2.3f,
+                building: "barn", parent: "barn-wall-x0z0-S-s0", mount: true, layer: 10, image: "farm-cold"));
+            e.Add(Entry("label-milk", "sign", signSmallWood, 32.76f, 2.55f, 0.0f, y: 2.3f,
+                building: "barn", parent: "barn-window-x1z0-S-s0", mount: true, layer: 10, image: "farm-milk"));
+            e.Add(Entry("label-eggs", "sign", signSmallWood, 34.58f, 2.55f, 0.0f, y: 2.3f,
+                building: "barn", parent: "barn-window-x1z0-S-s0", mount: true, layer: 10, image: "farm-eggs"));
+            e.Add(Entry("label-meat", "sign", signSmallWood, 38.83f, 2.55f, 0.0f, y: 2.3f,
+                building: "barn", parent: "barn-window-x3z0-S-s0", mount: true, layer: 10, image: "farm-meat"));
             e.Add(Entry("barn-feed-1", "box_feed", componentBoxFoodLarge, 30.695f, 13.725f, 180.0f, on: "barn-fnd-x0z3",
                 y: 0.099f, building: "barn", layer: 9, replaces: "box-feed"));
             e.Add(Entry("barn-feed-2", "box_feed", componentBoxFoodLarge, 32.785f, 13.725f, 180.0f, on: "barn-fnd-x1z3",
@@ -901,8 +971,11 @@ namespace Oxide.Plugins
                 parent: "barn-wall-x4z0-E-s0", layer: 9));
             e.Add(Entry("barn-splitter-02", "decor", splitter, 44.4f, 4.65f, 270.0f, y: 1.35f, building: "barn",
                 parent: "barn-wall-x4z0-E-s0", layer: 9));
-            e.Add(Entry("barn-light-01", "decor", ceilinglightDeployed, 34.0f, 6.9f, 0.0f, y: 2.973f, building: "barn",
-                parent: "barn-floor-x1z1-s1", layer: 9));
+            e.Add(Entry("barn-light-switch", "decor",
+                "assets/prefabs/deployable/playerioents/simpleswitch/switch.prefab", 44.4f, 4.05f, 270.0f,
+                y: 2.0f, building: "barn", parent: "barn-wall-x4z0-E-s0", layer: 9));
+            e.Add(Entry("barn-light-01-timed", "decor", ceilinglightDeployed, 34.0f, 6.9f, 0.0f, y: 2.973f, building: "barn",
+                parent: "barn-floor-x1z1-s1", layer: 9, replaces: "barn-light-01"));
             e.Add(Entry("barn-light-02", "decor", ceilinglightDeployed, 40.0f, 6.9f, 0.0f, y: 2.973f, building: "barn",
                 parent: "barn-floor-x3z1-s1", layer: 9));
             e.Add(Entry("barn-light-03", "decor", ceilinglightDeployed, 34.0f, 9.9f, 0.0f, y: 2.973f, building: "barn",
@@ -1128,40 +1201,103 @@ namespace Oxide.Plugins
             e.Add(Entry("lantern-03", "decor", lanternOnStatic, 48.6f, 13.3f, 0.0f, layer: 10));
             e.Add(Entry("lantern-04", "decor", lanternOnStatic, 27.5f, 3.6f, 0.0f, layer: 10));
             e.Add(Entry("lantern-05", "decor", lanternOnStatic, -3.2f, 22.0f, 0.0f, layer: 10));
-            e.Add(Entry("lantern-06", "decor", lanternOnStatic, 27.4f, -15.0f, 0.0f, layer: 10));
+            e.Add(Entry("lantern-06", "decor", lanternOnStatic, 27.4f, -12.5f, 0.0f, layer: 10));
             e.Add(Entry("lantern-07", "decor", lanternOnStatic, 40.5f, -13.6f, 0.0f, layer: 10));
             e.Add(Entry("lantern-08", "decor", lanternOnStatic, 30.0f, -0.6f, 0.0f, layer: 10));
             e.Add(Entry("pump-01", "pump", PumpPrefab, 29.5f, 29.3f, 0.0f));
             List<LayoutConnection> c = layout.Connections;
-            c.Add(Link("windmill-01", 0, "barn-combiner-01", 0, "power"));
-            c.Add(Link("barn-solar-01", 0, "barn-combiner-01", 1, "power"));
-            c.Add(Link("barn-combiner-01", 0, "barn-combiner-02", 0, "power"));
-            c.Add(Link("barn-solar-02", 0, "barn-combiner-02", 1, "power"));
-            c.Add(Link("barn-combiner-02", 0, "battery-02", 0, "power"));
-            c.Add(Link("battery-02", 0, "barn-splitter-01", 0, "power"));
-            c.Add(Link("barn-splitter-01", 0, "barn-splitter-02", 0, "power"));
-            c.Add(Link("barn-splitter-02", 0, "fridge-02", 0, "power"));
-            c.Add(Link("barn-splitter-02", 1, "fridge-03", 0, "power"));
-            c.Add(Link("barn-splitter-01", 1, "barn-light-01", 0, "power"));
-            c.Add(Link("barn-light-01", 0, "barn-light-02", 0, "power"));
-            c.Add(Link("barn-light-02", 0, "barn-light-03", 0, "power"));
-            c.Add(Link("barn-light-03", 0, "barn-light-04", 0, "power"));
-            c.Add(Link("barn-light-04", 0, "barn-light-05", 0, "power"));
-            c.Add(Link("barn-light-05", 0, "barn-light-06", 0, "power"));
-            c.Add(Link("barn-splitter-01", 2, "heater-01", 0, "power"));
-            c.Add(Link("heater-01", 0, "heater-02", 0, "power"));
-            c.Add(Link("heater-02", 0, "heater-03", 0, "power"));
-            c.Add(Link("heater-03", 0, "heater-04", 0, "power"));
-            c.Add(Link("heater-04", 0, "pump-01", 0, "power"));
-            c.Add(Link("pump-01", 0, "sprinkler-01", 0, "water"));
-            c.Add(Link("sprinkler-01", 0, "sprinkler-02", 0, "water"));
-            c.Add(Link("sprinkler-02", 0, "sprinkler-03", 0, "water"));
-            c.Add(Link("sprinkler-03", 0, "sprinkler-04", 0, "water"));
-            c.Add(Link("sprinkler-04", 0, "sprinkler-05", 0, "water"));
-            c.Add(Link("sprinkler-05", 0, "sprinkler-06", 0, "water"));
-            c.Add(Link("catcher-05", 0, "tower-splitter", 0, "water"));
-            c.Add(Link("tower-splitter", 0, "trough-01", 0, "water"));
-            c.Add(Link("tower-splitter", 1, "trough-02", 0, "water"));
+            c.Add(Link("windmill-01", 0, "barn-combiner-01", 0, "power",
+                GroundWire(61f, 19f), GroundWire(44.65f, 19f),
+                GroundWire(44.65f, 3f), BarnWire(44.35f, 0.08f, 3f)));
+            c.Add(Link("barn-solar-01", 0, "barn-combiner-01", 1, "power",
+                BarnWire(34f, 7.8f, 9.915f), BarnWire(44.35f, 7.8f, 9.915f),
+                BarnWire(44.35f, 4.865f, 12.85f), BarnWire(44.35f, 0.08f, 12.85f),
+                BarnWire(44.35f, 0.08f, 3f)));
+            c.Add(Link("barn-combiner-01", 0, "barn-combiner-02", 0, "power",
+                BarnWire(44.35f, 0.08f, 3f), BarnWire(44.35f, 0.08f, 3.45f)));
+            c.Add(Link("barn-solar-02", 0, "barn-combiner-02", 1, "power",
+                BarnWire(40f, 7.8f, 9.915f), BarnWire(44.35f, 7.8f, 9.915f),
+                BarnWire(44.35f, 4.865f, 12.85f), BarnWire(44.35f, 0.08f, 12.85f),
+                BarnWire(44.35f, 0.08f, 3.45f)));
+            c.Add(Link("barn-combiner-02", 0, "battery-02", 0, "power",
+                BarnWire(44.35f, 0.08f, 3.45f), BarnWire(44.35f, 0.08f, 3.2f),
+                BarnWire(42.485f, 0.08f, 3.2f)));
+            c.Add(Link("battery-02", 0, "barn-splitter-01", 0, "power",
+                BarnWire(42.485f, 0.08f, 3.2f), BarnWire(44.35f, 0.08f, 3.2f),
+                BarnWire(44.35f, 0.08f, 4.05f)));
+            c.Add(Link("barn-splitter-01", 0, "barn-splitter-02", 0, "power",
+                BarnWire(44.35f, 0.08f, 4.05f), BarnWire(44.35f, 0.08f, 4.65f)));
+            c.Add(Link("barn-splitter-02", 0, "fridge-02", 0, "power",
+                BarnWire(44.35f, 0.08f, 4.65f), BarnWire(44.35f, 0.08f, 2.6f),
+                BarnWire(30.295f, 0.08f, 2.6f), BarnWire(30.295f, 0.08f, 3.035f)));
+            c.Add(Link("barn-splitter-02", 1, "fridge-03", 0, "power",
+                BarnWire(44.35f, 0.08f, 4.65f), BarnWire(44.35f, 0.08f, 2.6f),
+                BarnWire(31.535f, 0.08f, 2.6f), BarnWire(31.535f, 0.08f, 3.035f)));
+            c.Add(Link("barn-splitter-01", 1, "barn-light-switch", 0, "power",
+                BarnWire(44.35f, 1.35f, 4.05f), BarnWire(44.35f, 2f, 4.05f)));
+            c.Add(Link("barn-light-switch", 0, "barn-light-01-timed", 0, "power",
+                BarnWire(44.35f, 2.96f, 4.05f), BarnWire(44.35f, 2.96f, 6.9f),
+                BarnWire(34f, 2.96f, 6.9f)));
+            c.Add(Link("barn-light-01-timed", 0, "barn-light-02", 0, "power",
+                BarnWire(34f, 2.96f, 6.9f), BarnWire(40f, 2.96f, 6.9f)));
+            c.Add(Link("barn-light-02", 0, "barn-light-03", 0, "power",
+                BarnWire(40f, 2.96f, 6.9f), BarnWire(40f, 2.96f, 9.9f),
+                BarnWire(34f, 2.96f, 9.9f)));
+            c.Add(Link("barn-light-03", 0, "barn-light-04", 0, "power",
+                BarnWire(34f, 2.96f, 9.9f), BarnWire(40f, 2.96f, 9.9f)));
+            c.Add(Link("barn-light-04", 0, "barn-light-05", 0, "power",
+                BarnWire(40f, 2.96f, 9.9f), BarnWire(37f, 2.96f, 9.9f),
+                BarnWire(37f, 2.96f, 3.9f)));
+            c.Add(Link("barn-light-05", 0, "barn-light-06", 0, "power",
+                BarnWire(37f, 2.96f, 3.9f), BarnWire(37f, 2.96f, 12.9f)));
+            c.Add(Link("barn-splitter-01", 2, "heater-01", 0, "power",
+                BarnWire(44.35f, 0.08f, 4.05f), BarnWire(44.35f, 0.08f, 14.1f),
+                GroundWire(44.65f, 14.6f), GroundWire(44.65f, 24.8f),
+                GroundWire(50.2f, 24.8f), GroundWire(50.2f, 21.65f)));
+            c.Add(Link("heater-01", 0, "heater-02", 0, "power",
+                GroundWire(50.2f, 21.65f), GroundWire(51.95f, 21.65f),
+                GroundWire(51.95f, 19.9f)));
+            c.Add(Link("heater-02", 0, "heater-03", 0, "power",
+                GroundWire(51.95f, 19.9f), GroundWire(51.95f, 18.15f),
+                GroundWire(50.2f, 18.15f)));
+            c.Add(Link("heater-03", 0, "heater-04", 0, "power",
+                GroundWire(50.2f, 18.15f), GroundWire(48.45f, 18.15f),
+                GroundWire(48.45f, 19.9f)));
+            c.Add(Link("heater-04", 0, "pump-01", 0, "power",
+                GroundWire(48.45f, 19.9f), GroundWire(45f, 19.9f),
+                GroundWire(45f, 25f), GroundWire(29.5f, 25f),
+                GroundWire(29.5f, 29.3f)));
+            c.Add(Link("pump-01", 0, "sprinkler-01", 0, "water",
+                GroundWire(29.5f, 29.3f), GroundWire(29.5f, 21.3f)));
+            c.Add(Link("sprinkler-01", 0, "sprinkler-02", 0, "water",
+                GroundWire(29.5f, 21.3f), GroundWire(32.9f, 21.3f)));
+            c.Add(Link("sprinkler-02", 0, "sprinkler-03", 0, "water",
+                GroundWire(32.9f, 21.3f), GroundWire(36.3f, 21.3f)));
+            c.Add(Link("sprinkler-03", 0, "sprinkler-04", 0, "water",
+                GroundWire(36.3f, 21.3f), GroundWire(39.7f, 21.3f)));
+            c.Add(Link("sprinkler-04", 0, "sprinkler-05", 0, "water",
+                GroundWire(39.7f, 21.3f), GroundWire(43f, 24.8f),
+                GroundWire(47.45f, 24.8f), GroundWire(47.45f, 22.7f)));
+            c.Add(Link("sprinkler-05", 0, "sprinkler-06", 0, "water",
+                GroundWire(47.45f, 22.7f), GroundWire(47.45f, 24.8f),
+                GroundWire(55.6f, 24.8f), GroundWire(55.6f, 17.1f),
+                GroundWire(52.95f, 17.1f)));
+            c.Add(Link("catcher-05", 0, "tower-splitter", 0, "water",
+                TowerWire(1.4f, 6.05f, 25.65f), TowerWire(1.4f, 2f, 25.65f),
+                TowerWire(0f, 2f, 25.65f)));
+            c.Add(Link("tower-splitter", 0, "trough-01", 0, "water",
+                TowerWire(0f, 2f, 25.65f), TowerWire(-1.65f, 2f, 25.65f),
+                GroundWire(-1.65f, 25.65f), GroundWire(-13.05f, 0f)));
+            c.Add(Link("tower-splitter", 1, "trough-02", 0, "water",
+                TowerWire(0f, 2f, 25.65f), TowerWire(1.65f, 2f, 25.65f),
+                GroundWire(1.65f, 25.65f), GroundWire(13.05f, 0f)));
+            foreach (LayoutEntry entry in e.Where(entry => entry.Prefab ==
+                         "assets/bundled/prefabs/static/lantern_on.static.prefab"))
+            {
+                entry.Replaces = entry.Id;
+                entry.Id += "-timed";
+                entry.Prefab = "assets/prefabs/deployable/lantern/lantern.deployed.prefab";
+            }
             return layout;
         }
 
@@ -1176,8 +1312,21 @@ namespace Oxide.Plugins
                 Image = image, Replaces = replaces,
             };
 
-        private static LayoutConnection Link(string from, int fromSlot, string to, int toSlot, string kind) =>
-            new LayoutConnection { From = from, FromSlot = fromSlot, To = to, ToSlot = toSlot, Kind = kind };
+        private static LayoutConnection Link(string from, int fromSlot, string to, int toSlot, string kind,
+            params WirePoint[] route) =>
+            new LayoutConnection
+            {
+                From = from, FromSlot = fromSlot, To = to, ToSlot = toSlot, Kind = kind,
+                Route = route.Length == 0 ? null : route.ToList(),
+            };
+
+        private static WirePoint BarnWire(float x, float y, float z) =>
+            new WirePoint { Anchor = "barn-fnd-x0z0", X = x - 31f, Y = y, Z = z - 3.9f };
+
+        private static WirePoint TowerWire(float x, float y, float z) =>
+            new WirePoint { Anchor = "tower-fnd-x0z0", X = x, Y = y, Z = z - 24.25f };
+
+        private static WirePoint GroundWire(float x, float z) => new WirePoint { X = x, Y = 0.025f, Z = z };
 
         protected override void LoadDefaultConfig() => _config = new Configuration();
 
@@ -1216,6 +1365,8 @@ namespace Oxide.Plugins
         private static List<string> ConfigProblems(Configuration c)
         {
             var problems = new List<string>();
+            ValidateLightingConfig(c, problems);
+            ValidateAssistedConfig(c, problems);
             FarmLayout layout = c.Layout;
             if (layout?.Entries == null || layout.Centre == null)
             {
@@ -1260,9 +1411,19 @@ namespace Oxide.Plugins
                 }
                 LayoutProblems(layout, problems);
                 foreach (LayoutConnection link in layout.Connections)
+                {
                     if (link == null || !ids.Contains(link.From ?? string.Empty) ||
                         !ids.Contains(link.To ?? string.Empty))
                         problems.Add($"connection {link} names a layout id that does not exist");
+                    if (link?.Route == null)
+                        continue;
+                    if (link.Route.Count > 64)
+                        problems.Add($"connection {link} has more than 64 route points");
+                    foreach (WirePoint point in link.Route)
+                        if (point == null || !Finite(point.X) || !Finite(point.Y) || !Finite(point.Z) ||
+                            (point.Anchor != null && !ids.Contains(point.Anchor)))
+                            problems.Add($"connection {link} has an invalid route point or unknown anchor");
+                }
             }
             if (c.StarterHerd == null)
                 problems.Add("Starter herd is missing");
@@ -1439,6 +1600,7 @@ namespace Oxide.Plugins
             public float CentreZ;
             public float Yaw;
             public ulong Owner;
+            public long LastFarmVisit;
             public List<StructureRecord> Structures = new List<StructureRecord>();
             public List<AnimalRecord> Herd = new List<AnimalRecord>();
             public Dictionary<string, float> SecondsSincePregnancy = new Dictionary<string, float>();
@@ -1458,6 +1620,8 @@ namespace Oxide.Plugins
 
         private class StructureRecord
         {
+            // A player's removal of the colony must not generate another starter nucleus for the same hive.
+            public ulong BeeColonySeededNetId;
             public string Id;
             public string Role;
             public string Prefab;
@@ -1776,12 +1940,15 @@ namespace Oxide.Plugins
             {
                 new Step { Name = "structures", Run = StructureStep },
                 new Step { Name = "wiring", Run = WiringStep },
+                new Step { Name = "lighting", Run = LightingStep },
+                new Step { Name = "attendance", Run = AttendanceStep },
                 new Step { Name = "sweep", Run = SweepStep },
                 new Step { Name = "herd", NeedsOwner = true, Run = HerdStep },
                 new Step { Name = "sex safety", NeedsOwner = true, Run = SexStep },
                 new Step { Name = "breeding", NeedsOwner = true, Run = BreedingStep },
                 new Step { Name = "crops", Run = CropStep },
                 new Step { Name = "compost", Run = CompostStep },
+                new Step { Name = "bees", Run = BeeStep },
                 new Step { Name = "chickens", Run = ChickenStep },
                 new Step { Name = "troughs", Run = TroughStep },
                 new Step { Name = "spoiled produce", Run = SpoiledStep },
@@ -2211,6 +2378,147 @@ namespace Oxide.Plugins
         {
             if (Authorized(arg))
                 arg.ReplyWith(Status());
+        }
+
+        [ConsoleCommand("farm.summary")]
+        private void SummaryCommand(ConsoleSystem.Arg arg)
+        {
+            if (Authorized(arg))
+                arg.ReplyWith(PlayerFarmSummary());
+        }
+
+        private readonly Dictionary<ulong, float> _farmStatusRequestedAt = new Dictionary<ulong, float>();
+
+        private void OnPlayerDisconnected(BasePlayer player, string reason)
+        {
+            if (player != null)
+                _farmStatusRequestedAt.Remove(player.userID);
+        }
+
+        [ChatCommand("farm")]
+        private void FarmChatCommand(BasePlayer player, string command, string[] args)
+        {
+            if (player == null)
+                return;
+            float now = Time.realtimeSinceStartup;
+            float previous;
+            if (_farmStatusRequestedAt.TryGetValue(player.userID, out previous) && now - previous < 5f)
+                return;
+            _farmStatusRequestedAt[player.userID] = now;
+            if (args != null && args.Length > 0)
+            {
+                SendReply(player, args[0] == "help"
+                    ? "Milk cows through their interaction prompt once they trust you; shear sheep with a cutting tool. " +
+                      "Player beds keep automatic watering and fertilizer. Plant and harvest them yourself. " +
+                      "After the configured absence grace, milk, wool, and ripe crops go to barn storage; player beds " +
+                      "are not replanted. Other beds remain automatic. Coordinate shared supplies with the owner."
+                    : "Use /farm for status or /farm help for farming instructions.");
+                return;
+            }
+            foreach (string message in FarmChatMessages(PlayerFarmSummary()))
+                SendReply(player, message);
+        }
+
+        private static IEnumerable<string> FarmChatMessages(string summary)
+        {
+            const int limit = 480;
+            var message = new StringBuilder();
+            foreach (string line in summary.Split('\n'))
+            {
+                if (message.Length > 0 && message.Length + line.Length + 1 > limit)
+                {
+                    yield return message.ToString();
+                    message.Clear();
+                }
+                string remaining = line;
+                while (remaining.Length > limit)
+                {
+                    yield return remaining.Substring(0, limit);
+                    remaining = remaining.Substring(limit);
+                }
+                if (message.Length > 0)
+                    message.Append('\n');
+                message.Append(remaining);
+            }
+            if (message.Length > 0)
+                yield return message.ToString();
+        }
+
+        private string PlayerFarmSummary()
+        {
+            if (!_ready)
+                return "Pandora Farm is starting. Try /farm again shortly.";
+            if (_disabled != null)
+                return "Pandora Farm upkeep is unavailable. Ask an administrator to check farm.status.";
+            if (!_data.Built)
+                return "Pandora Farm has not been built yet.";
+            UpkeepPass pass = BeginPass(false);
+            var sb = new StringBuilder("PANDORA FARM\n");
+            bool absence = AbsenceAutomationActive(pass);
+            sb.AppendLine($"Production: milking {(_config.AutoMilk ? "automatic" : "player managed")}; " +
+                          $"shearing {(_config.AutoShear ? "automatic" : "player managed")}. " +
+                          $"Absence fallback: {(absence ? "active" : "inactive")}.");
+            int readyCows = Herd(pass, Cattle).OfType<Cow>().Count(CowReadyToMilk);
+            int readySheep = Herd(pass, SheepKind).OfType<Sheep>().Count(SheepReadyToShear);
+            sb.AppendLine($"Ready: {readyCows} cows to milk; {readySheep} sheep to shear.");
+            sb.AppendLine("Lighting: " + FarmLightingSummary(pass));
+            sb.AppendLine(BeeSummary(pass));
+            sb.AppendLine("Herd: " + string.Join("; ", AllSpecies.Select(s => $"{s} {Herd(pass, s).Count}")));
+            List<string> surplus = AllSpecies.Select(s => new
+                {
+                    Species = s, Count = CapCount(Herd(pass, s)), Cap = CapOf(s),
+                }).Where(s => s.Count > s.Cap)
+                .Select(s => $"{s.Species} {s.Count}/{s.Cap}").ToList();
+            sb.AppendLine($"Culling: {(_config.AutoCull ? "automatic (breeder and infant protections apply)" : "disabled; owner manages surplus")}. " +
+                          (surplus.Count == 0 ? "Herd within caps." : "Above cap: " + string.Join("; ", surplus) + "."));
+            List<ChickenCoop> coops = pass.Role(RoleCoop).OfType<ChickenCoop>().ToList();
+            sb.AppendLine($"Coops: {coops.Sum(c => c.Animals.Count)} chickens / hatching eggs");
+            List<HitchTrough> troughs = pass.Role(RoleTrough).OfType<HitchTrough>().ToList();
+            int dryTroughs = troughs.Count(t => t.WaterStorage == null || t.WaterStorage.GetLiquidCount() <= 0);
+            sb.AppendLine(troughs.Count == 0 ? "Troughs: missing; ask an administrator to inspect the farm."
+                : dryTroughs > 0 ? $"Troughs: {dryTroughs}/{troughs.Count} empty; check the water supply."
+                    : $"Troughs: all {troughs.Count} contain water.");
+            List<PlanterBox> planters = pass.Role(RolePlanter).OfType<PlanterBox>().ToList();
+            int dryPlanters = planters.Count(p => p.soilSaturation < _config.DryFraction * p.soilSaturationMax);
+            sb.AppendLine(planters.Count == 0 ? "Garden: no planters found."
+                : dryPlanters > 0 ? $"Garden: {dryPlanters}/{planters.Count} beds dry; check irrigation."
+                    : $"Garden: all {planters.Count} beds above the dry threshold.");
+            List<PlanterBox> manualBeds = planters.Where(p => IsManualPlanter(pass.Name(p))).ToList();
+            if (_config.ManualPlanterIds.Count > 0)
+            {
+                GrowableEntity[][] manualPlants = manualBeds.Select(PlantsBySlot).ToArray();
+                int ripe = manualPlants.Sum(slots => slots.Count(p => p != null && p.State == PlantProperties.State.Ripe));
+                int empty = manualPlants.Sum(slots => slots.Count(p => p == null));
+                string locations = string.Join(", ", manualBeds.Select(p => PlayerBedName(pass.Name(p))));
+                sb.AppendLine($"Player beds: {locations} " +
+                              $"({manualBeds.Count}/{_config.ManualPlanterIds.Count} present); {ripe} ripe crops, {empty} empty slots. " +
+                              "Plant and harvest here; soil and fertilizer stay automatic.");
+                sb.AppendLine("Absence care harvests ripe crops to Feed; player beds are not replanted. /farm help for instructions.");
+            }
+            List<Fridge> fridges = pass.Role(RoleFridge).OfType<Fridge>().ToList();
+            sb.AppendLine(fridges.Count == 0 ? "Cold storage: no fridges found; ask an administrator to inspect."
+                : $"Cold storage: {fridges.Count(f => f.IsPowered())}/{fridges.Count} fridges powered."
+                    + (fridges.Any(f => !f.IsPowered()) ? " Check the barn power supply." : string.Empty));
+            var stores = new Dictionary<string, string>
+            {
+                [BoxFeed] = "Feed", [BoxClones] = "Clones", [BoxDung] = "Manure",
+                [BoxWool] = "Wool", [BoxMilk] = "Milk", [BoxEggs] = "Eggs", [BoxMeat] = "Meat",
+            };
+            var crowded = new List<string>();
+            foreach (KeyValuePair<string, string> store in stores)
+            {
+                List<ItemContainer> containers = pass.Containers(store.Key);
+                if (containers.Count > 0 && containers.All(c => c.itemList.Count >= c.capacity))
+                    crowded.Add(store.Value);
+            }
+            sb.AppendLine(crowded.Count == 0 ? "Stores: free slots available in the barn stores that are present."
+                : "No free slots: " + string.Join(", ", crowded) + ". Collect supplies; stack space may remain.");
+            int missing = _config.Layout.Entries.Count(e => e.Role != RolePlaceholder && pass.ById(e.Id) == null);
+            if (missing > 0)
+                sb.AppendLine($"Maintenance: {missing} layout parts absent; ask an administrator to check farm.status.");
+            sb.Append("Barn: labeled supplies. Grazing pen: west. Garden: north. House and coops: south.\n"
+                + "Containers are shared; coordinate with the farm owner before taking supplies.");
+            return sb.ToString();
         }
 
         [ConsoleCommand("farm.tick")]
@@ -3712,6 +4020,7 @@ namespace Oxide.Plugins
         {
             var slots = new Dictionary<string, int>();
             foreach (List<string> plan in _config.SlotPlan.Where(p => p.Value != null &&
+                                                                     !IsManualPlanter(p.Key) &&
                                                                      (planters == null || planters.Contains(p.Key)))
                          .Select(p => p.Value))
                 foreach (string clone in plan.Where(c => !string.IsNullOrEmpty(c)))
@@ -4969,6 +5278,8 @@ namespace Oxide.Plugins
         private class UpkeepPass
         {
             public ulong Owner;
+            public bool FarmOccupied;
+            public bool AbsenceFallback;
             public float Elapsed;
             public BuildingPrivlidge Cupboard;
             public readonly Dictionary<string, List<BaseEntity>> Roles = new Dictionary<string, List<BaseEntity>>();
@@ -5011,6 +5322,9 @@ namespace Oxide.Plugins
         private UpkeepPass BeginPass(bool record = true)
         {
             var pass = new UpkeepPass { Owner = FarmOwner() };
+            pass.FarmOccupied = FarmHasPlayers();
+            pass.AbsenceFallback = AbsenceDue(Epoch.Current, _data.LastFarmVisit, _config.AbsenceMinutes,
+                pass.FarmOccupied);
             float now = Time.realtimeSinceStartup;
             pass.Elapsed = _lastUpkeepAt < 0f ? 0f : now - _lastUpkeepAt;
             foreach (StructureRecord rec in _data.Structures)
@@ -5286,7 +5600,7 @@ namespace Oxide.Plugins
         }
 
         // Null when the link is already in place, empty when this call made it, otherwise why it cannot be made.
-        private static string WireProblem(LayoutConnection link, UpkeepPass pass)
+        private string WireProblem(LayoutConnection link, UpkeepPass pass)
         {
             IOEntity from = IoEnd(pass.ById(link.From));
             IOEntity to = IoEnd(pass.ById(link.To));
@@ -5297,8 +5611,26 @@ namespace Oxide.Plugins
                 return "no such IO slot";
             IOEntity.IOSlot output = from.outputs[link.FromSlot];
             IOEntity.IOSlot input = to.inputs[link.ToSlot];
+            List<Vector3> points;
+            string routeProblem = WirePoints(link, from, to, pass, out points);
+            if (routeProblem != null)
+                return routeProblem;
             if (output.connectedTo.Get() == to && output.connectedToSlot == link.ToSlot)
+            {
+                if (link.Route != null && !SameWirePoints(output, points))
+                {
+                    output.linePoints = points.ToArray();
+                    output.slackLevels = new float[points.Count];
+                    output.lineAnchors = new IOEntity.LineAnchor[0];
+                    output.originPosition = from.transform.position;
+                    output.originRotation = from.transform.rotation.eulerAngles;
+                    output.worldSpaceLineEndRotation = to.transform.TransformDirection(input.handleDirection);
+                    from.SendNetworkUpdate();
+                    from.NotifyClientsLineChanged();
+                    Puts($"wiring: routed {link} along {points.Count} points");
+                }
                 return null;
+            }
             if (output.connectedTo.Get() != null || input.connectedTo.Get() != null)
                 return "a slot is already connected elsewhere";
             if (output.type != input.type)
@@ -5308,28 +5640,221 @@ namespace Oxide.Plugins
                 WaterResource.SV_GetAtPoint(pump.WaterResourceLocation.position) != WaterTypes.WaterItemDef)
                 return "the pump would deliver salt or radioactive water, which empties or kills the planters; " +
                        "left unwired";
-            if (!Connect(from, link.FromSlot, to, link.ToSlot))
+            if (!Connect(from, link.FromSlot, to, link.ToSlot, points))
                 return "ConnectTo refused";
             return string.Empty;
         }
 
-        // A hose or wire from an output to an input. ConnectTo sets both slots, marks the source dirty, and walks
-        // SendChangedToRoot; the two line points (output-local, input end first) only draw it.
-        private static bool Connect(IOEntity from, int output, IOEntity to, int input)
+        // Rust stores drawing points in output-local space, starting at the input. Its LineAnchor type is only
+        // for moving door bones; fixed surfaces use ordinary points resolved from their supporting entities.
+        private string WirePoints(LayoutConnection link, IOEntity from, IOEntity to, UpkeepPass pass,
+            out List<Vector3> points)
+        {
+            points = new List<Vector3>();
+            Vector3 start = from.transform.TransformPoint(from.outputs[link.FromSlot].handlePosition);
+            Vector3 end = to.transform.TransformPoint(to.inputs[link.ToSlot].handlePosition);
+            var world = new List<Vector3> { start };
+            bool ground = false;
+            foreach (WirePoint point in link.Route ?? new List<WirePoint>())
+            {
+                Vector3 next;
+                if (point.Anchor == null)
+                {
+                    next = FarmPoint(point.X, point.Z) + Vector3.up * point.Y;
+                    if (world.Count == 1)
+                    {
+                        Vector3 foot = start;
+                        foot.y = TerrainMeta.HeightMap.GetHeight(foot) + point.Y;
+                        world.Add(foot);
+                        ground = true;
+                    }
+                    if (ground)
+                    {
+                        Vector3 previous = world[world.Count - 1];
+                        int steps = Mathf.CeilToInt(Vector3.Distance(previous, next) / 2f);
+                        for (int i = 1; i < steps; i++)
+                        {
+                            Vector3 sample = Vector3.Lerp(previous, next, (float)i / steps);
+                            sample.y = TerrainMeta.HeightMap.GetHeight(sample) + point.Y;
+                            world.Add(sample);
+                        }
+                    }
+                    ground = true;
+                }
+                else
+                {
+                    BaseEntity anchor = pass.ById(point.Anchor);
+                    if (anchor == null || anchor.IsDestroyed)
+                        return $"route anchor {point.Anchor} is missing";
+                    next = anchor.transform.TransformPoint(new Vector3(point.X, point.Y, point.Z));
+                    ground = false;
+                }
+                world.Add(next);
+            }
+            if (ground)
+            {
+                Vector3 foot = end;
+                foot.y = TerrainMeta.HeightMap.GetHeight(foot) + link.Route[link.Route.Count - 1].Y;
+                world.Add(foot);
+            }
+            world.Add(end);
+            for (int i = world.Count - 1; i >= 0; i--)
+                points.Add(from.transform.InverseTransformPoint(world[i]));
+            return null;
+        }
+
+        private static bool SameWirePoints(IOEntity.IOSlot output, List<Vector3> points) =>
+            output.linePoints != null && output.linePoints.Length == points.Count &&
+            output.slackLevels != null && output.slackLevels.Length == points.Count &&
+            (output.lineAnchors == null || output.lineAnchors.Length == 0) &&
+            points.Select((point, i) => (point - output.linePoints[i]).sqrMagnitude < 0.0001f &&
+                                       output.slackLevels[i] == 0f).All(same => same);
+
+        private string WireStatus(LayoutConnection link, UpkeepPass pass)
+        {
+            if (!IsWired(link, pass))
+                return "NOT connected";
+            if (link.Route == null)
+                return "connected";
+            IOEntity from = IoEnd(pass.ById(link.From));
+            IOEntity to = IoEnd(pass.ById(link.To));
+            List<Vector3> points;
+            string problem = WirePoints(link, from, to, pass, out points);
+            if (problem != null)
+                return $"connected; {problem}";
+            IOEntity.IOSlot output = from.outputs[link.FromSlot];
+            if (!SameWirePoints(output, points))
+                return "connected; route needs updating";
+            float length = 0f;
+            for (int i = 1; i < points.Count; i++)
+                length += Vector3.Distance(points[i - 1], points[i]);
+            return $"connected; routed {points.Count} points, {length:0.0} m";
+        }
+
+        private static bool Connect(IOEntity from, int output, IOEntity to, int input, List<Vector3> points)
         {
             if (from.outputs[output].connectedTo.Get() != null || to.inputs[input].connectedTo.Get() != null)
                 return false;
-            var points = new List<Vector3>
-            {
-                from.transform.InverseTransformPoint(to.transform.TransformPoint(to.inputs[input].handlePosition)),
-                from.outputs[output].handlePosition,
-            };
-            from.ConnectTo(to, output, input, points, new List<float> { 0f, 0f }, new IOEntity.LineAnchor[0],
+            from.ConnectTo(to, output, input, points, Enumerable.Repeat(0f, points.Count).ToList(),
+                new IOEntity.LineAnchor[0],
                 WireTool.WireColour.Gray);
             return true;
         }
 
         // Sweeps the dropped items OnEntitySpawned tracked within the farm radius (dung, eggs), no area query.
+        private static void ValidateLightingConfig(Configuration config, List<string> problems)
+        {
+            CheckRange(problems, "Farm lights sunrise hour", config.LightSunrise, 0f, 24f);
+            CheckRange(problems, "Farm lights sunset hour", config.LightSunset, 0f, 24f);
+            if (config.LightSunrise == 24f || config.LightSunset == 24f)
+                problems.Add("Farm light hours must be less than 24");
+            if (config.LightSunrise >= config.LightSunset)
+                problems.Add("Farm lights sunrise hour must be earlier than sunset hour");
+            if (string.IsNullOrWhiteSpace(config.LightSwitchId))
+                problems.Add("Farm lighting switch layout ID must not be empty");
+            if (config.ScheduledLightIds == null || config.ScheduledLightIds.Any(string.IsNullOrWhiteSpace) ||
+                config.ScheduledLightIds.Distinct().Count() != config.ScheduledLightIds.Count)
+                problems.Add("Scheduled decorative light layout IDs must be a non-null list of unique non-empty IDs");
+        }
+
+        private bool FarmLightsWanted()
+        {
+            float hour = TOD_Sky.Instance.Cycle.Hour;
+            return LightsAtHour(hour, _config.LightSunrise, _config.LightSunset);
+        }
+
+        private static bool LightsAtHour(float hour, float sunrise, float sunset) =>
+            hour >= sunset || hour < sunrise;
+
+        private bool IsScheduledFarmLight(BaseEntity entity)
+        {
+            if (!_config.ScheduleLighting || entity == null || _data == null || !_data.Built ||
+                _disabled != null || _config.ScheduledLightIds == null)
+                return false;
+            ulong id = IdOf(entity);
+            return _data.Structures.Any(r => !r.Retired && !r.Missing && r.NetId == id &&
+                                            _config.ScheduledLightIds.Contains(r.Id));
+        }
+
+        private object OnNightLanternToggle(BaseEntity entity, bool enabled) =>
+            IsScheduledFarmLight(entity) ? False : null;
+
+        private void LightingStep(UpkeepPass pass)
+        {
+            if (!_config.ScheduleLighting || TOD_Sky.Instance == null)
+                return;
+            bool wanted = FarmLightsWanted();
+            ElectricSwitch lightSwitch = pass.ById(_config.LightSwitchId) as ElectricSwitch;
+            if (lightSwitch != null && lightSwitch.IsOn() != wanted)
+                lightSwitch.SetSwitch(wanted);
+            else if (lightSwitch == null)
+                Failure("lighting:switch", "scheduled barn lighting awaits the lighting switch layout upgrade");
+            foreach (string id in _config.ScheduledLightIds)
+            {
+                BaseEntity entity = pass.ById(id);
+                if (entity == null || pass.Retired.Contains(IdOf(entity)))
+                    continue;
+                Guard("lighting", id, () =>
+                {
+                    BaseFuelLightSource lantern = entity as BaseFuelLightSource;
+                    if (lantern == null)
+                    {
+                        Failure("lighting:" + id, $"{id} is not a controllable lantern; layout upgrade required");
+                        return;
+                    }
+                    if (!wanted && lantern.IsOn())
+                        lantern.StopCooking();
+                    else if (wanted)
+                    {
+                        EnsureLightFuel(lantern.inventory, "lowgradefuel", id);
+                        if (!lantern.IsOn())
+                            lantern.StartCooking();
+                    }
+                });
+            }
+        }
+
+        private void EnsureLightFuel(ItemContainer inventory, string shortname, string id)
+        {
+            if (inventory == null)
+            {
+                Failure("lighting:" + id, $"{id} has no fuel inventory");
+                return;
+            }
+            if (inventory.itemList.Any(i => i.info.shortname == shortname && !i.isBroken && i.amount > 0))
+                return;
+            Item fuel = ItemManager.CreateByName(shortname, 1);
+            if (fuel == null)
+            {
+                Failure("lighting:" + id, $"{id} cannot create {shortname}");
+                return;
+            }
+            if (!fuel.MoveToContainer(inventory))
+            {
+                fuel.Remove();
+                Failure("lighting:" + id, $"{id} fuel inventory cannot accept {shortname}");
+            }
+        }
+
+        private string FarmLightingSummary(UpkeepPass pass)
+        {
+            if (!_config.ScheduleLighting)
+                return "manual (schedule disabled)";
+            if (TOD_Sky.Instance == null)
+                return "waiting for world time";
+            List<BaseFuelLightSource> lanterns = _config.ScheduledLightIds.Select(id => pass.ById(id))
+                .OfType<BaseFuelLightSource>().Where(e => !pass.Retired.Contains(IdOf(e))).ToList();
+            List<CeilingLight> barnLights = pass.Role(RoleDecor).OfType<CeilingLight>()
+                .Where(e => !pass.Retired.Contains(IdOf(e))).ToList();
+            string pending = lanterns.Count != _config.ScheduledLightIds.Count ||
+                             !(pass.ById(_config.LightSwitchId) is ElectricSwitch)
+                ? "; lighting upgrade incomplete"
+                : string.Empty;
+            return $"{(FarmLightsWanted() ? "night" : "day")}; yard lanterns {lanterns.Count(e => e.IsOn())}/" +
+                   $"{_config.ScheduledLightIds.Count} on; barn lights {barnLights.Count(e => e.IsOn())}/" +
+                   $"{barnLights.Count} on{pending}";
+        }
+
         private void SweepStep(UpkeepPass pass)
         {
             if (_dropped.Count == 0)
@@ -5366,6 +5891,74 @@ namespace Oxide.Plugins
                            $"{dropped.transform.position}");
         }
 
+        private static void ValidateAssistedConfig(Configuration config, List<string> problems)
+        {
+            CheckRange(problems, "Assisted farming absence fallback after minutes", config.AbsenceMinutes, 0f);
+            if (config.ManualPlanterIds == null || config.ManualPlanterIds.Any(string.IsNullOrWhiteSpace) ||
+                config.ManualPlanterIds.Distinct().Count() != config.ManualPlanterIds.Count)
+            {
+                problems.Add("Player-managed planter layout IDs must be a non-null list of unique non-empty IDs");
+                return;
+            }
+            foreach (string id in config.ManualPlanterIds)
+                if (config.Layout?.Entries == null ||
+                    !config.Layout.Entries.Any(e => e != null && e.Id == id && e.Role == RolePlanter))
+                    problems.Add($"player-managed planter {id} must name a planter layout entry");
+        }
+
+        private bool IsManualPlanter(string id) => _config.ManualPlanterIds.Contains(id);
+
+        private static string PlayerBedName(string id) =>
+            id == "planter-07" ? "07 (east of scarecrow)" :
+            id == "planter-08" ? "08 (south of scarecrow)" : id;
+
+        private static bool AbsenceDue(long now, long lastVisit, float minutes, bool occupied) =>
+            !occupied && minutes > 0f && lastVisit > 0 && now >= lastVisit && now - lastVisit >= minutes * 60d;
+
+        private bool FarmHasPlayers()
+        {
+            Vector3 centre = FarmCentre();
+            float radiusSquared = _config.FarmRadius * _config.FarmRadius;
+            return BasePlayer.activePlayerList.Any(player => player != null && player.IsConnected &&
+                !player.IsNpc && !player.IsDead() && !player.IsSleeping() &&
+                (player.transform.position - centre).sqrMagnitude <= radiusSquared);
+        }
+
+        private bool _absenceFallbackActive;
+
+        private void AttendanceStep(UpkeepPass pass)
+        {
+            long now = Epoch.Current;
+            if (pass.FarmOccupied || _data.LastFarmVisit <= 0 || _data.LastFarmVisit > now)
+                _data.LastFarmVisit = now;
+            pass.AbsenceFallback = AbsenceDue(now, _data.LastFarmVisit, _config.AbsenceMinutes, pass.FarmOccupied);
+            bool active = AbsenceAutomationActive(pass);
+            if (active == _absenceFallbackActive)
+                return;
+            _absenceFallbackActive = active;
+            Event("care", active
+                ? "absence care active: milking and shearing resume; ripe player crops go to the feed store"
+                : "absence care ended: configured player jobs are reserved again");
+        }
+
+        private bool AbsenceAutomationActive(UpkeepPass pass) =>
+            (!_config.AutoMilk || !_config.AutoShear || _config.ManualPlanterIds.Count > 0) && pass.AbsenceFallback;
+
+        private bool AutoMilkNow(UpkeepPass pass) => _config.AutoMilk || AbsenceAutomationActive(pass);
+
+        private bool AutoShearNow(UpkeepPass pass) => _config.AutoShear || AbsenceAutomationActive(pass);
+
+        private string AssistedCareSummary(UpkeepPass pass)
+        {
+            string grace = _config.AbsenceMinutes <= 0f ? "disabled" : $"{_config.AbsenceMinutes:0.##} min";
+            return $"milk {(_config.AutoMilk ? "automatic" : "manual")}, " +
+                   $"shear {(_config.AutoShear ? "automatic" : "manual")}, " +
+                   $"culling {(_config.AutoCull ? "enabled" : "disabled")}; " +
+                   $"player beds {string.Join(", ", _config.ManualPlanterIds)}; " +
+                   $"absence care {(AbsenceAutomationActive(pass) ? "active" : "inactive")}, grace {grace}, " +
+                   $"farm occupied {pass.FarmOccupied}, last visit {_data.LastFarmVisit}";
+        }
+
         private void HerdStep(UpkeepPass pass)
         {
             // Before the starter herd spawns, an adopted wild animal would count as that species' herd already linked
@@ -5385,10 +5978,10 @@ namespace Oxide.Plugins
                     Bond(animal, pass.Owner, pass.Cupboard);
                     NeedsNet(animal, pass);
                     var cow = animal as Cow;
-                    if (cow != null)
+                    if (cow != null && AutoMilkNow(pass))
                         Milk(cow, pass);
                     var sheep = animal as Sheep;
-                    if (sheep != null)
+                    if (sheep != null && AutoShearNow(pass))
                         Shear(sheep, pass);
                 });
             }
@@ -5429,10 +6022,20 @@ namespace Oxide.Plugins
             return true;
         }
 
+        private static bool CowReadyToMilk(Cow cow) =>
+            cow != null && !cow.IsDestroyed && !cow.IsDead() && !cow.IsInfant() && !cow.IsMale &&
+            cow.HasFlag(Cow.MilkReady) && cow.MilkDef != null;
+
+        private static bool SheepReadyToShear(Sheep sheep) =>
+            sheep != null && !sheep.IsDestroyed && !sheep.IsDead() && !sheep.IsInfant() &&
+            sheep.ShornQuadrants != LivestockFleece.AllQuadrants && sheep.ShearItems != null &&
+            sheep.ShearItems.Any(item => item?.itemDef != null && sheep.UnshornAmount(item) > 0);
+
         // Cow.TryMilk without the player: milk goes to storage, or stays on the cow when there is no room.
         private void Milk(Cow cow, UpkeepPass pass)
         {
-            if (!cow.IsAdult() || cow.IsMale || !cow.HasFlag(Cow.MilkReady))
+            if (!AutoMilkNow(pass) || cow == null || cow.IsDestroyed || cow.IsDead() || cow.IsInfant() ||
+                cow.IsMale || !cow.HasFlag(Cow.MilkReady))
                 return;
             if (cow.MilkDef == null)
             {
@@ -5454,7 +6057,7 @@ namespace Oxide.Plugins
         // Sheep.Shear for all four quarters at once without the player.
         private void Shear(Sheep sheep, UpkeepPass pass)
         {
-            if (!sheep.IsAdult() || sheep.ShornQuadrants == LivestockFleece.AllQuadrants)
+            if (!AutoShearNow(pass) || !SheepReadyToShear(sheep))
                 return;
             var fleece = new List<Item>();
             foreach (ItemAmount shearItem in sheep.ShearItems)
@@ -5494,6 +6097,12 @@ namespace Oxide.Plugins
                 Failure($"corpse:{pair.Key}", $"no corpse appeared for {pair.Value.Description} within " +
                                               $"{_config.CorpseTimeout:0} s; nothing was stored", "cull");
             }
+            if (!_config.AutoCull)
+            {
+                _cullBlocked.Clear();
+                _cullWaiting.Clear();
+                return;
+            }
             foreach (string species in AllSpecies)
             {
                 if (_pendingCulls.Count > 0)
@@ -5504,6 +6113,12 @@ namespace Oxide.Plugins
 
         private void CullSpecies(string species, UpkeepPass pass)
         {
+            if (!_config.AutoCull)
+            {
+                _cullBlocked.Remove(species);
+                _cullWaiting.Remove(species);
+                return;
+            }
             List<LivestockAnimal> herd = Herd(pass, species);
             int cap = CapOf(species);
             int count = CapCount(herd);
@@ -5548,19 +6163,24 @@ namespace Oxide.Plugins
             Cull(victim, reason, species, count, cap);
         }
 
-        // Mating stops while a species' heads plus the young its pregnancies can bear reach its cap plus
+        // Without culling, mating stops at the cap including expected young. With culling, it stops at the cap plus
         // BirthOvershoot, and while a cull that is due cannot run (no room for the yield, or no adult it may cull). A
         // pregnancy begun one head short can still bring twins, and several can begin within one pass, so births can
         // pass the cap by a little more than BirthOvershoot. Null when mating may go on.
         private string BreedingHold(string species, List<LivestockAnimal> herd)
         {
-            string blocked;
-            if (_cullBlocked.TryGetValue(species, out blocked))
-                return $"a cull is due but cannot run: {blocked}";
             int heads = CapCount(herd);
             List<LivestockAnimal> pregnant = herd.Where(a => a.IsAdult() && a.IsFemale && a.IsPregnant()).ToList();
             int young = pregnant.Sum(MaxLitter);
             int cap = CapOf(species);
+            if (!_config.AutoCull)
+                return heads + young >= cap
+                    ? $"automatic culling is disabled; {heads} heads and {pregnant.Count} pregnancies of up to " +
+                      $"{young} young reach the cap of {cap}"
+                    : null;
+            string blocked;
+            if (_cullBlocked.TryGetValue(species, out blocked))
+                return $"a cull is due but cannot run: {blocked}";
             return heads + young >= cap + BirthOvershoot
                 ? $"{heads} heads and {pregnant.Count} pregnancies of up to {young} young reach the cap of {cap} " +
                   $"plus {BirthOvershoot}"
@@ -5987,15 +6607,23 @@ namespace Oxide.Plugins
                 Failure($"type:{id}", $"{id} is not a planter");
                 return;
             }
+            TendSoil(planter, id, pass);
+            Fertilize(planter, id, pass);
+            GrowableEntity[] plants = PlantsBySlot(planter);
+            if (IsManualPlanter(id))
+            {
+                if (AbsenceAutomationActive(pass))
+                    for (int i = 0; i < plants.Length; i++)
+                        if (plants[i] != null && plants[i].State == PlantProperties.State.Ripe)
+                            HarvestPlant(plants[i], id, i, pass, preserveLifecycle: true);
+                return;
+            }
             List<string> plan;
             if (!_config.SlotPlan.TryGetValue(id, out plan) || plan == null)
             {
                 Failure($"plan:{id}", $"{id} has no entry in the slot plan, so nothing is planted in it");
                 return;
             }
-            TendSoil(planter, id, pass);
-            Fertilize(planter, id, pass);
-            GrowableEntity[] plants = PlantsBySlot(planter);
             for (int i = 0; i < plants.Length; i++)
             {
                 GrowableEntity plant = plants[i];
@@ -6123,7 +6751,8 @@ namespace Oxide.Plugins
         }
 
         // GrowableEntity.PickFruit into the feed box. Only at Ripe: an earlier pick ends the plant for a fraction.
-        private void HarvestPlant(GrowableEntity plant, string id, int slot, UpkeepPass pass)
+        private void HarvestPlant(GrowableEntity plant, string id, int slot, UpkeepPass pass,
+            bool preserveLifecycle = false)
         {
             if (!plant.CanPick(null))
                 return;
@@ -6140,7 +6769,7 @@ namespace Oxide.Plugins
             }
             // maxHarvests is 1 for all four crops, so the plant would turn Dying; free the slot now and store the
             // plant fiber "Clear" would give. The worm or grub roll of a player pick is skipped.
-            if (!plant.Properties.disappearAfterHarvest && plant.Properties.removeDyingItem != null)
+            if (!preserveLifecycle && !plant.Properties.disappearAfterHarvest && plant.Properties.removeDyingItem != null)
                 items.Add(ItemManager.Create(plant.Properties.removeDyingItem, 1));
             Dictionary<string, int> stored = StoreAll(items, i => pass.Containers(BoxFeed),
                 $"the {plant.ShortPrefabName} harvest in {id} slot {slot + 1}");
@@ -6152,6 +6781,22 @@ namespace Oxide.Plugins
             }
             if (produceDef != null)
                 Collect(produceDef.shortname, Amount(stored, produceDef.shortname));
+            if (preserveLifecycle)
+            {
+                // PickFruit's counters and state transitions, after the produce has safely reached storage.
+                plant.harvests++;
+                plant.ResetSeason();
+                if (plant.harvests < plant.Properties.maxHarvests)
+                    plant.ChangeState(PlantProperties.State.Mature, resetAge: true);
+                else if (!plant.Properties.disappearAfterHarvest)
+                    plant.ChangeState(PlantProperties.State.Dying, resetAge: true);
+                else
+                {
+                    plant.TellPlanter();
+                    plant.Die();
+                }
+                return;
+            }
             plant.TellPlanter();
             plant.Die();
         }
@@ -6359,7 +7004,87 @@ namespace Oxide.Plugins
 
         #endregion
 
-        #region Chickens, troughs, spoiled produce
+        #region Bees, chickens, troughs, spoiled produce
+
+        private void BeeStep(UpkeepPass pass)
+        {
+            foreach (StructureRecord rec in _data.Structures.Where(r => !r.Retired && !r.Missing))
+            {
+                Beehive hive = pass.ById(rec.Id) as Beehive;
+                if (hive == null || rec.NetId == 0 || rec.BeeColonySeededNetId == rec.NetId)
+                    continue;
+                Guard("bees", rec.Id, () =>
+                {
+                    Item colony = hive.inventory.GetSlot(0);
+                    if (colony != null)
+                    {
+                        if (colony.info.GetComponent<ItemModBeehiveNucleus>() != null)
+                            rec.BeeColonySeededNetId = rec.NetId;
+                        else
+                            Failure("bees:" + rec.Id, $"{rec.Id} cannot start a colony: its nucleus slot is occupied");
+                        return;
+                    }
+                    Item nucleus = ItemManager.Create(hive.BeeNucleusDefinition, 1);
+                    if (nucleus == null)
+                    {
+                        Failure("bees:" + rec.Id, $"{rec.Id} could not create a starter nucleus");
+                        return;
+                    }
+                    if (!nucleus.MoveToContainer(hive.inventory, 0, false))
+                    {
+                        nucleus.Remove();
+                        Failure("bees:" + rec.Id, $"{rec.Id} could not accept a starter nucleus");
+                        return;
+                    }
+                    rec.BeeColonySeededNetId = rec.NetId;
+                    Event("bees", $"{rec.Id}: started a colony; honeycomb grows through the native hive cycle");
+                });
+            }
+        }
+
+        private List<Beehive> FarmHives(UpkeepPass pass) =>
+            _data.Structures.Where(r => !r.Retired && !r.Missing)
+                .Select(r => pass.ById(r.Id)).OfType<Beehive>().ToList();
+
+        private static string BeeState(Beehive hive)
+        {
+            Item colony = hive.inventory.GetSlot(0);
+            if (colony == null || colony.info.GetComponent<ItemModBeehiveNucleus>() == null)
+                return "no colony; place a bee nucleus in the first slot";
+            if (!hive.IsOutsideAccurate())
+                return "indoors; production requires outdoor placement";
+            if (hive.inventory.IsFull(true))
+                return "full; collect honeycomb to resume production";
+            return hive.IsOn() ? $"colony active; next comb {Mathf.Clamp01(hive.createNewCombAccumulator):P0}; " +
+                                 "cold and rain slow production"
+                : "colony stopped; inspect the hive";
+        }
+
+        private string BeeSummary(UpkeepPass pass)
+        {
+            List<Beehive> hives = FarmHives(pass);
+            if (hives.Count == 0)
+                return "Bees: no farm hive present.";
+            int comb = hives.Sum(h => h.inventory.GetAmount(h.HoneyCombDefinition.itemid));
+            return $"Bees: {comb} honeycomb ready in the hive. " +
+                   string.Join("; ", hives.Select(BeeState)) +
+                   ". Leave the nucleus in place; collect honeycomb and use Extract for honey.";
+        }
+
+        private void AppendBeeStatus(StringBuilder sb, UpkeepPass pass)
+        {
+            sb.AppendLine("bees:");
+            foreach (Beehive hive in FarmHives(pass))
+            {
+                Item nucleus = hive.inventory.GetSlot(0);
+                string grade = nucleus?.info.GetComponent<ItemModBeehiveNucleus>() == null ? "none"
+                    : NucleusGrading.GetGradeAsString(NucleusGrading.XpToGrade(nucleus.instanceData?.dataInt ?? 0));
+                sb.AppendLine($"  {pass.Name(hive)} [{IdOf(hive)}]: {BeeState(hive)}; nucleus grade {grade}, " +
+                              $"honeycomb {hive.inventory.GetAmount(hive.HoneyCombDefinition.itemid)}, " +
+                              $"temperature {hive.CalculateTemperature():0.0} C, rain {hive.CalculateRain():0.00}, " +
+                              $"native growth rate {hive.growthRate:0.000}");
+            }
+        }
 
         private void ChickenStep(UpkeepPass pass)
         {
@@ -9674,6 +10399,681 @@ namespace Oxide.Plugins
         // Decoded on first use and shared, so callers must not modify the arrays.
         private static readonly Dictionary<string, byte[]> SignPngs = new Dictionary<string, byte[]>();
 
+        private static readonly Dictionary<string, string> ExperienceSignImages =
+            new Dictionary<string, string>
+            {
+                ["farm-feed"] =
+                    "iVBORw0KGgoAAAANSUhEUgAAAQAAAACACAIAAABr1yBdAAAJRElEQVR42u3de1BTVx4H8N9NAuEVEVQeSwkIgiDyElFERLDo" +
+                    "OlRdVChad9fW3eljWt3tutvpbmd327HOUmeYrXVmHZ2pnbZ2qq1Wd9txdX0AER8oQiCAvI1g5P2QEEJIQvaPi0wMEPPAXZr7" +
+                    "/fwVTg733nNyv/ece5PcMPWSwwTAVTx0ASAAAAgAAAIAwCkCk793781Dp4ADO5T/LkYAAAQAYOIUaKqRAuBHbaq5PUYAwBQI" +
+                    "AAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAgB89AWdbrhoafvmtj6z6l/x9b4gDfGb+EhiG+Hw+n89zdRG6u7l4e4l8" +
+                    "53mHBvtHR4b4+nhhp0cAHJzBQDqdXqfTazTa/keDirZuGd27VEREFBEWuHVDalz0AvQSpkBcVNvQuv/vXx08clqj0aI3EACO" +
+                    "Ki6pev/A55oRZABTICNCodPxw39ymCVodfpBlbrlQYe0qumypEyt1hhXa7yn+OTod79/80WGYTACgANyEvC9PD1io0J35q77" +
+                    "x4HfLIkJM6lwq6xWcqMSUyBwfB7uru/s3hYZLjYpP3m2UK8fRQDA8fH5vNd2bjSZ73R199fU3UcAgBMC/OdGLQw2KZRWNeIk" +
+                    "GIiINBptzq4Ppno2c+3yV7avn/lLMC9yYVBVrdy4RN7ajhEAuGKut6dJiVI5hAAAV7i5Ck1KVEPDCABwxdCT7wYQkbubC84B" +
+                    "gMhR3ggzr7O736RklsgdIwBwRfWTZ8BEFCz2QwCAE+63dtQ2tJgUxkaFIgDg+HQ6/dEvfjApnDd39qKFQTgHAAenHBz6+Mjp" +
+                    "+qYHJuW5WWl8Pg8BAMc85A+q1C0POstlDZevlqsnXP9ZtiQidUUMx3sJAZhO5t/HJaItG1Zt37Lm/7sE1oL5AXte3cLxz0Ij" +
+                    "AByVkhT9+s6NQmcndAUCwC0RYeLsTakcv/KDADg4hiEejycQ8Nm7QszxmuXr4xUS9JOYqBCfubPRPwgAEZG7m8u3x/6KJXAc" +
+                    "3gcABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAwNHM0I9CvLf/0/Fvb3y8/80A/7njT3116tLZc9eIyEnAP5S3Z473LLZ8154D" +
+                    "ykG1yMP12CfvGFfbtjl968ZU4xIiys1Ky960enyZnx4/d/7KbfbxL15cu2l9srUbM76Wp1K0dZ/6V1FDs6Knb0AodPIUuYsD" +
+                    "fFKTYxPjF5pZ5unvJSfOFBBRVubKHdkZJs0hIoZhRB6u4aGBm19ICQ99zmRRltSZtAnmu9HY2rSEV3+5wcI2YgQwp6Ozz/i7" +
+                    "S0XXKyatptXpT31fZNsqLknKRkcN7GPNiNbMTZIt3BgLNcvb/vD+keKSqo6uPp1Or1INP2zvuXnnbrmswc5OMxgMA8qhUmnd" +
+                    "n/92rFzWaHMd+z27NnJlBDDZHYtvyrZveX7Sb24UXJVmZab4zrP6d696egfKZQ0JseFEdK2kauLdcmzYGEuc/XexVqtjGPrt" +
+                    "a9kJceEjIzpFW/eN29VCoe0fzWePzaqh4c9PXCgolo6OGo5/czH+yR9BsqSObev937SRWyMAu88JBHx2xOzqeXS3YZI7GPN4" +
+                    "jH509Jt/Flq7fM9Z7kR0qegO++fFwjvjhTZvjIUetvcQkZuby4rERUJnJ5GHa0RY4CsvrX9p6/N2dpq7m8u2zWPfFGtRdI6M" +
+                    "6GyrY79n10ZOBKC+6UF7Zy8RRUfOT1sZN7YXXp9kisJ+n/XqDZmirduqVaSnxBNRWWVDT9+AvKW98Z6CYSg9Jc6ejbGQl6cH" +
+                    "EalUwx/mHy8oliraug2Gaes6AxmmpY6dnmkbHX8KdPXxlGN5QmTc4gVCZyfNiPZmac2vfp7pJOAb10yIDX/Y3lPf9ODk2YLf" +
+                    "vZFj+SpCg/1Dgv2b5W2XJWX9jwaJKDoyxM/H256NsTR7q+KlVU1EVFnTXFnTTEQiD9eVyxbn/CxtlsjNnn5TDQ2fPFPAPhYH" +
+                    "+Dg7C2yrY7kTZwpOPF4aEb339g72xyefXRsdfwTQ60ev3apmpzeJ8RHOzoLYxaHsK3enon5i/dzN6UR0s7RG3tph1YrWrl5K" +
+                    "RJclZcU3ZewVDPs3xhLJiVG7f73Z+KRFOag+f+X2vvwv9aOjNu+IObs+ePmtjwqKpeylnh05GTbUmS7Poo1cGQHKZY3KwSEi" +
+                    "iggTs0eL5Usib5XVEpHkekVSQqRJ/ZhFIYsWBtXU3T955opVK0pJWvzFyQu9fUp29p8YH1F4TWrnxlgoNTkmNTlG3tpRUyeX" +
+                    "yhrZqzHylvaGJkVEWCARCfj88ctcxpe8xl4w/uQjD8MwHu6u4aHPZWWujAgT21zH/pNgS9qIADxl/lNTd9/k3h7lssZBldrD" +
+                    "3XXCy7DmL3mflUrreTwrLs24CJ1XJcX8p7CUiNasip/05lA2bIzlggN9gwN9MzOWHzz6HTsK9T9Sjs2hZ4vYB11GN7Lt7Oob" +
+                    "e9ZLZPmOaFWdaWemjZgCTUKt1tyW1k31rE6nv367emJ5ZLiYvcfB+HV9S2dBaQlExDCUsTphujbmqQ4eOf3Z1+erauU9vQM6" +
+                    "nb5V0XXvfhv7lL/vnLFhLSqEvV1PSdndyupmjUZbWd18q7yWPYTP/Bs6WNJGjACTuFFao9XqiCh5WdTbr2ePl1dUN32Yf5y9" +
+                    "/LIubekkh7ct6RXVTVYfn8R+Zr5Obu3GmJwRRoQF7vvjromL7e1XFpdUnbtYYlKeEBseFOjLPvbz8X5hXdIPF25oNNp9+V8a" +
+                    "V9u0PtmGNz1sO6mdqglPrW9JGxEAc/Of1cmxJhN9by9Rb5+yrrG14/FMwNiC+QFL48JLpfUzYWPMy81Kv1VWW9vQ0ts3MDA4" +
+                    "JODz/X29VyRGbfzpCuNqO3PXhQT5X5aUyVva1cMaVxdhsNgvI3VJSlI0zXgWtnGGYOolh43/3r03j31wKP9dAnAUU+3Y+DQo" +
+                    "cBoCAAgAAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgAAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgA" +
+                    "AAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgAAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgAwGOCqZ7Y" +
+                    "vTcPvQMYAQAQAAAHxdRLDqMXACMAAAIAgAAAIAAAnPBfYWaXZdUz1w8AAAAASUVORK5CYII=",
+                ["farm-clones"] =
+                    "iVBORw0KGgoAAAANSUhEUgAAAQAAAACACAIAAABr1yBdAAARTElEQVR42u2deVhTV/rHT0hICAlhF1mCCCQEUBYRUFQQRS24" +
+                    "ojIq6lSsfVoddazOM3Wqvz5tta3OPNqqHZkuYjvjLhWlFlFQQBFBUPZ9kX0PkJCQkPX3x5U03rBEirHg+/kr99x7zz335Hzv" +
+                    "ed+zEiruRyMAeFPRgywAQAAAAAIAABAAALxRkHDHu/YdgUwBJjCnju2HGgAAQAAAoGkCDVVTAMC4ZijbHmoAAEwgAAABAAAI" +
+                    "AABAAAAAAgAAEAAAgAAAAAQAACAAAAABAAAIAABAAAAw7iFNgHcQiSW5BZWllfVVNU08vkAgFEkkMgMq2YRBZ9pYujgzvaY7" +
+                    "29lYqt8i7BNv2XlUPYRC0T8X/dHoElDf2J5XVFVSXtfcxhUIRH19YgMDMp1OtTQ34bDsp7tNdWNPGeZ2zcQghMxNGaeO7NLX" +
+                    "H+QP2rn/ZFt7t+rQZrL5iS92jhjh8Bw7tN3edtKgp0or6jOyi2tqm9s6uvtE/Qq5gkwm0WhUMxOjSZamdtYWDvaTWY52DCND" +
+                    "EICu4fGFN249TL7/VCTqx5cqoVgoFDe1dGY+Kf3p8h3nqTZbN4axHG3HNgFllQ1X41MLims0y7SwT9zW3l1U+iw2Ps2BabV6" +
+                    "WeBsXzftY+Z28xOSs1aGznmN2dvU0hl9Nr68qkHziyMSSzq5vIrqRlXgV4d34L4yIIBXS35x9anv43h8oTYXVz1rrqhuGEMB" +
+                    "KJXo2s37l6+nKpXKES+ubWg7Hn01KN/z3T8vpZD1tXxEXEJ6SKAPjWbwWrK3vqn9k6M/9gpEWl6v0CIfwAcYM+4/Kvj8+Dkt" +
+                    "S/+r4Mz5hEtxKcqX+dfTMvK//PqCXK7Q8nqhUByXkP5a3k6pVJ76Pk770g8+gE4pKqs9HXNDs+z5zeAEBXiyHG2N6IZSqayH" +
+                    "L6yubc4vqn6UU9zfLx3DBCSlPrl9LxsXaGVpunrZPE93J2MGTdgnLqus/+X2I5z9UFxWG3Ph1rubl2r5oFt3s0JD/MxNGb8z" +
+                    "wS/r4RSU1NTWt6qHODCt1iwPdHFmMhg0mVTO7xU+q28trazPyinp4PJAALpDLlf858d43HeUakDe8/7aGR6s316MRKRSKdZW" +
+                    "ZnP9p23dGHrz9iOqAWVMEiDsE5+PTcYFunMc/rEnUmXeGDNo/j6ufjNcY84nJL4olaTUnEVBPg72k7V5lkQiu3I9dXvUCh1n" +
+                    "Ms6rMaRSPvlwC83wuTFGpOhZUkwsLUz8ZnDeXre4pKLul8QMPQIBTCBdkJz2RL0NBCFEICBc6cdBNSBHrAxaMM97TBKQkJQl" +
+                    "7BOrhxjRqft2RGga9wQC2rox1MnBBuc8XI1P0/5xqQ/zmlo6dZzJnV0vfNRtJluoSr8mbuwpH+7eMB494HEpgPuPCnAhs2a6" +
+                    "DVP6x5zMnBJcSOhCfyP64I2ABAIhYmUQLjC3oFIikQ3zCFtri9+cS4VSs8J51SgUyhebgzq6eYIJ6QOMMwEIheKqZ024wMXz" +
+                    "Z+osATy+sL6pXVOBw9ziNd3ZgEJWD5HK5GWV9cPc4jjFepaPq+owO7dcvcFRB1iYG6sfisSSA4d/+DUps6WtC5zg10l9Uzvu" +
+                    "40QiEV2cmTpLQGNzB96/JOvb2VgMcwtRT28K0wrnDTc2d3i4Ow5zV+Sahdm55XLFc1fn3NWkz/ZHjTrZ/f3SiK2fDnU2bJF/" +
+                    "1Ia31EO8pznfvP1IPaSDy/vx4u0fL942olOn2ls7Oli7ODM5LHs6jQoC0B28Xny7p4kxfdDu0ldEr6APF2LMoBFG8v9MTYxw" +
+                    "IXyNeHBYTzYPnuednPYEOyytqH+SX+HjydbNa3q4O7qy7Usr6gfLAVFBSU1BSQ2mbXdXh7AQf50l7E03gfpe9D4xB1enCdDo" +
+                    "csaZN4NiQNHXiEc84l1/WjVf3bG+EHtXqcPOpr3bIxyYVsNfI1coCoprjpy4+MVX54V9YhDAK8dQoy1CJJboNAFUfFuquH/k" +
+                    "BIg1eiEMqSP375oa05cunqVu/qVl5OvsTU2M6Z8f2LY+PHgo//4Ft76w6nj0VTCBXjnGRjRcSA9PIJXKdGYFaZYGHl+oVCqH" +
+                    "t4K6e3pxIQy6VkPHVobOSUrNUfXIXr6eOsd/+iiSPbqhfmQyac3ywJWhc/KKqgtLakor6uob21VuCY6C4pqCkhoPN0cQwCuE" +
+                    "aWupp0dQ94NlMnl5VcM016m6SYBma3e/RNrY3Mm0tRzGTqhraBsxnqEqnNVL5/10+Q522MnlJd59rOsiQiLO9GLP9GIjhCQS" +
+                    "WU1dMzY+FNdVjNUD404A48wEotOozlPxA9rupOborgpi0DSHDWv2DKiTV1iFM5P0SUQOy17LJy5Z6KfeKHnt5gOxbq0+XJ3A" +
+                    "YdmHL537r0/eW7poFu5s5zgcEzH+OsICZ3tolr+nBZU6S4Bmq/+tu1lDjRtTKpWxGv2+3h4sMlnbulefRFy3Klh1KBCKXuMQ" +
+                    "wBeUGYzvfiER9UAAr5yQIB+rSaYvFjL09X9icwurhrpFJJbExqfde5A7JgkIW+SPGxfQKxAdP31Fs3NXqUQxFxKrnjWrBxII" +
+                    "KGJF0Es9MSjAw95uki4z+ebtR9/+dLO6tnmYa5pa8QM0zH73oD3wAUaGSNR7/+3lh4+fUx8PJxJLvvjqvGo0KMOIJpHKeHxB" +
+                    "9bPmvKLqzJwScb9ky4YlY5IAmqHBxrUh3/33pnpgUVnt3o9Pr1kW6OHuaMKgD4wGzSirxM8mWTR/ppYj4dQ0Q4hcs/DIiYs6" +
+                    "y+Q+cX9y2pPktCfmZgwfDzbLyW4K08rclEEzNJBIpF09vdm5ZdcTHuLu0pkn9kYLAMvoHVErvzkTh2sWf/y07PHTstHFOXxf" +
+                    "KUJo9bJ5G1YvGCjEPnWNbbgR0W3t3adjbgz/FHeOw9bI0FEkz8eT7caeUlJRp4O3U4fbxb+TmqONl2VrbTHuPGA0fifEBAZ4" +
+                    "fPTBJmMG7XUl4J2NYevCgwkvMwY4KMDzH3siiaM1lDdGhPxh/w4qlbJzWzgRfABd4jXN6dhn25ctmU2ljjzQ38nBhu00lkOG" +
+                    "CAS0dnngZ/ujtPnsOTCt9m6P2LltlfbzITVhO9n5zeDoJm85zvYuzkwt5c12sju0P8p5qs14LEXje1K8MYP29rrFf1oRlFtY" +
+                    "VVpRV1nT1MMXCIViiVRqQCGbGNNtrS1cnJneHqyhljz4vQWFxfy/v23+bVWI1k6BUNTX10+h6BvRDS3NjTks++nujsOvCqE9" +
+                    "kWsW5uSV44YDvgo83B093B17BaKyyvrKmsaGpvb2zp7uHkG/RCKVyg0o+oZUA+vJ5o5TrP1mcNhOzPE5GQYhhAgV96PVj1V7" +
+                    "icEmecBEYqiCDQtjAW80IAAABAAAIAAAAAEAAAgAAEAAAAACAAAQAACAAABgQkKaGK9xPjZZfXg6gUAwolPZTszwpXPZTna4" +
+                    "a9aHB69ZHjhUVAc+P6Nahu3rz/+ivkqhKgZ9EvHUkd3mZs/nf2zd/c9egciITo05+Xfs91CRM20tjx/aMeipppbO2Pi0ypom" +
+                    "bjefQtE3NqLZ204KDPD09XZRPUKbaKueNSckZZZW1vfwBPokorWVua+3S2iIv+binu2dPQlJWfnF1Z1cnhIpzUwZHGfmgnkz" +
+                    "OCzmoNmlUChPfn/tYVYRQojDYh7Yu0mbJWFAAK8BpVLJ7+3LySt/WlCx/6+R3tOdtbyxrb1bfRHCtIz8yDULNS+TyuSxv6S9" +
+                    "9/bysUpwTW3LwS9jpNLnc8pkMrlQKG5u5RoZGWIC0JL4xIxzV5NVywfJZPKaupaaupa7D3IP7t2kLuaMx8X/jrmuPoutpZXb" +
+                    "0srt7uk9sHeTZswKhfLUQOlnO9l99MFEKP0TUADY50rYJ/7p0u2U9DyFQnnuSpL2AsCtvJueWbhh9cJBhzqmPMhbFTbXytIU" +
+                    "Fx5z8u/YD3G/ZPP2L7Hq4sJ3B4d/7vVb6VKpjEBAe95b6+PFlkhkTS2dj7KLKQMramkT7dOCyv9dSUIIGVDI26NWzPRyEQhF" +
+                    "l+LupaTndXJ5R09ePH5oB4lERAhVVDee/O6aXKEgENCqsLlLgn2N6IZtHd2llXUNje2DflC++SEuPasIIcRytD24d5OO1yMD" +
+                    "H+DloBkarA9/Pr+pvql9+KWYNQVAIhGx724Hl1daOcgkLD09glyhuHIjdawS3NzKRQgZGhrM9nWjkPWN6FQOixkV+dag9c9Q" +
+                    "/PzLfexHxMqgAD93MplkZmq0PWqF9WRzhFBLW9fDx0XYBRev3cOW91k0f2bkmoXmZgwymcS0tVw8f+Y7m8IGKf1nrj/ILEQI" +
+                    "OU+1ObhvszYTMEAAr9sKQi89aL6iurG1vQshNN116vw5Xs8lkVGgeSW2MsWDR4VjtXK/qTEdISQUig8fO5eSntfU0vmyiyD2" +
+                    "ifora56vmx0U4KnuDs0fOMwvqkYIicSSkvJaLGTFWwEjxnwzKRPLBEcH64P7NhtOoNI/YQUg7BNfjkvBftvbTtJyDZIHA/aP" +
+                    "v4+r1zRnbPZWZk6JVCbHXenjyWY72SmVysvXU8YkwcEDm3cUlNScjrmx58C/3/nrP8+cS+D39mkZA7eLj5n+FLI+bqboJAsT" +
+                    "7Ae27QW3i4dNqdHXJ02yMB05M4ViTKIf7/vzMNtkgAD+EFyKS4nY+umWnUdT0vOw75+WU2nlcsXDx8WYeePrzSGTSZ7TnDAt" +
+                    "Pcmv0Lx+XXgwJo9ajVXfRkGAr/uubeHqHkWvQJR4L/vQsf8NtRThy1SGA7UBGv3ErW6eIPHeYzThmJg1AIFAMKIb+niyP9u/" +
+                    "RcvNY3ILq7Clzzkse2zPZ/8ZrgNW0CBL0nq4Obq5TFEq0eW4e2OS5sAAj2+O7v7Xp+9HRb6l8tpr61srq5u0ud3cjIFN4e2X" +
+                    "SHErZ3V09qiuQQiZmxnr6REQQlKprL2ze8SYOSx7op4e9nHRXAoFWoH+iK1Ao7hRZf+UlNfhVhDJLawSCEWaO0GsD1/w8ZGz" +
+                    "OXkVWHkaExyYVg5Mq7AQ/xPfXUvPLEQI9fB6tbnRkEphOdpibbhpGfkq416pVKYOCBir06gGZDcXh6LSZwih+MSMEbes9Jrm" +
+                    "FBbi//W3sdhmTUSi3vIls6EGmFCIRP3ZeeVDnZXJ5BnZxZrhrmx7T3cnpLGj1ig48e3PZy8mFpXVcrv4Mpm8oanjWV0Ldsra" +
+                    "ylzLSFTKj41Py8gulkpl3T290WfjW1q5CKHJk8zm+E1TfSawj3pSas6Fn+9yu/lSqay5lZuc9uTM+VuaMc/2ddv17mpM5/+9" +
+                    "fCchKQtqgPHtJ1yKS1Gr4pnBc72xTqgAP/cP3l+rOpVfXH342DmsLWjQncjWrw7OL67+/Unq6ulNzyrSLFg+nuwpI+1SoWKG" +
+                    "B2tTRMj52GSRWPJVdCzOQPpw93qsEwAh5OLM/Mu2VdFn46VSWdyv6XG/pqt/7weNfK7/NIVC8c0P15VK5dmLiUSi3pIFviCA" +
+                    "CYLK/lFvQMQMfTNTo67u3vKqhraOQcxl56m2M73YOXkVvzMB61YFP35aVlZZ39XN5wv6SESitZXZbF/3lzU2VobOcec4/JqU" +
+                    "VVpRx+MLsXh8vTlhIf402gsNOPNmTWc72iUkPx8KgRAyM2O4ODEXBg65mWzgbA+FQoFtUX7mfIKent6i+T7j3l2EZVGANwFY" +
+                    "FgUAwAkGABAAAIAAAAAEAIAAIAsAEAAAgAAAAAQAACAAAAABAAAIAABAAAAAAgAAEAAAgAAAAAQAACAAAAABAAAIAABAAAAA" +
+                    "AgAAEAAAgAAAAAQAACAAAAABAAAIAABAAAAAAgAAEAAAgAAAAAQAACAAAAABAAAIAABAAAAAAgAAEAAAgAAAAAQAACAAAAAB" +
+                    "AAAIAABAAAAAAgAAEAAAgAAAAAQAACAAAAABAMAwkIY6sWvfEcgdAGoAAAABAMAEhVBxPxpyAYAaAABAAAAAAgAAEAAAvBH8" +
+                    "P1go5y2mJTtJAAAAAElFTkSuQmCC",
+                ["farm-compost"] =
+                    "iVBORw0KGgoAAAANSUhEUgAAAQAAAACACAIAAABr1yBdAAAPTElEQVR42u2deVRUV57H76M2ijWAskTABVkUZZFN2QSBKGrc" +
+                    "beOSTExnkmMSk+lkptvpzrSnO+mOyUmcjkmOJ5loOhN3iTKmRSLIJqLsi8i+ibKoFAUFxVJV1Js/npSPV1BUlTl2gd/PX+/e" +
+                    "t9xbt9733t/vvvt+j6rLOUwAeFoxQxMACAAACAAACACApwo+J733vQNoFDCN+eKzfRgBAIAAANA2gSYaKQCY0kxk22MEADCB" +
+                    "AIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAJjy8E22ZvKBoZff+lg7f95sl4/3vzbRWQqF6vX3DvbLBzn59nbW" +
+                    "X3/2ru4S07NLvv7+J+38v/3lzVkuMwytqoOdzRcH9goE47TwW/sO3bsv1SSfdXb4/K9v6b6gSCQ4dvj345a+47UPlaoRds4P" +
+                    "h//TXCSctCUZeGZm5uZCaysL12dnes93Cw/1dZzxjKF/ig4++2CP+yxHjAC/GE23O+oa7060Nzf/pvbdrydZ18oMyteNRCpL" +
+                    "Sc83/fYcUavlA0Od97uLymqPJ6Xv3Xfof364qFSqYAKZLpeuFBixSzcd97prG+6Muys7r0Ktpo245vmUXLl8aGq1rVpNX84s" +
+                    "+uTL0zQNAZgqN4qqemVy7fya+taW1s5ftvsnhEh7+ipuNRpjxcmHzqfkTsUWLrvZkJt/Ez6AiaJSjaRlF295Pprb/acb2f3T" +
+                    "NJ2dV67jgMxrZQGL5xs1WOUnxoc62NmYVANqPAqapmV9A8Xldd+f+nlgcJh9TE5eedTSxfpfCiPAEyUtq2hEreb00/nF1cZd" +
+                    "7WZVs6Rbxs5Z4OXOThaW1soHjDFmFArVmeQsk21GiqJsbSxXRAW+sjORs6uhuR0mkGlhZ2ul2e6W9hUU17D3Xs58JAnmf9X/" +
+                    "ypm5pZyC9ry8jp2jVKqu5VcabVy1dXSZeNsG+Xtx7beBQfop8AOmkgB8F8x1cXbQJFNZ/i5jFLH+Tk8He32tjsHB4YLSMVqK" +
+                    "XLrYxdnBy8N1rEjK9K8qe9pUraaPJ6WbeNtaWoi5dwZlRlEUBGBK4zUhq2JDNMmqututd+8z23mFt9hu8aq4UP0ve62gUqEY" +
+                    "M+sXHe5PCFke7j/WJGjTvyOfN9tladACtgWlY+rWFOiXD3BynJ3s4QSbHLGRASfPZQwNK0ZdzILX/2UtZzRwcXbwW+hx4scr" +
+                    "ets/Y7p2d1fHOW5OhJDwUN+jJy6NjKjZR+7aGq/nZXdsjissrdVYZcfOpv15326TbdiisrpJjaJxGR5Wbn3lTxPtXZ0Qtnv7" +
+                    "KowAvxhisSg63E+TvHqjQj4w1NjSXt/UpslMXBGq/9Dd0Snh9M2ajt/KUrzEz3PMxMh1Ax4IuDg7xEYFapLVda3F5XWm1p40" +
+                    "TXpl8oyrpX8/mTrGIrI0X7cqHCOAKZIYF3o5s0jT/WTmlrHn/s1FwpgIfwPc37HT/xRFRYY9mvuLXuZXWFqrSUp7+spvNQbq" +
+                    "PR/6qw0xV69XDCuUTPJE0pUlfp6mYFjr7rYtLc1/t3e7QbMI8AGeHK7Pzly0YK4meTHtRl7Bo/mZmAh/sVikd/9H5+RVsHMW" +
+                    "L5hrb2f9yAwI8La0MNcxX6QbO1urNc8t1SRb2+7rftrwT0ckFMRFLzn45zc4s8AYAUxuEKisbma2uyS97F0Gub/lt5okUtlY" +
+                    "99ePnRTwectCFqZnlzyylUtr5fIhS0tzPYtYnxiRllXU1/9wedLp5KyIsMmfLj3mKEERI0+nCa1UqXg8A7rFqf4gbEoKIDjA" +
+                    "e4aDLefWJ4T4LZyne9kmB+3lD19+m/zlt8k6TlGqRnLzb65cEaJnERZi0aY1Ud+fvqyRa6oeq5XMRUKKIuxZ+IlWp9E0zVkK" +
+                    "amZGCYUC4xpWoVDl5FVUVjf/9f1XTe3pNUygMf/xythg7XyDuv+BweGCkhojSjd0cejKuNAZDraa5Ll/XB0aUkz6A8XmYww5" +
+                    "tZqW9Q1oH9nT28+14C3Ek44fIpHg7NH9Z47s//Zv//7Wqxs493q3tO+TL04Zt/4PAnhCxEUHcZbaz5zxTHCAl/5XuJZfadyi" +
+                    "34bm9rvtD/Q/XsDnbdsQq0n2ywfHXcnHwd2Vu4a+vmmcJwnajxdmu+q7+J6iiK2N5fJw/z/te5nj6jS1dKRmFEAApou1lTgi" +
+                    "dNGYjjY22CDT2bhV/qOusGHnLg/3c3c17KUQX5+5nJyUtHzO0gSapi+m3dA6cY6hP8dppp32840zyVlGv1kBH+CJuMLxoZqb" +
+                    "WCDgr4haov+57VrT/+sTI3Q85Pqvj76rqW/VJHOuV+zcEm9mpq/eKIrasTnuwOcnDRjiogKTL+ayF/xVVDV9+tXpjWuiZrs6" +
+                    "0jS5ffde0oXs6rrWMX8nnxcbGWhEY66IWnIxLZ89sskHhs794+pL256DAEyUebNdzh7db2wXzp3N1P3gM8jfiy2Ant7+ssoG" +
+                    "zmMy3QT5ey30ml1Vd1vP42fOeGZVXCingy8oqdHtt6yOD9N/ERTH69i5Je7jQ6fYmalXChLjw2ayHBhtdD9SIIRsWhu1fdMK" +
+                    "mEAmBE3TOdfHTP9bWYq957vpOGWJv+djWkGEkJ16L6NgeHFbgkEaCw7w3rkl3uhmCQ7w5kz/K1Ujp85lwAeYbpRXNnZL+9g5" +
+                    "AYvn67Zn3Gc5cjrC4rJaQ01kLw/X0CU++h/PMzPb9872HZvjJn20ZyEW7doa/9u92/S3ysZl19YETs7VGxVGv2QHAZgomVru" +
+                    "rz4LvwLHdsZK1Uiu4W8I7NgcZ9A9SlHUxjWR3xx8d8/udcvD/d1nOdpYW/D5PAGfZ2tj6e7qGBMR8Oav139z8L31iRGPv8jC" +
+                    "y8M1jLWIlRBC0+SHs2nT+Gag6nIOs9Oab4nhI3lgOjHRjY3AWOCpBgIAEAAAEAAAEAAAEAAAEAAAEAAAEAAAEAAA05IpvBz6" +
+                    "eFJ6cso17fyEmKDXXlqrSTY0t6ek3aiub+3p7RfweS5ODiGB3onxYex3oDiX4vHMbKwtvT1cNz0fPdfdWXc17nf1pKTll99q" +
+                    "7JL00oS2t7Pxme+2ImqJj6eb0XXYtiFmy7rlml1HjqWkZhQy2y/+KoGJ2MOpM0VR1lZiLw+3jWsiOUEd9SmdENLW0ZV0Ibu+" +
+                    "qU0ilYlEAltrS/dZjtHh/iGB3oSQV97+RPNqvzZus2Ye/OANCMDkuJCad+xsuibIq0o10nS7o+l2x5Wrpe+/u2uiN+hHRtTS" +
+                    "nr4bxdWlNxsOfviGjk8G5RXc+upoMjuyYkenpKNTIu3p+8O7u4yuQ3pOyaa10cyyuWGFkrN4e1yYQOdFZbUlFXX73tmhCV6k" +
+                    "Z+lNLR3vf3RU846oSjUilw+1d0qsrS0YAWAEMF1e2Bi7WetbAYSQkor6H86kEULMRcI9u9cFB3j3ywdPnc/IzC3rkvR+fOjk" +
+                    "wQ/e4PN52peSdMs+/ep0Q3P7sEJZUFKzlhXbh01d491D35wbUaspimxYHbkyNsTayuLeA2l1/e07o0FLjagDIUTSLSu9Wc+s" +
+                    "Ub2WX8mJ3D/uz5cPDH1/6ufM3DK1mj52Jo0RgP6lJ1/KVSpVFEX+7fUtQQFeCoWqraPreuEtkehhgImjh37LbAwNK17c8xEh" +
+                    "RMDnnfjmffgApsuPP+UwG1vXLw8P9RUK+fZ21nt2r2NCTHfc675WMP56Zgd7Gz9fD2ZbPfYrBGxOnstgXllMiAnesTnOwd5G" +
+                    "KOS7zZr5XEzwr3etNroOTEi29NFg12lZxZpMHVhamL+w8eGLV61t95lBSf/S2zslhBALC/NlIQtFQoG1ldjH0233jlU7NsfB" +
+                    "CZ6SDAwOawKGsuM8UxQVM5osrxz/w0cSqYzZRVHEf1QJHAaHFFW1Lcz2RGE0jasD81JvSUW9RCprae1saG6jKBIbGTC5FURo" +
+                    "o0tnvr0glw99+NmxzNyyto6up+QbYdPBBDp1PvPU+UxN8g+/2RmweL6kW8YYviKhgNN9amz6ru5eHZdysLd5adtzs92cxhdJ" +
+                    "dy8TOUcg4DvOsJvgGGPq4DHHZd4cl6aWjis5JUzYn8UL5jk7ThKsXD4wdHq05u6zHIVC/r02qf6lx0YFllU2EkIqqpoqqprI" +
+                    "aNyNretjbKwtIIBphaZr0x1CkKZp+2ds/il1SFge/HXLT1dySgYHh5l5LR0faOLon6KoSV8+1i49PMRXpRw5839Z9x48/IBx" +
+                    "X/9gakZhTcOdA3/8V56ZGQQwxZxgB3sbiqJomh5WKHtlcnYX+KCrR3OM9qXWJUZcziz8+8mfu6V9n351+osDb4vNheP5CbZm" +
+                    "ZpRaTSuVqvtdUqeZduP6EkbUgRASuXTR/57+mXlx2dbGMiTQZ9IoRhRFWVmKvTxcN6yO8PF0N6L06HC/6HC/ljv3qmpbym42" +
+                    "lN5sIIS0tHbWN7axp3ThA0wNLMQiz3mzmG12TGaaprNGk/6LxrHvBXzemoSlTADqXpn80gQfuxabCxd6z9FMNf6ydTAXCaOW" +
+                    "PgzTuyIqUHe02hc2xp49uv/MkT8ePfQf+97Zztz9Rpc+x81pdXzY73+zM3L0E5E9vX1wgqckmmEh6UJ2XuEtpVIl7ek7/N2F" +
+                    "jk4JIcTZ0Z4TW46Nxq9NzShkfySGc+cxtkFaVtGJH69IpDKlUtXeKUnPLj5y/NJj1iEhJojxwuOXBz2BFvj86x+/O5laWdMi" +
+                    "6ZapVCN32h403+5gdrk4OcAHmJIs8fPctTX+eFL64JDivw8ncYyT3739gvYEvIaARfNdnB2YR1rXi6oiw8a5Tb3nu7356obD" +
+                    "311QKlXnL+aev5jLOt3jMeswx93Z6LBfRrRAd09fbn5lShp3uAvy95poGgACmAKsT4zw9ZlzMS2/uu52r0zO5/FcnOxDAn1W" +
+                    "x4fpjvFPUWR1fNiRYymEkJS0G+MKgBAStXSx1zzXlPSHSyEIIfb2Nt4ebnHRgY9fhyfZAts2xBaU1NTUt3ZLZbL+AeawZSG+" +
+                    "z69cNr3vEIRFAU8FCIsCwFPmBAMAAQAAAQAAAQAAAQAAAQAAAQAAAQAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAI" +
+                    "AAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAIAAAI" +
+                    "AAAIAAAIAAAIAAAIAAAIAAAIAAAIAADD4E+0Y+97B9A6ACMAABAAANMUqi7nMFoBYAQAAAIAAAIAAAIA4Kng/wE2Y+44Qpqg" +
+                    "WgAAAABJRU5ErkJggg==",
+                ["farm-wool"] =
+                    "iVBORw0KGgoAAAANSUhEUgAAAQAAAACACAIAAABr1yBdAAAOnklEQVR42u2de1QU1x3H7755LQiIiAjyWlheAlWCoqIYTSNR" +
+                    "E204SWOStqRtatLYvE7bpKk9qcmJbaNNmyae9lTT02hilBwNOUUTH4hRVCAKCrjAIu+Xsiy7y+6y7Kt/jI6zM/siWXIS9/v5" +
+                    "a+bO3d/M/s793vu7d+7cy2s7vYsA4K/w4QIAAQAAAQAAAQDgVwhZ58+8sB1OAXcwb+/4LVoAACAAALghkKuWAoDvNK5ie7QA" +
+                    "ACEQABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAAN95hHfwf7PbyRO/+rNu3EinxMbMfOv1p7k5T51tfGf3YWbK" +
+                    "4vyM5zeXcnO+f+BYxdEaZsqObZvjY2c5fYCevusNTcqW1u6BYdX4uNFgmAgIEIeEBEZFzpDL4rMzEjNS503pH31Ng3rDxI9/" +
+                    "+SdmikQi2rvrZQjgzoTHI3JZfN2lVjqlf3BEqzOESoNYOa+2dXNSepzabGl1yBkcHBA3x0npV7T3Hqw4dbn5GrcI6g0Tw9fV" +
+                    "TVc7yyuqE+KiN64tWpyf4fG/+Nwg8IsQiFsjcss6IeRqO7u4j2nGh66PshJNJnNn9yAzJV0Wz+Oxm52PPz29dft73MLKpat3" +
+                    "eOeug//492HTpNlNO+Zbg8CPBJCeNs9j1a7R6geHVE5UwcnZ2tFrtdkc7HMEtntf5f5DVXa73fuHrK5pfOOtD6xWm9OrPjcI" +
+                    "/CUEIoQkxscEBoiNE5Nuo51uV9FO8dJch5yt7JxyWTzz9NipLz87WcfKEx0VvnHtspzM5LDQYL1hQtHe8+ln51qVvcw8zYqu" +
+                    "PR8c+dlj97F+63ODwL9aAD6fl5oc5xgkDBmNJlc1fWCghBEXsYt7i6NUJGJRcsIcZji+r/w46yeZ8oQd2zavXJYXGREqFArC" +
+                    "QoMLFqRve6ns3pX5nLJe39UzxIrvfWsQ+J0ACCEZjlGQzWZXOFaWzBaAWYyGr6vVmnH61GKxKjv7mT+UJc8VCG47sPLYBb1h" +
+                    "gplBGhL4wlOlErGI2zsv27SGKR4q1j9YUc1M8blB4I8CSHfbDzYaTd19w/Rp8dK8iHCp05zKzoHJSYujZYf453x9C+tGa+4u" +
+                    "kIYEuRih4pXev5yVeOlyO/MWPjcI/FEAKUmxIqHAlQAUyl6b7Wb/Miw0OCY6gikYZtDP7Sqky+Yxe9I9/ddZGRYtdDccmZud" +
+                    "EiARM1PMFqvi1niUzw0CPxWASChISYplpig7B8xmC7dYU0WfOXLKHB5ldQAEfH5q8lz6tG/gBuu+ErFo7pyZbh5MwOfPi4tm" +
+                    "JdJ2fG4Q+KkAuFGQxWJtv9bP7QFTIQ0zc0/fdSoKt9vtrGGWpIQYieR2LK4bN7BuGhYazGO9I+AQPkPKStHesuNzg8B/BZDB" +
+                    "eRtAVedmi7WD0a+l6v65c6LoOJsu95097LEjlqgMjlcJIaxoxCkBEnZ31mCcmCaDwH8FkJYSx+c71J1UcN9+rc9ssVIpQYES" +
+                    "Kn7g8Rx6t9TcBycdAMcecBBj/JRiwjTp8cEmTOz3tUGBAdNkEPivAAIk4sT4GGYK9U5XwYh/0lLi6ADDoR/c1k04U4CoWUbM" +
+                    "FO7gjEar9/j6Vj2mY6WE3rLjc4PAfwVAOHMiqFk9zHqdGSYx+8EdXQOmSTNrLCVuzqyQ4EBmytw5Uaw7mibNfQMjbh7JarN1" +
+                    "9w6zEmk7PjcI/FoA3FlxTVe7mP1aOWNMMyF+Nv1K2Gq1VZ9t1OocupJyx/iH6qFyJ0VzB/KZNFxRsqIakVBANyw+Nwj8WgBy" +
+                    "zrTNz6vq6DlCIpEwJfH2a1Q+n5eWcnsCxeHKM+6HlSi4g/RHTlxgfo3AxG63l3Ne0+bNl4nFwukzCPxXANKQQFYwcEOloY9l" +
+                    "SbFCx5dlzBaDmdNpD5iiZHVBcJBDj1M3btz57gHuu1i7nez54Kiyc4DVryhdv3xaDQL/FYCratvVJTeZo2bOiAwP5aYHBwVs" +
+                    "enAVO9BSdD2/9d2qMw0qtdZqtWl1htqLiq3b9xw9UcvKuXrFwoT42dNqEHDxo/YxI3Xe51X1LgTArtFTEueIxUKnE2ncfHa4" +
+                    "esWC7r5h1gTm4evqd/d84v7ZMuUJZY+s+QYMsjvWJnNp2atuMmxcu+yHG1eiBbgjBJDmvOCyIv6bFYNQIEua66VamDyxqeSh" +
+                    "DcUeX9kyWV6Y89KzjzAnlk6rQeCnLUD4DGl0VPjwDTUrPTE+xulL1vTUec2KrimFUlTk/eC6oix54sFPTl1u8fARozef8Prc" +
+                    "IPBTAVBllysAVzW601AnLDR4zuxIjzeSy+J+/+JjtxdxGBoZ1xsNBpNEIpKGBEVFhsll8dmZSd6vCuFzg+Bm/dJ2ehfznN5L" +
+                    "DJvkgTsJVwUbYSLwayAAAAEAAAEAAAEAAAEAAAEAAAEAAAEAAAEAcEfy7Z0L1D84Ul5R3X6tX6XWSiSiMGlwfOysosKc/Lw0" +
+                    "KsO+8uOHK88SQh7eUPyDdUVUom7cULblL4QQaUjgnr//mpmNxeoVC37++Fpmyu9e393W0Ucdv/X607Ext1ehYhkRCPih0uC0" +
+                    "5Lkb1xUl3ppzz30eOkUkFLy9fUtkxM2vCMq2/Fk3bqSfkEI1qj1yoraxSTk8MmY2W8KkwTMjw7IzkooWZce4nn3k3kvUjVz9" +
+                    "Ni42aue2p6hjZedA5bHzV9t7xjTjIqEgJjoyPy9tzSqHL3Km5ASP3oYA3HGta/CVN/bQ67dZLFa9fmJgSCWVBtEC8C3D19V0" +
+                    "6SeEVNc0PvKDu11ltlpt6jHd+S+vXrqi3PnaU7NmznBv3Gyxln9a/eSP1rnKcL6+5R+7D5sYi5qo1FqVWtuq7LVYLNzPYnzr" +
+                    "pYqjNXsPHqeXnLBYrNe6B691D5744tIrzz/KrAi+jhPQAkyBw0fOmM0WHo88++SDC3JTJyct/YMj5+qaJZyFn7yH2VBwOX3u" +
+                    "MvP0zPkrP9x4N3cSPmVENap9852PlJ0Dpklz7UXF2nsWebx71RcND5QsjY4K515q6+h7658fU/tZ3Lsyv2RVQdTMGRqdfmBQ" +
+                    "dba2KTBA8pW9RLcwE6bJxza/QbVFH/zrFaaRi5fb3z9wjBASIBFv/sn6hblp43rj/kMnq840jKg0f/r7hzu3PcX6XtQbJ7j3" +
+                    "NgTggYEhFSEkKChgcX4Gj8eTiEVyWZxcFjd9d6QEIBQK8rJT6i613lBprrZ3u5pdHBkROj8zmfoG12bzvBELn8+z2mwHPjn1" +
+                    "zE83cK/uP3SSKv0rl+U98WjJzVuEh0aGh2ZnJE63lz7+9DR1UHr/8sK7MgkhEWLp5p+sVyh7B4dUg8OjZ2ublhfmfH0noBM8" +
+                    "BcLDQgghev3Eazv2Vp1p6B8cmcoWQVOmraOP2hEsOz1xxZLcm5Kouewqv0qtbWzqIITweCQnM9mj/aLF8wkhX5y70j/IXtjH" +
+                    "ODFJf3az8b5l37CXDEYTvUwqs5TzeLwVt06pf/r1nYAWYAoUL8traOoghFxuuUZ9BiUNCVxyV1bp/Su4ezzuP1S1/1CVR5us" +
+                    "bL97blNudgp1/MWt+KdgQXpuVopELDJNms/XtzzxaAlraXWmkciI0Mcfuoe7IDOXBTmpA0Oqto6+jw5XsXZfVY1qqPXZRULB" +
+                    "rKgZ0+cl54V4VEuF/hKxKCw0mHmJjulHRjVuPOnKCW68DQF4pjA/02K2HvjkFP0Bl27cePRknULZu33rzwR8XzZcVqvtbG0z" +
+                    "Fajk58nFYmFOVnLtRYXeMPFlY9uiBemufmi32yNmhHp5l4c2FG978/3z9S1dnMXb6FqXkJt9jj+++d8rLZ3UsZutfKfVS3Rb" +
+                    "wiPuPkeekhMggClQVDi/qHB+V+9wS2tXwxXlpStKQkhXz1B7Rz8rzHU6DOp9J/jSFSW1FrlcFk9VnAXfS6+9qCCEnK5pZAng" +
+                    "4Q3F69cs+byq7j8ffjaq1r35zkdvb98SGOB53eb5GUkZafNaWrs/OnTSMZIO4/N5NpvdbLbcUI1NdSzFey+56szweDy73W6a" +
+                    "NGu0emYjcGNkjM7D9aRHJ3xXOsHf9hdhCXHRJasKXn5u09JF2VTKmEbn21vQ8U9La3dp2aulZa++/e9DtDbG9exxdJFQcN/q" +
+                    "RVnpiYQQjVZ/5PgFr4ehVhJC6hvamDt/BQaIM9IS6OFI6mDri48f3PMH5mZN0+SloECJ7NbuIdU1jcx6/dSt05wsJ/H9V3YC" +
+                    "BOAVf/vnx+99eLRJ0aUa1Vos1t7+G/QO1THRkT68kdFoqmtodXXVYrHW1DU7vbT+3kLq4OjJOi935E1Pjac6i/SmTHRlSYUr" +
+                    "n1fV7Ss/cUOlsdpsunGDR7M+8RJdT5dXVNfUNZvNFvWYbtd7FdTeybNnRSy5K8vVb7+CExACecXomO7MhabKYxe4vUlvOp3e" +
+                    "dILlsrhtL5Wdq2+hXiQV3pX53C8epK82Nne8tmMvNRZ0z4qFXGu5WSkxsyMHh1TqMd25+palBVleNQIbixub2YMqaSlxT//0" +
+                    "gV3vVZjNlsOVZ7hLkU6rl743X/Zo6ap95ceNE5N/3VXOCpB+s+Vh1ksAL53g1NsQgLc89EBx7UWFor1nVK3VjhuEAkFMdMTi" +
+                    "/Mx13188TfEPa6h7fkZSRLh0VK1rVfZyV1Khuqwlqwp2760khFQeO++lAFISYxfmptY3tLHSly3KTk2aW3n8QmNzx4hKYyf2" +
+                    "8DBpVGRYTlZywYKM6fbS/WuWZMoT/nfswtW2bo1WT9nJz5OXrCoIDna3v8ZXc8K3CiyLAvwCLIsCwHdwFAgACAAACAAACAAA" +
+                    "CAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACABAAABAAABAAABAAABAAABAAABAAABAAABA" +
+                    "AABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAAB8cwhdXXjm" +
+                    "he3wDkALAAAEAMAdCq/t9C54AaAFAAACAAACAAACAMAv+D+c0MHlDgzikgAAAABJRU5ErkJggg==",
+                ["farm-cold"] =
+                    "iVBORw0KGgoAAAANSUhEUgAAAQAAAACACAIAAABr1yBdAAAUcUlEQVR42u2dd0CT1/rH3zcJGWQBAREhiBAgygYViwoO1Iri" +
+                    "5jqr1tthvd3tr/t2719rh731dmj1Xq2LVkstojjAjaAiM5Cwwh4BErLIIPePF2J4A4EwEtHn8xc5JCdPzjnfc85z3nOeg5Ze" +
+                    "3I0AwIMKAYoAAAEAAAgAAEAAAPBAQcK9fualT6FQgPuYXV++BiMAAIAAAMB8CtTfSAEAY5r+5vYwAgAwBQIAEAAAgAAAAAQA" +
+                    "ACAAAAABAAAIAABAAAAAAgAAEAAAgAAAAAQAAGMe0vCzUKk1t/OExUKxqLxWKpPLFSqNRkelkZ1YDO4Et0AeNzyE5zXBzXIm" +
+                    "4pqm3AJRUUlVXaNELlcplWoqlcxg0Nw4Tnx/75Apk6YETLTwcYVSvfXpz0xTKBSHA7vfGIz95p9FEARFESKRSCQSaFQK3ZHq" +
+                    "4sx0d3Px8/EImezrPs55BCuguFR8NbuwvLKusblNqers0neRySQ6nebixBzn5uzl4erjPd7f14vFdDR+5Lk3vqtrkAz5G2Om" +
+                    "B72wfY1tasEUIoFApZKZDEevCW6BPG7M9KBxrk5Dy6pPvvzgKW/PcTYVgFSm+OPUlbMXb6lUnfgfoFArFOra+pbrN4v3HznD" +
+                    "mzRh28YEf19P80wEwupjKRl5heXmRaBQqhub2gqKK5JTMn247quWxj40bYptOgaDAdHp9DqdvrNT2y6V19a35CMVZzMRBEH4" +
+                    "/tzVS2PDQ3jD/Ira+pbdv6SUiKrNOxSVWtMikZaW1RgTv/pwx4CdyHCwQS3ou7qw3BqaWnNySw79fi4+LmrrukUODiTEfgz9" +
+                    "u+8Ulu366bhUphjMm0UVdaVl1TgBGAzI7ycvHjmRYTAYBsyhsrpx5+5jcXfCHt+8hEJ2sGORCYTVH311cFZ08PatyyiUIVoi" +
+                    "rm1697N9HXLVIN/fNYgiGrLU7VILXV2GMxdymlra33h+I4qONR/g4rW8j3YeGGTr7489B1MPH79gsKZqM6/e+eTrX/X6LrvP" +
+                    "HS9nFbz7+f5OjXZIbc6w66fjg2/9o4p9ayE3X3Q5K3+MjQAFgsrv9/5hXmLTI/lxMWH+vp5MhqNWq2uXKcoq6+4UlF3LKezs" +
+                    "xDeU9Iybp89n4xLd3ZxXLZ0dFuTHZtEVSrVAKP7z9DXcJKFQULn311OPP7Jk9ArF6D9odXq5QiWuacwtKDtnNtMTVdR+++Pv" +
+                    "L//jb6iVPVheUXmluME0xYfrvjoxNpDHZbHoOq1e1qGoEDcUC8VZOUXNEinu4998/LR5nu1S+eMvfGmawmTQ9n77imVLRrsW" +
+                    "jCVpMBhkHcqbd0r3Hz6t7F2MF6/emT0jZPCVYmcB6PVd/96XglM/jUp+fvuayFD/u/mSiDQaxcPdZVZ08LaNi0+evkajUkxn" +
+                    "lgeTz+JyDuL7vP78BuPAymbRo6MmT4+cvPdgalrvSkrPyFkQF+XjPX60uwcHEtGZzXBmM8KC/FYvnb3rp+O38oSmb7hxS3Dx" +
+                    "Wl5cTJh1Aug91XakUd59dSvdkdrtLFIIbhQnN1en6ZH8LWsXFpVW/Zl2lTAKswRb1gKKomwWfd7sCCKR8N3PJ3DTYzuOAFZP" +
+                    "gc5m3mxsasMtmOBaPw4alZy0PG7e7AhjSmp6lkKpxnVXL+1IMp9WoiiybeNiP58JuGnrsZRMG5cUg0575Zl1kwO8celHTmRY" +
+                    "Oxloae3VqU8Y72ps/eZMCZj46rPrR8MDtkstRIUFmOlQZRg1D2fkBXDxWh4uZcbUKRZaf59czynCpSyeH81kOPbXeSQtj8Ml" +
+                    "3s4TajQ6GxcWkUh4cksiri9ubmkvKqmy1v/rvRzU3CaV277u7VILdEcavgmiBNR+XrB1AlAo1KKKWlziwjlTrcpEKlOIa5vM" +
+                    "VWThI+EhPCqFbJqi1ekFQrHty8vTwzUo0AfvyRWIrMrElcM2falSa9788Oe/0q/XN7ba7IfYqxbkCiUuZby7y5hxgsW1Tbje" +
+                    "i0QiBvK4VmVSU9eM92/IDl4TXC11vQTCRK47zg+rqWsODfK1fZFNDpxYIKjsvTjYYFUOEcG8k6ev9RpGJNJ9h07vO3SayaBN" +
+                    "8vbw9fEI5HH5/t4MOm2UfoW9aiEnt3TASVGfdHZqk7a9199/ExZEP7r+4VEXgLQDv+7pxGZY+yCjQ47vA9gs+oCDoLMTE5ci" +
+                    "M8vHNri6sPG/qMM6S0KDfCcHeBeXivsqHFVeUXleUTnW4IIm+yTERw+yidzLtWAwILIOBbYK1GtGRKcuezhmzIwAyt4+E+bg" +
+                    "WvuVSrPHxriBtU+oZo+clCq1XYrMkUYxX06xNpMXn0r6aOeByupGSwtuXV15heV5heURIbznnlxtwVEeArapBcvdNp1OffWZ" +
+                    "9WwWfcysAjma1YFKrRl+A1J3DpyJ2uxJgiONapciM286Q2iaTmzGR28+tm7l3P6czl6+Zr5o5+5joy1jW9YChewwPzZy5/s7" +
+                    "zFfV7ukRgM3Ei7VdKtdqdVbNgsyrXCpTGAwGy+NvW3sHLoU1iKYzGjS1tOMtYQ6lDyOTSasTY5cvnplbUJZfVF5cWiWuadJ3" +
+                    "9b2imldYnldUHjplxHwe+9aCATFodToi0Yr+9554EMb1dCMQUFM/WKfTl4iqgydPGnwm5kvanRptTV0L19PNwmSgymy2MKqb" +
+                    "wyxQ2NsDRhBkOI/kSCTi1PCAqeEBCIJoNLryqjpsfyjuUTE2DoygAOxbCxqN7uLVvILiio/feozjzBozUyAGncabhN/ReSYj" +
+                    "x7phhEU337ZqviZtSm6+CDdAO5CIfH87jJ5V1Y3mC39hQX4jkjmZTOL7e69cMuv/331yyYIZuP+2mO2JGA62qQUKxeHY3neO" +
+                    "7nnn569ffvqxFbi23trW8fmuw7h1xXtaAAiCxD4Ual5quA0CA2K+3nzqXFZ/m8MMBkOy2RPHiFB/MtnW22h1Ov2P/zmJS3Rz" +
+                    "dZoSOHHEv2vRXPzTFRJxhE8v2awWUBRhs+hxMWHvvbYV5y+VV9annb8xlgQQHxeFOxFiMCBf/zv5dn6/D4NUak1ySub5S7eN" +
+                    "KQkLonEF0SFX7fz+qPljRYMB2ftrGm67CIoiScvibFxSHXLlJ9/8arpHH2PtijlEK5vmydPXfth/sqzS0h6Y2oYWXIrLSE8V" +
+                    "bF8L7m7Om5LicYlHT2TIFXbbGGt1J0okErZvSfxw5wHTDTAqtebjrw4ad4OymHSNVieVycsq6nILyq7nFKk7NVvXLzJdNtm4" +
+                    "Jh7XmxYIKl98+/vVS2NDg3ydWIyefYhXBUL8kZEFc6baYCcc1uXLFSpxTdPtfOG5S7fNz/1Mj+SbD4kDryOpO89m3jybeZPj" +
+                    "wooKDfD385rIdec4s+iOVI1G29rekX1bcCL1Cu5TVjlag8EutTBvduRf6Vmmj+EUSvXvJy9tXrtwbAgAq4kdjy7/bs9x3Bam" +
+                    "G7cEN24JBpnJgjlRVTWNuL24jU1t3+/9w/IHg/g+2zYsHjB/yyvQCIKsWjp7/ap5Q/ssBm+S57NPrBrOPhZJq+xMRs5gnChP" +
+                    "D9cR9IBtVgt9TDkI6MY18z/79rBpYtq5G4vjo9047FGq0JGcAnV7AjGhb7ywaZiPMP6+MWHtyrlWNaC4mLDXn99AJNr/LP+s" +
+                    "GSHvvrLFNmfTaDTK04+tHKVfbftamBoeiFv+1+r0h38/P2ZGAIzwYL8v33/qxKkr5/o6E4zDz2dCgB/X3DdakxgbzJ907I8M" +
+                    "7OG/BWx8JtgCfH/vNctih7Pyw+d5B/K4pWU1g9kGHODn9cTmpRO57qP0c+xSC5uSFrz50R7TlEvX8xIXPWSbme3ICABbStuy" +
+                    "duHflsXdzhcVl1YJy2vbZXKFQq3RaqkUshOb4enhGsjjRoT6Wziuz/fn/vPlR+7GI2hokStUSmUnheLAZDi6cdh8f++QIF/L" +
+                    "8QhGo1kQCAQSiYhFheA4s9zHOftOnBAa5GshlsEgCQ3yDQ3y7ZCrBEKxsLymurapqaW9rV3eqdFotXoqxcGRRvUYz/Gd6DE9" +
+                    "kh/gx7XBZmEb10KAn1d01OSsm8WmfvZ/j6X/86VHbCwAtPTibtPXxrvE4JI84H6iv4YNgbGABxoQAAACAAAQAACAAAAABAAA" +
+                    "IAAAAAEAAAgAAEAAAHBfYs+7CQ4mnzXd9Y6iKJNBC/DjrlwyK8DPy/Sdooq61PTrxUJxu1TuQCJ6uHOmRQQujr97niM94ya2" +
+                    "r33D6vkrl8zCEt/7fD8WwWr71sT5sZFY4ktv7xbXNBEI6L7vXqNRyTgbjCyYE/XE5qXmRhKJBBaTHujntSoxdlLPzi2rMiES" +
+                    "CVQqmePE4vl6LpgTZX7E1EIRDdO8dSvnrk6MtdYeSavs1LkbdwpEjS3tWq2OzaS7ctghU3xjZ4R4jOcMxkgEQWrrW5JTMoXl" +
+                    "tZI2GYXiwGbSvT3HxcaETYsIfHAFgAOLoJ2TW3Irr/S15zZE9FzBkpJ29cCxs8aNkzqdvryqvryq/tyl22+9uMnTwxVBkED/" +
+                    "7q2mxgO7XV0GYU8UR4GwGhOAUtVZXduMIIi3l/sQIhohCKLXd7W1d1y/WXw7X7Tzwx1D2Bin13dh1+eIa5vOX7q9ImHmxjXx" +
+                    "I1WGQzDPsj3Xc4q+23PCNLq9pE0maZOViKp1Ot0gLS+vrH/rk71arc5YgwqFuq5BwmQ6ggAQY8+kUKr3Hz594XJuV5fhwNF0" +
+                    "TAC38oT/PZqOIAiVQn7q0WVTwwPlCtXh4+cvXM5tkUg/+/bQzg92kEhE7oRxdEeqQqkuKas2GBAURSrFDcZqKxF1q6JUVI0J" +
+                    "iW8WztHYO1o2UtIq++JfR0QVdZ0a7Y1bgqULZ1ibyaqlse0y+Y2bxQeTz6rUmhOpV9gsBi6f/r59mOZZa09pWc3XP/yGHf17" +
+                    "eN60hPhoN1cnaYeirl5y5UaBabx7y0aeOHVZq9WhKPL8k2uiwgM0Gl1tfcu17MIh369zf/oAdEfqupXdJ3rEtU3YydTf/ryI" +
+                    "pSQtj4uZHkQmk1ycmU89ugwbfOsbW6/cKEAQBEURbNakUKhr65sRBBGIxAiChAf7EQhofWOrrEOJIIigJ66ltfFMjXBcWKE9" +
+                    "JwG6uoZyRQqKIs5sxqJ5057ckoilJKdkml8gYjPzLNhz+Ph5rPXPmx3x900JHuM5JBKR48wKmTJp+9bEVUtnD9Iq7Eo/R0fq" +
+                    "Q9OmUMgOTAaN7899dMPDG1bPBwH0ngUhvQ6IKFWdwvLuaYzpJRQois7peXmnoAz7wxifAzu9isVwDQ/heXu5G1+W9EyQAoca" +
+                    "UkXSJsO+EUWHGw1lZnQwFiZaoVQXl1aNSAEOxzycPSq1xhgBadWS2cOxypnNwPqmD788cOFybm19i8FwrzS5e8gHUCjVR45f" +
+                    "wP729hxHJpMaa9uwGQuF7IA7fmmc3RovmzB26gKhOD4uskRYjSBIIM+7obG1UtwgEIojw/wxr8DFmWl+/PTw8QuHe74dQZA3" +
+                    "X9iIuwfS9A0cF9bmtQvNT2kNmAkOz/GuWLQf82hzo2HegJja48phYxF7HEjEcW6DcnX6M3Lu7IjcgjIEQYxxf5kM2szpwUnL" +
+                    "55he//rgCgBXcCiKbkyKH2is6Hkz0n1ciufrSSQS9PougUjcIpFK2mQUssMk7/GNTd5p57NLRNUVVd1ewZDnP6b+uovTCAQp" +
+                    "GaWbUYZsXt/2oCjSU8jvf/Gf/KIK7O/BxyqMmRak0+qP/pHR2Nx9t1CHXJV2Plsgqv707ceJBMKDLgBju2fQaQF+XisSZmLz" +
+                    "GY4LC0VRg8HQqdFKZQrTQaC5p8vkuHTXNNbcRRV1jU1tWbeKjZLgB3gjCFJeWVdQ3F1zfJ730LzMZYtnnrmQve/Q6da2ji/+" +
+                    "dWTXp8/ilpIGzKR3a7sb/GfA5ZoRMc8qezgubCwMplara5a0D2ZByYKRsTGhsTGhldWNRSWVufkiLIpUpbhBWFbL9+fasdXd" +
+                    "Ez7AupVzj+195+iet/d++3+vPbfeOJt3pFGMVwtnXr1j2lFl9LwMC7470w3sadknz1w39vQcZ5Yrh63V6U9fyO5xAIZY4g4k" +
+                    "4pIFM7D4PFKZ4tTZrOH86stZ+ZJWGeb9Tx6J2HLDNA9nD41KntJzF05K2lXsj7df3nxs7zsuzsyhWejDdU+Ij37jhY2zeq6F" +
+                    "bJd2gBNsCWOPkpySeTW7UKvVtbV37P4lpb5BgiDI+HEuM6cHG99s7EuwiaxxqoMpCkukkB2GGXrAeKFD2vnsIdyVazAg7VJ5" +
+                    "2vnsH/d3R6RasyxuBMOrWGueBXvWrZyLzU/OXMg+mHyuWSLVd3V1yJXW/upvfvjtl0NpBYJKSatMp9NX1zZXVNVj//Jw54AP" +
+                    "YInIUP9NSfHYEvVXu5NxS36vPruORCLeHQFM1nZQFAnsCcTC53EvX8+/6yr0NenE+SF8f+4Hr2/r06TwYJ7HeE59g6StveNa" +
+                    "TtGs6ODBZ4J7A4IgKxJmDbhabxUWzBvwV+PsCeRx//HYit2/pGi1uhOpl0+kXrbKlzP+/Nb2jstZBanp+BEpKixg9MK93CcC" +
+                    "QBBk+eKZQXyfv9KzikurpDIFiUj0cHeZFsFPiI+m06m45bZxrk7Yioqnh5vxv6YRjIfvAaMokhAfvedAKoIgqenXLbewPsZc" +
+                    "AkqjUXq2HkzlTZow0q6UdeZZtmf2jJAAX6/Us1l3CstaJFIDYnBmM9047LBgv+iowUYHWrti7o1bAoFQ3Nomk8mVWA0+NC0o" +
+                    "cdFD9vc8ISwK8CAAYVEAYAw6wQAAAgAAEAAAgAAAAAQAACAAAAABAAAIAABAAAAAAgAAEAAAgAAAAAQAACAAAAABAAAIAABA" +
+                    "AAAAAgAAEAAAgAAAEAAAgAAAAAQAACAAAAABAAAIAABAAAAAAgAAEAAAgAAAAAQAACAAAAABAAAIAABAAAAAAgAAEAAAgAAA" +
+                    "AAQAACAAAAABAAAIAABAAAAAAgAAEAAAgAAAAAQAACAAAAABAAAIAABsB6m/fzzz0qdQOgCMAAAAAgCA+xS09OJuKAUARgAA" +
+                    "AAEAAAgAAEAAAPBA8D94EzJ5xo8q/AAAAABJRU5ErkJggg==",
+                ["farm-milk"] =
+                    "iVBORw0KGgoAAAANSUhEUgAAAQAAAACACAIAAABr1yBdAAALlElEQVR42u3daVgU5wEH8HfZXZYbuQREVBAEhAAGEAVFUALi" +
+                    "QSLRakyiQptEk+oTYw41iXglhSTaHE8eEx+jWLWallRrE7TBSkREDhEEOeQKoNy77MUCe0E/jGzGWRYW26Ys/H+fdt6dHead" +
+                    "mf+87wxzsKqzjxCAicoIiwAQAAAEAAABAJhQOIzhrTtSsFBgHPvi0E60AAAIAIB2F0hXSwFg0HT17dECALpAAAgAAAIAgAAA" +
+                    "IAAACAAAAgCAAAAgAAAIAAACAIAAABg8zgSvv6ynb9PvU7XL3ac7pya/rOtXCoXqlR2Hu2W9jHJbG8uvD70x/PR5PO7pI7tH" +
+                    "O47+86/rt9Lunv2fnGpoaqMXWluZv7/jxemujmgB4BH1ja3VdQ90fZuTX6a99Y9lInF3cmoaY+u3sbbY986mibz1IwDDufSv" +
+                    "gsf4agzqEkr3pKbdb+6kF9rZWu3flejibI9jABha3q0KsUSmXV5V08TYlY5lnXzRnpQTrW0CeuFk+0kHdiY6TbbFWkYAdFKp" +
+                    "1JnXiobY/V8xmN1/W0fX+ykn2juF9EJnR9v9uxId7CdhFSMAI8j86Za6v59eIhRJ84sqDWLmm1v5e1LSBF0SeqGLs/2+nYl2" +
+                    "NlZYuQjA0GysLei954KiKvq3P2b9EgkWi2VtZT42a9F4vz05NU0oktILp7s67t+ZSK8gIABMvj5uzk52msHLtONdRqcoKMDT" +
+                    "znYs7krrG1r3fnSScQDjPsN579sbrSzNsIoRgOGwCFkaFaIZrKhubHrQQX3OLSynb1VLl8wdi4cuSvW+j08yztLOmjk1+a2N" +
+                    "FuamWL8IwMiiFgSa8Ix/OeodbATorYGzk53/7JljcObV/f09vXJ6ic+sae/teNHMlIc1iwDoxdSUFxHmrxm8nlcq6+mra2ip" +
+                    "qW/WFMYtnstiGUKPznvGu2+8YGpijNWKAIxCHK17I5crs3JK6Gc/TXjGkeEBBlGRTr5IMtR/MwABGM7UKQ5+Pm6awR8y83IL" +
+                    "7moGI8MDTA2kR9HBF+1JTWvvEGKdIgCP3wjwBWKlSj3GD3914QvEe1KZ/wwGBGAEwYFe9nbW2uX+s93H8iU0PB53/bNLGIXU" +
+                    "5UDNrXysVgRA70VjxIqNCtYuH/u7/1XLF2xYG8MopC4I1ZzSBQRgZEsigrjcR26ZcLCfFBw4a+zP+crY+Unr4xiFYols70dp" +
+                    "BnQlHwLwf2ZpYRo+149eEhsVzDKI05+ExEXPfWnDcsbMSrt79358sq6hBSsXAdB3M9J85nI5ixc+aUAzHxMZvHlTPCOxMlnf" +
+                    "/o//NMztPhMKB4tgeO7Tnf96PPlX/qNyuXJN0r5hRkhYsfC5hMX6TGrxwjkcNvvL4xf6+wc0hT298oOHTu3e/ry35zS0ADDO" +
+                    "RYT5b3spgW30yLru7VMcPHy6vKoBAYDxLzzU7/Utq9lsI0Y78+GnZ0or6hEAGP/mBfm8+dpvOBw2vVChUKV8dra4rHbCLhZW" +
+                    "dfYR+rDmXWJ4SR6MJ7o2bLQAgGMAAAQAAAEAQAAAEAAABAAAAQBAAAAQAIDxZrxdDn0m/cqFjBvUZzbbyMTE2G6SlYe7y1OR" +
+                    "QR5uLtrjv/vBN5or4z/94DX6zb6aSa1bFfXsygjGxKnpW1mae82cmrAywm2ak1rd/87+o4332wkhG9fGrIidT42mVve/mfzV" +
+                    "g5ZOQkjS+jj6DQZ0za389IvXauqbBUIJj8e1tjSf5jI5IiwgZI4XISRp20fSbp2v5HB1cTh84FXqc+3PLRmZeZU1TSJxN5fD" +
+                    "dna0C5njFRcdam5mMuRS0q7IkONoPBUZ9PKGFWgBDIBa3S+T9TU1d1y9XrzrwLEz6VcYI7R3COn3hVzLvTPa6QtF0ryiyvc/" +
+                    "PN7BF7HZRps3xRsZsQgh5y5kaR7L/PdLN6itf9bMqUuXhAw5qfqG1rf2fp2Tf7e9U6hSqWWyvpY2QV5RZXFZzahm6eLl3N0H" +
+                    "j13PK+MLxCqVurdPUd/Y+u2Fn95M/mqYO+IZFUELMB6sWxWVsCJCJOkuKKo8k36lt09xIeOGtZXFiph5mnGyb5bSf5KTV/Zc" +
+                    "whJ9bnik2gRBl+STL7+t/blFrlAW3K5aETPPw23KsujQ73/Mk8uV35zJeHvruvZO4XffZxNCOBy29s1ZGhcu5SiVKhaLvP7K" +
+                    "6qDAWQqFqrmVf7OwnMfjUiMc//xt6kOfXPHilj8QQrgc9p+PvkefyO3SmlN/ySSEmPCMtyTGBwd6dct6z52/mpVTwheIUz8/" +
+                    "e/jAq4yrQXVVRHscHAMYHhaL2FhbxC4OeWXjSqok/eI1uVzJCACHw6a6GZ0CcWVNo/7Tt7O18vd9+HjQ/sFnpq9LWDzZfhIh" +
+                    "pLD4XmHxvWOnMxQKFSFk1fIFri4OuibV0iYghJiZmcwPmc0z5lpamHp7uiauX6r9gJNhfPePbOrDmqcXhc31NTbm2NpYbkmM" +
+                    "px523dredYP2bK8RK4KD4PEjPNSPesKPrKevsvrhJl5d96Cto4sQ8oSPW2R44MNI5JbqP1mBUHLnbh2VtIDBDYhnzNXk7fOj" +
+                    "fyspqyWETJ3ikLB84TCTop7ZL5P1HTx0OiunpLmVPzAwujr29Mo1jy5dFBZA2wuwIgcHqbnVsyLoAo0rLk72fIGYEKLp414f" +
+                    "7P+EBvkE+nnwjLlyhTLvVsVvX1jGfbSfoO3c+axz57M0u88Na2Po71r093VfFBZwLfdOn1xBbYKbN63kDDvNqIVzSu7WEUJK" +
+                    "K+qpW7SoB1KseTpSzyf6C7okAwMDVAIZr+2YPPg2JH6XeFQV0R6HEPLu9ucDn/BAC2BgBh7do6rV/TcKygkhRkaskDnexsac" +
+                    "AL+ZVBNRdKd6tFO2ncR8Tcam52I1W2FsVLCXh+vwEwkL8d36u1WODjaaEml37+WrhQcOnVL/x30STc1ZhDXaiqAFGB9bP2lu" +
+                    "49N3h8VltdLuHkKIt+c0ahcb+qRPwe0qQkh27p15QT4jHgTHx4X/mFWYdvafXULpJ19++0XKNvojyC3MTWfOmHK7tIYQouf+" +
+                    "MiLMPyLMv+F+e8W9hpKyWuo2xYamtpq6Zm9PV30OSFgs1sDAgFyhFEtk9Eagc7DR036fzYgVwUHweJCTX0adlDQ3M/Hxmk7v" +
+                    "/1Tca1yTtG9N0r4vjp2nSorLavV5CTaXw17+1DzqCdJiiezSlfz/yqzOcHVcFh26e/vzC+Y9QZWIxFJ9fmhmyvN0f/iPDvr5" +
+                    "3IGBgZ8GB6lW7tepCAIwJnb8InH35auFR09+T5Wsjl/EM+b29soLS+7p+pVKpc4tLNfzT8QvDaM+XL5aqFY/fl/ls6+/O3H2" +
+                    "8t2qBkGXRKVS32/u/LmxlfrK2dFOz4lo9tPpF6/lFpYrlSqhSHrkxEXqudBOk20ZT7n7X1QEXaCxgnHoRgh5ZtkC6gz3zVsV" +
+                    "SqWKEBI213f75tWaEe6U1x08dJo6FxQTGazPXwn083B2smttEwhF0pu3KhaE+j3e3HaJpDn5dzMymXvfoIBZ2kelujzp7/nC" +
+                    "mmjqnx5/PJLO6CC9s23dMAfiw1SEsSS9PV0P7EpCAAyhdTNimZryBi+FCPZwm8I4/0M/XUgI8Z/tbmtj2SWU3qu9z3i5tC4s" +
+                    "FlkWHfrN6QxCSEZm3mMHYO0zUQW3q6pqmrqEEkl3D4fNdna0nR/iu3Lwego9PR0X7us944fM/MrqRrFERk0nZI73suhQc3OT" +
+                    "X6EiBgePRYEJAY9FAZioZ4EAEAAABAAAAQBAAAAQAEAAsAgAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBA" +
+                    "AAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAE" +
+                    "AAABAEAAABAAAL1wdH2xdUcKlg6gBQBAAADGKVZ19hEsBUALAIAAACAAAAgAwITwbwcUqAEm9wvLAAAAAElFTkSuQmCC",
+                ["farm-eggs"] =
+                    "iVBORw0KGgoAAAANSUhEUgAAAQAAAACACAIAAABr1yBdAAAMrklEQVR42u3da1QTVwIH8DtJyIOQAOEtBJBXQBBBUSwgPoq0" +
+                    "4hOtq22t1q6tq9t2T9s9p92652y3urv2bLXduj3s2pc91WqrLR4fVAUfWBUVBEUBDRAkBUHkFSDkRZL9MCXGQSBBYNX8f58m" +
+                    "N3cul8n8Z+5kJjOU/HQWAXBULCwCQAAAEAAABADAoXAYr197azMWCjzGtm15B3sAAAQAoO8QqL89BcAjrb+xPfYAgCEQAAIA" +
+                    "gAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAI88jgP+z+pu7YuvfmDXLFs2rgv09x6ggqHHeOVa9Y0qpby6rrWts0ut6dZo" +
+                    "nTgcPp8rcRP5+kiCpb5REUHhIf4cDnvQPzdcrVXIlecKyxQ3b92+09at0ZmMJi6XIxQKJG4iby/3AD/P4EDf8JAAscgZAYAh" +
+                    "6tboDh0rOHaySNWhZryl0xt0eoOqQ12jbCwoLCeECIX8JxKi17yQwWaxRrS1+obmrK8O3Kj6hVGu0eo1Wn1zi0peXWcp/GjT" +
+                    "+oAxXggA2K1cXrvts+zmFpWtOx+1Ni//0qrl6Wwed+RaU9Y3vffBjs4ujY3tmMxm7AHAbueLyrdm7TMP09ozXK2ZzeZtn2Xb" +
+                    "vvbjGAAIj+e0M+tde7f9n2z/se/6GhEaMDMlPjJcKnEX87hO3Rpta1tnjbKhQq4sLLnR2dU90q2VlituKhutS4KlPkvmp8rC" +
+                    "pGKxsMdg7OhU1ygbKyqVF4rK79i8t0EA4C6jyfSfHQcNPUbrQi6Xs3bl/NSkWOtCkYuzyMU5SOozIzlu7Spzcan84JECilAj" +
+                    "11ppmcL6pbOA997bLwqd+fRLNo/lxXPz8nSbMjFy1bL0cnntwSPnWBSFAIAdjucXNzS2MApff3lx4qSoAeZisaiEOFlCnGxE" +
+                    "W2tuvWejPsbX07L29zUuImhcRJAjf5Q4DzAUpwtKGSWJk6IGXl9HrTWTyXzv10F32lRd+MgQgGGjVmsrFXWMwqdnTX4YWiOE" +
+                    "eHq4Wr/UaPUbNn1+OPd8w+1WfHYYAt2fTmdY+tJf+3s3Y3bi6meftrxU1jcxtrIcDlsWJh3anx7e1ggh8TFhh44WWJfcaVHt" +
+                    "2H10x+6jIhfB2EC/kGA/WZg0MjzQRSjAR48A2E3VyTxF5SoWOjkxl+T+nDO79h2/bwuuYuHnH/9xJFojhMRGh0RFBFbIlX1r" +
+                    "dnZpSssVpeUKQgibxYqOCs5IS5w0IQJDILBDd7eWUeIs4D0krdHeXLc0WOozcB2jyVRaptj8r91//2iXuk8fEADol3OfL1U0" +
+                    "Wv1D0hrNzdXlbxvWLM+cKXIZ/CKfkqtVW7P2Ygjk0Ow6EeYqEjJK2lVdhh6jkw1XuY10axZcLmfJ/NSFc5IvX6u+Wq6okNcq" +
+                    "65qMJtN9K5eWKUrLFbHjQhAAGJzU34vFoqyPXHt6jJXVdeNk93yhvigjZVFGCj399vvbFTcbRqE15qfLYSfERSTERRBC9Poe" +
+                    "Re0t+vpQxqliej/gmAHAEMhuLkJB2Fh/RmHuqaKHobWB9wmR4YGZc1P++d7aubOnMt5tdtRrIhCAoUh9IpZRcvZi2eVr1Q9D" +
+                    "a7Z4amYCc1/BZiEAYKu06ZN8vN2tS8xm89asvcWllf/31g4dLfjv14eqb94aoE59YzOjROIuxkEw2IrNZv1u1fxNW3cajXcP" +
+                    "KzUa3T8+/jZ+fFhq0gRZaICr2IViUV1qTXXNLZVKPWqtdWt1efmX8vIveUjEk2IjwkMDgqQ+Hu5ioTNfrze0tncWllzfn3OW" +
+                    "MVdM1FgEwHENfCaYELJ43rRnF89irDHrVy/89xfZjEuYS65WlVytsrcDw9saraW149ipomM2HE74+3k65hEwhkAPdiSQFPvu" +
+                    "GytcxcKHsDXbCQS8V9dksh31GAB7gAcSFxO65f11+386e/x0sUajG7S+xF2Ukjh+1rT4kWstMixQFiaVV9fZ8uOyiNCAV1bO" +
+                    "CxrstDECAP1yFQtXLUv/zYLpJVerKuS1lYr69o4utVqrNxj4PK5AwPPycB3j6xks9Y2JGiv19xrp1mKjQ2KjQzq7NNcrlZWK" +
+                    "ul/qm5qa29vau3R6vcFg5POcnAV8P1+PkCC/KRMjI0KlDvxjGEcNgNCZv/fLvwz7QCJpSnTSlOiHpDWRi2ByvGxyvAxbKBwD" +
+                    "ACAAAAgAAAIAgAAAIAAACAAgAAAIAAACAOBYHrFLIZqa23NyL1wpq25uUZmJWeIujgyTzpo2MTL87p2kqmpu5eSer6hUtqu6" +
+                    "nDhsPx+PyfGyOWmJfW+RaUvNXfvyrK+epyhK5CKICJVmzk2JCA3or5+2zMWow2azxCKhLDRg8fzUsYG+D9JPNpvF53M93MRh" +
+                    "If6zZ0yy/smlpdryzJlL5qfShT8cPL0n+yQhZFFG8vPPpNm4tBn9t5g9Y9IrK+chAMPv3MWyT7/cr9f3WEoaGlsaGlva2js3" +
+                    "vLmCLjlw5NzOvXmWCyF7eoyK2gZFbcPxn0v+/OYKfz9Py7y217RmNps7OruLLt8oLpW/84fn4seH2dJzW+YyGk1t7Z3nL1WU" +
+                    "XK3aumm9t6fbkPtpNJrUaq1arVXWN534uYSxWg/j0sYeYPTIq+s+2f6j0WSiKLIoI+WpmZNFLs6377RVVNb+UtdE1ykurfzm" +
+                    "+1xCCJ/HXbd6QUKcrEut2ZN94uSZy80tqg8+2b1143r6oVq217SgN5nqbu3Xe46ePHPZZDLv/D530ADYMhddp6W148NPv6uq" +
+                    "uaXTGy4WX5+XPnXI/Vw8L7W9o+vipYpd+/I0Wv3+nLOuYhe6wWFc2oz+4xhgZO3+8QR9W5vZMxKeW/Kkh0TM5XKk/l7pMxJ+" +
+                    "uyLDsiunJ5YunJ40JZrL5UjcRetWL/Dz9SCENNxuPXvxmr01GYTO/OWZv/40TFnfZL2BHIAtc3lIxLHRofS0qfcGPkPrJ0UR" +
+                    "d1eXp2ZNXrtqPl2y70C+TmcY3qWNg+DRo9Hqy2/cpKcXPJ103zrdGl2lop6enp40wXr8PaP35ZVr1XbVvP94hgzlKUaDztXS" +
+                    "1kH/UYoiE6JDH7yfhJDkxBj6ZtHqbm2FvHYYlzaGQKOqpVVF3zrKyYnj7eneT50OeqDM4zoxflhoGU/TD4+wvWZf6m7td9kn" +
+                    "6elAf28u16YFOPBce7JP7ul910MiXrksnf6J1oP008Lf15O+509Tc/swLu3++k8I2fDG83G2HRohAKPEsu1lPE3IrpqMj5mi" +
+                    "qOeXptm7cgw6l9lslriJh/M/cuAnQD4+AfCQuNL3DzQYepqa23y83O87hqYoymw20w/Ttd5k3und+HlIxHbVvN/wmnIRCiJC" +
+                    "AxZlJEeGB9rY/4HnWp45c8Gc5GMnC3fsPtra1vnhp99t2/y6gM99kH72rv13bwFE7zQ47F+PmK0fSWaZpt+1ZWk/NgfBj0YA" +
+                    "BHzuOFnwtYoa+mvBl1+Y27eOs4AXHuJPP/85/9wVy+DVbDafOneFnp4QE2pXzQf/mG2cy4nDnjt7atFl+bWKGlWH+qe8C4vn" +
+                    "TRtaP62duXC1pbWDPgqPkgURQtzdRIwIEUKa7rTRE+7uIhuXNg6CR9vyzJn089BzTxV9+8PxlrYOg6HnVmNLXv6lL3b9RNex" +
+                    "rGr7DuSfKywzGHra2juzvjpAP4LO11uSPCXG3pqjybKKHzlRSN8ka2j9NJtJu6rryInC7V8fokueWTCdx3UihMRGh1AURQi5" +
+                    "UFxRWqbQ6QylZYqLJdfp3dSE3q+hbFnaGAKNKlmY9PdrFmV9dcBg6Mk+fCb78BnLW3G9W8GJseErlqbRX35/lLWPMUB6+/Xl" +
+                    "lq/Mba85muJiwvx8PeiTTQVF5SmJMUPoJ+OogxCyKCPFchLA11syN33qoaMFOp1h45ZvGPGzjHZsWdr9/cXIcOnGP72EAAy/" +
+                    "aVPHR4QE5OT9enKeECKRiGWh0idT794YZ+Gc5OjI4MO5FyrktaoONYfN9vORTI6PzEhLFArvuRTC9pqjhqJIRlriFztzCCE5" +
+                    "uedTEmOG1k8WixIIeL2XQiSEjR1j/e6qZekhQX7HTxffVDZqtDoBnxcc6JuWOjFl6nh7l/ZjgJKfzrJ+/dpbm+mJbVvewVcE" +
+                    "8Njob8XG1aDg0BAAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAA" +
+                    "AAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEA" +
+                    "QAAAenH6e+O1tzZj6QD2AAAIAMBjipKfzsJSAOwBABAAAAQAAAEAcAj/A/YGUGDLSWJ9AAAAAElFTkSuQmCC",
+                ["farm-meat"] =
+                    "iVBORw0KGgoAAAANSUhEUgAAAQAAAACACAIAAABr1yBdAAAMkElEQVR42u2de1QTVx7H70AeBAhIoghFUHmqKKCAKCAFxRf1" +
+                    "XT216ra1u61rn2t7drfbdtuzx3Zr91R3a9vDaU+L21Or1mp1bUVbUIQCCigg8pKXgEJQCYFAICEJs38MjENCYhiU+vh+/pq5" +
+                    "d2Zy5zfzvff3uzP5DVWVlUwAeFixgwkABAAABAAABADAQ4XAZP3l13fAKOAB5pOdb2AEAAACAMDcBbI0UgBwX2PJt8cIAOAC" +
+                    "AQABAAABAAABAAABAAABAAABAAABAAABAAABAAABAAABAHDfI3jYTljTrX3mpQ/Ny30nen747vOW9urtNWx5fVeXpsekXOYm" +
+                    "/Xzna7Yc3wo7t2/18XK3skF6ZuHnX/9oXv6f91/08hw75C6vvvlpc4uSt5WiZwdv++NajAAPEXUNiqraa5Zqs/Mumd/9o8aZ" +
+                    "nOJhlQMIgA8nTuXzqLrbKK63Xa65OmRVZm5JXx+NCwcB3BnOnS/vUGvMyyurG+sbW+617p8QomrvLCmrxYVDDHBnMBiMaZkX" +
+                    "1i6PM+3+00fU/YvFwr3Jb/Lbl6bpzNyLVjbIyCkOm+FvXv7xP18yL2zv6Hpu205uidRZkrL7LxgBQD9pZ84b+/pMetm8CxW/" +
+                    "VXsulV9Rtqm5JVMDfbirBUWXNd1aXDgIgD9urs7scpuqM/9CJbf2l4xbkqAoytXFaTTblpFdZNLUrc+s4Jbo9YacvFJcRAiA" +
+                    "P8FTJ3t6yNnVk5x4l3GK2NXw0AC5zGXUGtbTo8svGqTG2DkzPD3kgX4TBoukGBcRAuAPRciShEh2tbyqofHaDWY5t6CMGxYv" +
+                    "WTB7NBuWk1/a22vglsRFhxJCHo0O5RbWXGlqUrTiOiII5k9CbNj+H05rdb39Ue+p/C1PLzMZDTw95CHT/PYdPjXcg+t0+nXP" +
+                    "/sNSbdLCqM1PLrHg/wzq2n0muE/yHk8IiZ4dnLLvhNHYx91y07pEXEeMADyRSMRx0SHs6q/nSjTd2tr65uq6JrZw6fzZFDV6" +
+                    "TVK0KE0ezLEdv7OTZFZIALcq6yweCEAAI2Mpx73R6fQZ2cXc2U8HsSg+JnRUw9/B0/8URcVGzbjlC80N4daq2jsv4oEABDAS" +
+                    "JjwybvrUyezq8bRzufm3ZlfiY0IlEvGoNYam6azcEm7JjKmTZW7SW+F4WJCTo8Ngf6kIFxExwEgHgdKKK8xyq7KDWzWS8JfH" +
+                    "g7CLZXVKlXpw+DuoyxcK7OdGTkvPLGRLzhdd1mi0Tk4OuI4QAE8iwoLGyl1Nbn1CSMg0X0svXd4lzF9/+PTLo59+edTKLnqD" +
+                    "MTvv0uL5kbiOcIH42sKOWpwQYV4+yrOf3T26/MLKOyIbAAEMjwVx4ULhoFFx3NgxEWGBo9mGnLxSvd7AY8eaK83Xmm/iIkIA" +
+                    "/JE6S2JmT+eWLE6IoEZz+nNkHTmeCiMGGHEonDibvQWFQsH8ebNG89ebzab/Vy6NsfKQ6+8f7KmsbmRXs86WbFybaGdH4TpC" +
+                    "ADzxnej5fcq7d/CA1p8EE0LWLJv35Jr5A1246WxmeKg1Byw8NJArgPaOruLSGpPHZAAu0P0BTdNZZwdN/zs7SYL8va3sMis0" +
+                    "AF4QBPCAcLG0tk3VyS0Jm+Fv3Z/x8XIfJ3flllwovvwb/n0ZAgD8yTALf637PwwzBzs8eoMxG/8QsBmqKiuZu85+SwwfyQMP" +
+                    "EpZubIwAAC4QABAAABAAABAAABAAABAAABAAABAAABAAAA8a9/Tr0N8eSj+amsOuUhQldZYE+nmvfiyWTQ9oso29vZ2L1CnI" +
+                    "b8Ka5XGTfTy4R6u50pyadq6iurG9o0sosPccL4+cGbQ0MYqbXoF7NHt7OwcHkXyMi7+v18L4cP/JXuabrV+d8PhANunDP2Yd" +
+                    "OJJBCFmVFLNx7a03+G+0tqem5V0sq21VdtCElrm5TPH3nj9v1pQAb/P2syyMD3/+qWWWLNOkaD10LLO6rkmpUovFQlepk4+X" +
+                    "e1x0aOTMIELIs6/8q7PL4vtw3l7jdm1/gZ9NLFmY31lAAMODpml1Z/f54suFJVVvvLph5lBpwY3GPlV757kLFUWXana994L7" +
+                    "2DFM+bGTuXu/T6fp/uxRBoOxrkFR16A49WvR269tGvI/70Zjn0aj1Wi0jU03Tv9aZHJb20huftlnKUe5GQ4VLUpFi1LV3vnW" +
+                    "a5v42aGuXvH2Byns3yYNBqNGo21uUUqljowAbISHTaxYGCPAXYTpaDXd2q8P/JyRXdzXR+89mGYiAGYbZZv6o8++q7nSrOvV" +
+                    "5xdWLls0hxBSWFL9zcE0QoiDWLR184qIsKAuTc+BI6czsotblR0f7t6/a/sLAoG9ydHWLItrV3flX6j49lB6j7b3aGqOq4sz" +
+                    "c0Abqaq9tvuLH4x9fRRFViXFLk6IlDo7Xr+pqqhuuDqQftSk/bYc9uiJbL3eQFHkT1vWhocF9vYamhStZwvKxGIhswGb8l+r" +
+                    "6/3d1g8IIUKB/b4v3uYehJ9NLFmYx1kgBhg2To4O61f3/3OqsemGSeJYBrnMJSTYj1nuG0hrfvjHLGZh3cpHo2cHi0QCmZt0" +
+                    "6+YVTFJoxfW2nPwh3h+mKOLm6rx4fuSWp5czJYeOZep0etsbvP+H00xq9YXxERseXyCXuYhEAm+vcYviI36/KYm3HZiv3zk6" +
+                    "OsyNnCYWCaXOkikB3ps3LNnw+ALbD8LPJpYsjCB4tLwgcpsMmEqV+mJpLXP7hgb7EUK6e3Rsik9uXmWKouIHVpldLBETNX2s" +
+                    "3JUQounWVlQ12NjUHm1v+eV6ZnnFkug7aATmgwYajfa9nXszsoubFK30MPOCjsQm5haGCzRKaLq13x3JYJZ9vNxFokGNP3Ak" +
+                    "48BArVzm8tQTiyZ6jyeEKNvUjJsrFglNPm/B+q+tbR3Wf9rLYyyTMOtGa7uNrVW2dTAJa4VCgftYt9tuz20/IeStbRuH/PYR" +
+                    "ISRh3szi0lpCSEl5XUl5HRlIZrFuZbyL1NG2tvGxiSUL8zsLCGAYmJiVoqiNVrOB0zQtG3P7L1mw/SZFqNvG3/eONaIjgw16" +
+                    "48H/nbl+U8WUdHb1nDxdUFlzdcc7z9nbjWhUt9EmNloYI8CdhKIoZydJoN+EVUkxUwJ8zIPIFUtjfsko+O/+n9tUnR999t0n" +
+                    "O16ROIjkMheKomia1vXqO9Qabod3c6A7t/7dF5omTS2t3A5SYN8fHeoNRnYzdpmplctc7eyovj5arzfcaFWNH+dmS6Bvoyni" +
+                    "okPiokPqr14vv1xffKmm6FINIaS+saW6tomZXbUOP5tYsjCC4NGYBfo+5d2DX72TsvvPb7z6pPndzyAU2D+2cA6T5LlDrTmR" +
+                    "nkcIcZSIA3z7p/C5X1ykafrMwGrodGu+bHbeJeZLdU6ODlODJhJC3MZITW4XQsiNgf7YzU1KCJE4iKYFTWInHO+GWSZ5j09K" +
+                    "jHpz28bYOf2Z09s7Om3ZkbdNhrQwguB7CzbiPHm6gPmMCtsnHTqWmVtQptcbVO2dyXuOKVqUhBAPd5lJNji242/v6Dp5uuCL" +
+                    "r39iStaueFQsEhJCQoJ9mXRxeYUVJWV1Op2+pKyO+Z4XRVFsaLh+dQLjkKSdOb/v8CmlSq3XG5pblOmZF7769gTvE/z488N7" +
+                    "9p8sraxXtqkNBuPVpptXGhRMled4uY0H4WcTSxaGC3QPETbd39NDzjxsOnu+PDZq+qyQgE3rEpnp/H8nHzJxBv76ynqTCW/z" +
+                    "qIMQsioplp3z9nCXPbZozk8/n9Xp9Nt3fmNyc7DeTpC/94t/WJW855hebzhyPPvI8WxOI/2s/+KUAO/tf3t2yBNsa+/MzitN" +
+                    "TTPtfcNDA82jUkvwsIkVC/M4Cwjg7oUKJCkx6qu9qYSQ1LRzzOVZuTQmeMqk42l5FVUNHWqNwN7ec7wscuaUpMQoSzn17ewo" +
+                    "iUQ88CpEhP/kR7i1Tz+xyHei56mswvrGlh6tTuIgnuTjkRg3i/VGGObNmRHoOyE1vf9VCEKITOYS5Oe9IG4m7xN8YlVCfmFl" +
+                    "ZXVjm0qt7upmzmVuZPDyxXOHdRweNrFi4fv1bkFaFPAwgLQoADwcQTAAEAAAEAAAEAAAEAAAEAAAEAAAEAAAEAAAEACAAACA" +
+                    "AACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACA" +
+                    "AACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAACAAADgicBSxcuv74B1AEYAACAAAB5QqKqsZFgBYAQA" +
+                    "AAIAAAIAAAIA4KHg/xqFnZ40Sl04AAAAAElFTkSuQmCC",
+                ["farm-guide"] =
+                    "iVBORw0KGgoAAAANSUhEUgAAAgAAAAEACAIAAABK8lkwAABFE0lEQVR42u2dd1gU1/rHz/ZCb1I2IF2aVEGMogKCJSYxlkSj" +
+                    "iSZGU4ymmPrz3mvKNTfNxJhEY2ISjS1iiT0oKr1JEel96Sydhe1s+f0xMC4LLLMLGNT38/j4nDlz5uw77ynfU2YGUnnSfgQA" +
+                    "AAA8fJDBBQAAACAAAAAAAAgAAAAAAAIAAAAAPJBQNY63bv8cnAIAAPBA8v3uD2AGAAAAAIAAAAAAPKxQCc4UAAAAgPuUkdb2" +
+                    "YQYAAADwkAICAAAAAAIAAAAAgAAAAAAAIAAAAAAACAAAAADwAEEFF9wzikprPvry8IglQaWwmAwrCxNnR7uZQZ5+3s4kEkl7" +
+                    "hgqlcvNbu3t6RRrx3332up2NhU5mvL9t9Qz/aUMTr3rxY/XDrZuemjvLV3tWFDKZQiUz6HRDA6apiaG1lbmLo62fj6uttTlx" +
+                    "X4nE0lu5JUWlNdU1zT0CkUAoptGoRgYsK0tTr2lT/X1c3V0e0c/VJBKJyaAZGrDsbCw93OwfDfHR4quxe3ssVUIDGpVy/Od/" +
+                    "3Zv6oKuvhs2ERELf7XrddoRLcvMr/rfn+ND43/a+a2TIhu4CBODhQi5X9ApEvQJRdW3z9cScqfbWr734pPNUWy2X3M6vGNra" +
+                    "EUKJaXfWLI/Q6ddPnLkZ5Oc+quQQ7CgVMqVMJu8ViJpbOkvK6xJS8xBCXu5TVy+P8HR30H65VNZ39lJy7I1bIrFUwz9isbS1" +
+                    "vbuotObU+UQPN/s1KyK93Kfqap5KpRJLZGKJrK2Df6eoKuZ84oJ5gRvXLqFQRpkNj6O3J4hxt1BvXw1cjq7GZ29Ys3DYs7E3" +
+                    "bkGrhyUgYHhq61t2fn6ovKpBS5rE1DvDxiel56tUuv1cXWNrckbBhN5RcXntzi9+P3rquhbbWlq7duz69eylZI3efyilFfUf" +
+                    "f3n43JXUMVqlUqniEnJ+/PXcqCnH0dsTxERbSNxXOAmpeVJZ37AFnVdYCc0cBAAYEYlUtveXs31yxbBnhUJJzp3yYU+1d/CL" +
+                    "Srm6/tzJv+IVCuWE3pFKhc7/nXrwyOVhz/J7hDu/PFRb30IwN6VSdez09b8up4zdsOSMgkpuo5YE4+7tceeeWTiqrwZZJZIk" +
+                    "pw8zsIiNz5okqvmQA0tA/ySvbHg8cm4gtmzS3sFPySg4czFJvcdvae3Kvl02K9hr6LWptwpH0gZs1u/j6aSTMa3t3dcTcxZG" +
+                    "BI/9jpRKlVAkbm7pLCzhXo3P6uzqVU9zLSHb/pEpi4b80Df7TnV09qjHMBn0px6bEzrDy8rSVCqVlVc1XIhNKyqtUU9z4uxN" +
+                    "VyfOdC8ngq4WS2RV3MaDR680NrerJ8i6XebqxBnp8nH39qh26so4WjhGX2lwNT5rwbxBdySV9cWn3IbmDzMAoB8KmWxtZbbi" +
+                    "8bnPPBWucSq/uHqkJq1+qLEpmpFdIpX26WrG6YtJw07Yda5VZJKRIdvd5ZHlS8O+/9829X1jjOOnr/cKxOox2XnlxeW16jFG" +
+                    "huzP/vXS8qVhdjYWNCrF0IAV6Ov20Xvro8NnaKxLHDt9nbhtLCbdx9Npy8ZlGvG81k5tqysT4O1xXv+ZAAv185UGNXW8ssr6" +
+                    "QXOI9AKhUAKtHgQA0CQkwEMjprOrZ2iyZl6HxvbA5ueXGhqw1JePMnNKdP31br7g7+uZ43tHdDr19ZeW+Xm7qEeKJbLLcRnq" +
+                    "MRdj0zQu3Lh2sT3HamiGLz6rGV9V01Q4eFowKi6OdlQqRT1GNrLyTZC3x5EJtVAnX+GoTxFib2YNmhPcvLv96+bMgVYPAgAM" +
+                    "jGeJJUsYPNxzeGTKVHvrmUGeWoaEWggOuPsA6Lm/U4WicR6dkUik9asXajxhlJVbqq4HGoNEKwuTR0N8hp8tUchLo2dpRN7R" +
+                    "fUdRpRzkbFMTw3vj7Ylgoi0k7iucxZEhavOPYn6PEAuXVtTVDGzzkEgkjfkcAALwUHNLrVvEMDcz1myNKpScnq8eMzvEB/8f" +
+                    "p6CE2zHc7GEoK5+YR6f37wYJhZLzf6eO+33Zc6ymPmKtHlPX2Ip3CmUVdQrloP1n/+muWh5JDfB104gpLqvVyZ6K6gaNX/Sa" +
+                    "5jh83zfe3h7/QcMEW0jcV+pM93bGXxqQyxU3knKx8N9qT38G+blbWZhCq/8HgU3gSYFSqWrv5KdkFJy+kKhxytfLWSOmqKym" +
+                    "rYOvHvNoiDdCyNvD0cTYAO9VVSpVcnr+siVzRv11c1OjRREhFwYWYa7EZT4WFWpibDC+9+jqzKkZ/IRPWwcf+5XO7l6NxA6c" +
+                    "KVqyMjMxNDRgCYR3dxGId20Sqay8quHXo1fUI6dYmoYOHi9PnLe189Ohiz8dujjsqU3PPxY9f8a9tFBXXw2a9iG0MCL49+Ox" +
+                    "2OG1hOxlS+bwe4XqK1GLIoOh7YMAPLxoae0Y1lPM1Ndn+ufygx/3dna0tZlijhAik0mhM7yuqq23JqTeIdjgn3pszvXEHOzp" +
+                    "e6ms7/TFpI1rF4/vzRobaSpKr0CkEcAxUFu/HhYNARiaA3FXmxgbvLt1NY02fFuYCG+PL+Nuod6+0iB8tv+JMzclUhlCqKOz" +
+                    "J+dOeU0dD3/U2Nba3NfLpbisBvoBWAIChoHJoG/btFxj/00q68vMKR4631cf+uE0NrdX1TQR+S1DA9aTi2fjh9cTc9rau8d7" +
+                    "pUKlZRFj6PhxlNwGb5eQkD7vMDMYtKj5QV9//IqjvfWwCSbI2+PIPbNwVF8NhcViqD8AdiUuIy4xBz9cGBE8Hi+eAyAADyJT" +
+                    "7a0//mDD0C/eZOaUiCUy9ZhZwXcbuaebg5mpkfrZhFSiW3/qyz5yueLkuYTxvSN8LUJtTsDWCOAIRtuI1niO0NCQpWcDIJNZ" +
+                    "TMZIZyfO2+PFvbRQu6+GZaHaIk9haU3XwFofg06bP9sfmjksAQH9UChkNothZWHq7Gg7M9DTz8dl2C/zDH3c28rC5O5AmESa" +
+                    "Fex1Je7uo5ypmYUbVi8k8vEWBoO2Yunc347/jR0mpeerzwnGztDXRy3N+y03H9xJIYTqGrS9D9zNF6iv/yCELIZslRMaPkv7" +
+                    "rt7MquI2ffLBhmGXNSbO2yOh64tg98zCUX01LA6cKV7Tpg7dog+b5WvAZkKrBwF4qNG1tXd29RYUD3qnv7yqQeODnRr0CkQ5" +
+                    "d8pDAj2I5B81P+jitXRs8UelUv35183xutOa+pa6hlaNrgGfcExztSeTSUq1Zw3zCipVKjTSEkFufoVGjOdoX4XDXC0USSqq" +
+                    "G4+dvl5Tx1NXpiOn4l58dvE99vbYmSAL9fCVFhZFhAwVgDG+cA7AEtDDSFJ6vkr3T6gQfwCcSqU8/eR8/HDoM6n6oVSqDp+I" +
+                    "1YgMVuuDWCzGNFd79bNtHfz07KJhc1MolRovkSGE/H1ciFhiwGb6+7h89O569WEyQujqzaz6xrZ77O1JXh908pUWQoI8zM0G" +
+                    "zfA83ByIbyQAIAAA3uD16Vxy8ys0vrughXmP+g77/q3eSKV93/18RuNNXRaT/lhUqHrM4wsf1bjw1yGfoME4dOKqxmTCeaqt" +
+                    "Tp/iMTBgblizSEOiTpy9ce+9PfnrA0FfaYFCJkfNCxo8J4DhPwgAoCNVNU06jbxw5HJF6q1CgolJJNLqp8b6dXuVSiUQiiuq" +
+                    "G09fTNr6wd60W5pj+WdXLjAavG07w3+ah9ugSUBPr+jD/x7863JKc0tnn1whFEryCio//uoPje/Ik0ho7coFuloYEujh6mSn" +
+                    "HpN1u0z9CZl74+3JXx+I+GpUFswLwncdTE0MQ2d4QXOeJMAewH2DxsydRqX8+t27LNbwT2W8//HP1bXNd69NvUN82BUS6OHm" +
+                    "zKmobtTDyFHfbEAIRc+fMdQYEgm9/drTH3zys/qnQ8Vi6fEzN46f0TbefGZZuK+3sx6mPrMsfNe3x9RjTv4V/39vrb3H3p78" +
+                    "9WFUX42KqYnhn7/8G5owzAAAPVEolKmZg0ZtgX7uI7V2hNDsmYM+A1DJbRx2OWUknl0ROSG1jUxau3LBS889NuxZMxPDj97b" +
+                    "QHwBikQirX4qfMXjc/Uzxn+6q8bGw+2CSuyTavfY25O/PmjxFQACAEw4uUP+2t+cmT5a0s8O8dF4hEanzUkfT6ehn6AYCyQS" +
+                    "aYa/+6cfvrhsyWwtr//YWpv/71+bli2ZzWLStWfo7vLIznef17v3x3h62XyNmJN/xd97b0/++qDFV8B9DSwB3R9oNFcmgx7o" +
+                    "664lvYW58TRX+9KKu5/YTErPX7M8gvhf/X12ZWT+J9X6DfMpZDKDQTcwYJqZGNlMMXOeajfD393K0pTI5QwGbe3KBcuWzLmV" +
+                    "W1pYyq2uae4ViARCMZ1GNcT+KLz71KEDUv3w9XL2cp+q/ncI8ouri8tr7723J399GMlXevxZZmDyQCpP2q9+vHX751jg+90f" +
+                    "gHcAAAAeAEbq2GEJCAAA4CEFBAAAAAAEAAAAAAABAAAAAEAAAAAAABAAAAAAAAQAAAAAAAEAAAAAQAAAAAAAEAAAAAAABAAA" +
+                    "AAAAAQAAAABAAAAAAAAQAAAAAAAEAAAAAAABAAAAAEAAAAAAABAAAAAAAAQAAAAAGAvwR+HvES+9+TW/R6g9jfUUsx8+3zYJ" +
+                    "jc8rqNz17TE3Z85n/3oJISSXK05dSEy9VdjewVcolAihDWsWPhYVOgktv5emXkvI/uWPywghI0PWb3vf0xIJACAAwH1DVl4Z" +
+                    "QmiG/zTs8OS5+HNXUu8Ly+8jU+8l3XzBprd2Y+FdOza6uzxy73MAQAAeIg7ueQcP38ot/eqHk1j43+885+vlPMmNz7lTjhCa" +
+                    "EdAvAGm3irDA0ujQdauiKJTJu5B4H5kKACAAwKSjura5o7PH2srMgTMFi+no7MEC01ztJ3mX+o+bGj1/RvT8GVCLABAAYHT+" +
+                    "OHnt4tV0hJDXtKkfv78Bj78Qm3YkJg4hZGdj8d1nr6uvLP+y550zF5PiU/L4fIGNtfmiiJDo8EE9jkqlSkrPT0rL59bxRCIJ" +
+                    "m81wceIsiggO8nMnYlK22vrP3p/PJmcU4Kd27zvVH/j01c7Onl3fHrtbsagUEyMDN2fOosgQbw9HPF7d8gPfbI85l5Ccnt/Z" +
+                    "3fvOlqc7u3p+PfZ3/6ndbx89fT0lo6BPrvD1cn7h2UUWZsbZeWWnLyTVN7WamRgF+buvfiqCxaSPZLYWUx04U5RKVXzK7ZSM" +
+                    "gtqGFpFIymTRHThTZof4LJgXhOuEFlNDAj0IFujQPYATZ2+evZSMEHJxtPv8P5uGprQwM9731ZtkMknvglMolVfiMtNuFTXx" +
+                    "2qXSPjMzIztrCz8fl7BZvmYmhju/OFRcVosn3rHrVywQFjp92+bl2H6P9nLUngN+g/Ycq28+fQ07dSMp96dDFxFCbBbj8I8f" +
+                    "ELETegMQgIeOJQtmXonLVCiVxWW1DU1tj9hZYfF4XxY5N1Djku8OnEnPKsbC9Y1tvxy53Nzauf6ZaCxGJpN/sfdEfnE1nr5X" +
+                    "IM4rqMwrqFwaHbp+9cLRBeB2mfr6D0HkckVHV09HTk9mbskrG56ICAvQSKBSoW/3n8q6XTb0WpUKfbP/VHZeOXaYmVNSU897" +
+                    "PHrWwaNXsJiWtq4rcZmdnT3btzyth5Ol0r7Pvj1WXH63CxMKJSXldSXldQmpd/7zznMsFoOgqXoQNS/o3JUUpVJVVdNU19iK" +
+                    "z6sSUvKwwIJ5gWQyaSwFd/DI5euJufhhewe/vYOfX1xdUFy94+1141uOWiAhkvYE42gnAALwIGBpYTIzyDMtqwghdDU+e+Pa" +
+                    "xQihxub2mjoeNhybP9tfPX2vQNzVLfj+860GbGbMuYTYm1kIoUtX02eHeLs6cRBCx05fxzoRMxPDN15e4erMKa9s+PrHkyKx" +
+                    "9NK1jGmu9qEzvLQtoXT1cOt4BgZMT3cHhNC2zcu3bV7+zEufKJUqhND211bhlztwppz6bScWVipV3XzBleuZ5/9OVanQkZi4" +
+                    "ubN8qVSKes4CobiJ1/Hphy+4OHFoVApCKPbGLfyUQqH85dvt/B7hh/892Ncnb2ntOnj0ytqVCxaGz4hLzMEmQxk5JZ1dveZm" +
+                    "RsNarsXUX49ewXp/JoO+bfNyH0+n8qr6PT+dEQjFldzG347Hbtn4pHZTx1jEgb5umLwlpOQ9/0w0QqiJ11FR3YgQopDJmMaP" +
+                    "peCS0wsQQmQy6aP3Nrg5c3qF4uaWjls5pUKRGCH08fsbtGzh+k93HbUctedwVwDIowiAdjuBewDsiU06li6chQUS0+5IpX0I" +
+                    "oZSB4X9wwDRjI7ZG+k3PP2YzxdzIkL1+9UITYwMsMiWjEBu+3Uy+jcWsXh7h7eHIoNOmeznh04ir8dlEhv+B090oZB2qCplM" +
+                    "MjczevrJ+XgHyq3jDU22ZeMyDzeHYbvUF55dbGpiONXeGh8g29lYLFsym8ViqEtgc0uHru6VyxUJqXewcHT4jOCAaSwm3c/b" +
+                    "5fEBt6dkFkikMuKm6kF0eDAWSErPVyiVCKH4geF/cMA0M1OjMRYcnU7DJi681s62Dr6xIdvLfeqGNQu3bFymW+9ArBxHngGM" +
+                    "wnjZCcAM4MHBzZnj7vJIeVWDWCxNzshfMC8oJbOwf3FgbpBGYhqVYm/X30VSqRR7OyvsbYMmXjtCqK2Dj/dl+3+/sP/3CxqX" +
+                    "19a3jCIAeUTXf+RyRezNrKzc0obmNqFIgj10j9PNF2jWPCrF1clu2KxoNKqttTkWxldjHO1tsACTcXfdf2hPPSrqPnFRMwAP" +
+                    "y+UKXkuno4MNEVP1w9/HZYqlaWt7N79HmFdQGejrlpyer64NYyy48Dn+F2LTVCrVvt/OY7MKO1uL6Z7OS6NDrSxNx7ccx8JY" +
+                    "7ARAAB5YHl84C9u0vHozy9HBltfaiRCaYmk6fbwfGNXegUqksqLSGgqFHODjOmpWX/1wMje/YqSzCoVCI4bFpJNIw48RmQza" +
+                    "3VHkQBLmwH6vUqUc0z2rVGpDVNJw0Yi4qfpBIpGi5gcdO30DWwWiUikdXT0IIVtrcx9Pp7EX3LpVCzi2lulZRdw6Hr9HqFAq" +
+                    "6xvb6hvbMnKKd3/yqqEBaxzLUQtKNZ+KxdLxtRMAAXhgCQn0tLI0bWvvrqlvOfxnLBYZOTdwaC/UJ1c0NLXZc6ywsVt9UxsW" +
+                    "b2tjgRCysjBhMuhYZ7F101NzZ/nqZEZeQWWfXOHr7ayxKTqUjs4evNdY+cS8pVGhBgbMXoH4xW1fTjbfWlmaMhg0bG2tqqZp" +
+                    "VnD/Sjq3thkf79sMzD8mjoiwwJPnEuRyRfadcomsr3/4P38GVsRjLDgSiRQRFoBt2EqkMm4tb/e+GH6PsLOrt7isNiTQYyQ9" +
+                    "I16OWhQRn6IJRRI8soLbqIed0BVMNLAHMClLhUxasmAmFi6tqMdiwuf4D5v44JHLLW1dvQLR4T+v4l+bmDNzOtaXhYf1X/XH" +
+                    "yWvZeWUisVQskTU0taVkFn79Y8yV65lazMBeAA4OGL0dqj9iz2LS6XRqW3v3gcMXJ+OQh0oJH9hFuBaflZ1XLpHK8ourL15N" +
+                    "G3Cdj/oq0wRhbMQODfLEZDuvoBJb+Jo/UMRjLLhd3xw9dT6xorqR3yOkUalMtYdl5QoFQojFZOA9eGlFHbYPoVM5jpQDNo/B" +
+                    "5SQ1s1Aslsan5GVkF+thJwAzgIeUyLCAmHPxYkn/TD/Q193MdJjHXQwNWMbGBq+/v1c9cknUTDdnDhZeu3JBQ1NbQTGX3yP8" +
+                    "Yu+fGpdrWdpWKlW38ysQQjMIvC5gamLo7+OSV1iFEDoSE4c9pbNgXuDk9O26VVF1Da3F5bViieyLvScGO4TzwrOL740Z0eHB" +
+                    "+O4OQmh2iLf6oofeBYcQam7tzCusijmfoDn7sTDBVvPodKqHm31JeZ16eWFTDYLlqCWHID93bIcDIbTnwBmEEINOiwgLUH/i" +
+                    "k6CdAAjAQwqLxYgIC7wcl4EdjtSZkkjozZdXnLazSkjN6+YLrK3MFkWGLIoIxhMw6LR/b38uOaMgOT2fW8cTCMRsNsPczNjJ" +
+                    "wSYk0NPP22UkA0or63oFYkcHG0sLEyIGv/XqqtMXEjNySrq7e83NjaPmBT0WFTq0zU8GGAzazvfW30y+nZJZUFPPE4ulLCbD" +
+                    "njNl9kyfKLUXwSYaT3cHe45VfWP/ql3U4BeG9S44hNDOd9enZxXl5lfwWju7uwVUGsXa0szPx+XJxbPx1bytm5YfOhFbUl4r" +
+                    "EIrV9z+Il+NIOdBo1J3vrT8SE1dWUSeSSD1cHZ57OqqS2zg0EyJ2AhMKqTxp/6BC3f45Fvh+9wfgnX+WkvK6/3z+O0LI3Mxo" +
+                    "/1dvkdWeqr4H35jE3kle+cS8Z5bNh7IAgPuakTp22AOYpAiEYnz4v2TBTDKZdI8NyL5TjhAK9p8GZQEADyqwBDTpUH/HEiFk" +
+                    "a2OxKDLk3pux97PXoSwAAAQA+GcwMmRP93R6/ploBp0G3gAAAATgwcfUxBD/GMtIwEeGAQAYO7AHAAAAAAIAAAAAgAAAAAAA" +
+                    "IAAAAAAACAAAAAAAAgAAAACAAAAAAAAgAAAAAAAIAAAAAAACAAAAAIAAAAAAACAAAAAAAAgAAAAAAAIAAAAAgAAAAAAAEwr8" +
+                    "PYARKSqt+ejLw+oxFDKZzWZybC2CAzwWRgRP/r/TMpY/HTzuf3Z43DPMyC7eve8UFh71LyjcY9smiHG85UlYM++XUgABeEhR" +
+                    "KJW9AlFphai0oj49q+i//7eRQoEpFAAAIAAPNO++/kxIoIdU2hdzPuFCbBpCqJLblJ5VNCd0OjgHAAAQgAcfBoO28ol5mAAg" +
+                    "hLh1PBAAABgv4A+dggDcT9Bp/d7LK6jc9e2xuz6lUkyMDNycOYsiQ7w9HPF49SXOA99sjzmXkJye39nd+86Wp7t7BPipX797" +
+                    "90Js2rX4bH6P0NrKLDp8RnR4MIl093dfe3dPWwcfIbR2ZeSyJXN0NZugteoolMozF5PiU/L4fIGNtfmiiJDo8EENVaVSJaXn" +
+                    "J6Xlc+t4IpGEzWa4OHEWRQQH+bmPag/Ba/k9wuNnbuTcKRdLpE4OtquXRxC/ZYVSeSUuM+1WUROvXSrtMzMzsrO28PNxCZvl" +
+                    "a2ZiONQeLf4fe1mHBHpMhls+cfbm2UvJCCF7jtU3n76GXXUjKfenQxcRQmwW4/CPHwy9l1/2vKOlJhBPOSwj7QEQcZdORQyA" +
+                    "AOiDVNaHtRmEEImEgvyH793kckVHV09HTk9mbskrG56ICAsY0sWgb/efyrpdNuzlPxw8l5Sej4XrGlsPHr2iUqkWRYZM0E2N" +
+                    "ai1C6LsDZ9KzirFwfWPbL0cuN7d2rn8mGouRyeRf7D2RX1yNp+8ViPMKKvMKKpdGh65fvVDLrxO8tlcg+r//Hmxt78YOyyrr" +
+                    "P/36j/A5AQTv8eCRy9cTc/HD9g5+ewc/v7i6oLh6x9vrxuJ/Pcp6st0yCZGI1xbtNUG/lNoh6C6dihgAAdCNr344OWjsT6du" +
+                    "XLvE1YmDHfpPd8UfyVAqVd18wZXrmef/TlWp0JGYuLmzfKlUivrlAqG4idfx6YcvuDhxaFQKNvbBK3cTr/27z15nsxh7Dpwp" +
+                    "Kq1BCF2OyxxHAdDV2l6BuKtb8P3nWw3YzJhzCbE3sxBCl66mzw7xxjxw7PR1rH2amRi+8fIKV2dOeWXD1z+eFImll65lTHO1" +
+                    "D53hNZIxBK89fuYG1hWymPQ3X1np6T61oLh6789nCd5ycnoBQohMJn303gY3Z06vUNzc0nErp1QoEmukHNX/Yy/r34/HTqpb" +
+                    "JpGJCsCoNUGPlKNCsIYQv19AHXiIRR9kMnlyen5Pr2gYh5JJ5mZGTz85H2//3Dre0GRbNi7zcHOgDe4sMDavf9zOxsLUxDBi" +
+                    "YLjX2t6lUConpPiJWbvp+cdsppgbGbLXr15oYmyARaZkFGJD4JvJt7GY1csjvD0cGXTadC+nyLmBWOTV+Gwtkw8i1yqVqtRb" +
+                    "RVhM1PwZgb5uLCY9JNAjPIzocJhOp2GDcV5rZ1sH39iQ7eU+dcOahVs2LhuL//Uo60l4yyRdKoyWmqB3Su3TU4K1S6ciBmAG" +
+                    "oBvYU0AKhbKiuvGbfTFdfEFhac2Pv5778M1nsWoaezMrK7e0oblNKJIoFIM6i26+QNPpVIqrk92wP0SjUhztbbAwm83AR5p9" +
+                    "fXIKg44d7vvqzTGu+ehkLY1Ksbebgltub2fF7xEihJp47Qihtg6+RCrDzu7//cL+3y9oXF5b3zKSJQSv7eYLxGIpFuM01RY/" +
+                    "6+RgQ/CWw+f4X4hNU6lU+347jxCikMl2thbTPZ2XRodaWZrq5P8xlvUkvGXiaK8J+qXUDvHaNRH3CwIADIJCIXu42S+YH3Tq" +
+                    "fCJCKDe/QirtYzBoX/1wMje/YqSrFAqFRgyLSSeRhh94MZl0/MxIaca+nKWTtWMEb8D3+Fp11q1awLG1TM8q4tbx+D1ChVJZ" +
+                    "39hW39iWkVO8+5NXDQ1YxP0/jmU9SW5ZqVLhYVx17hdwdxG/XwAEYEyotRckFEkEQjHeI6x8Yt7SqFADA2avQPziti8nyICx" +
+                    "PAXU0dmjq7V9ckVDU5s9xwob/9Y3tWHxtjYWCCErCxMmg461w62bnpo7y5e4MQSvNTUxZLEYWN/ErW2eM9MHix92vWVYSCRS" +
+                    "RFgAtkMrkcq4tbzd+2L4PcLOrt7istqQQI+J896kvWXmwIRSKJLgV1VwG7Xkqb0m6JdyXNw1jkX8sAF7ADqgUChLK+qvJ+Zg" +
+                    "hybGBmamhuovA7OYdDqd2tbefeDwxUk7idHD2oNHLre0dfUKRIf/vIrN5RFCc2ZOxyb44WH+WMwfJ69l55WJxFKxRNbQ1JaS" +
+                    "Wfj1jzFXrmeOOPogdi2ZTHo02BtLFpeQnZtfIZHKsm6XxQ+sDo/Krm+OnjqfWFHdyO8R0qhUJpN+d0FMlxnP2Mt68tyyrbU5" +
+                    "rmqpmYVisTQ+JS8ju1jvmqB3yrG7axyLGGYAwPDLJkNHHBvWLCKRSKYmhv4+LnmFVQihIzFxR2LiEEIL5gVOzhvRw1pDA5ax" +
+                    "scHr7+9Vj1wSNdPNuf9xjrUrFzQ0tRUUc/k9wi/2/qlx+Ui7HTpd++yKyPzi6rb2brFE9r89x7EuMnxOwI2kXCJ33dzamVdY" +
+                    "FXM+YegAM8DHdUK9N2lvOcjPfYqlKfag0Z4DZxBCDDotIixA/WFKXWuCHinHy13jVcQgAIA26HSqmanRNFf7RREheG1+69VV" +
+                    "py8kZuSUdHf3mpsbR80LeiwqVEtD+mfR1VoSCb358orTdlYJqXndfIG1ldmiyJBFEcF4Agad9u/tzyVnFCSn53PreAKBmM1m" +
+                    "mJsZOznYhAR6+nm7aDGG4LXGRuxdOzaeOHMjO69cIpU5OdisWREpEIgI9oY7312fnlWUm1/Ba+3s7hZQaRRrSzM/H5cnF89m" +
+                    "sRgT6r1Je8s0GnXne+uPxMSVVdSJJFIPV4fnno6q5DaOpSbokXK83DWORfxQQSpP2q9+vHX751jg+90fgHcAACD+kU74nOek" +
+                    "ZaSOHfYAAAAAHlJAAAAAAEAAAAAAgIcJ2AQGAEAbxL/SDN9zhhkAAAAAAAIAAAAAgAAAAAAAIAAAAAAACAAAAAAAAgAAAACA" +
+                    "AAAAAAAgAAAAAAAIAAAAAAACAAAAAIAAAAAAACAAAAAAAAgAAAAAAAIAAAAAgAAAAAAAIADA/c3Pf1xa9eLHJ87eBFcAwFiA" +
+                    "PwijM0WlNR99eVgjksWk20wxD/JzXxo9y8CACV66T2nv4Mcl5hSWcJtbOkViCZNBNzJkW1maeLpNDfJ3d55qO6G/npFdvHvf" +
+                    "KSx86redUBw48OfmQQAmNWKJjFvH49bx4lPyPvnwhSmWpg+5Q7r5gk1v7cbCu3ZsdHd5ZJIbrFKhvy4nx5xLUCiVeKRQJBGK" +
+                    "JLzWzoJiLreu+b2tq6GqQ50BAQD6eff1Z0ICPaTSvrSsov2/n1epUEdXz8Ejl//vrbXgnPuLY6evn/87FQv7+7g89ViYs6Mt" +
+                    "Qqijs6e5pSPrdhm4CAABAIaBwaCFz/HPyC7Oza9ACN0pqpLK+hh0GnjmfqGiuhHv/R8N9n7zlZUkUv8pjq0lx9Zyhv808BIA" +
+                    "AgCMiI21ORZQKlW9vSKGhQlCSKVSJaXnJ6Xlc+t4IpGEzWa4OHEWRQQH+bnjF6qvb/763bsXYtOuxWfze4TWVmbR4TOiw4Px" +
+                    "zggh9Nq7e9o6+AihtSsjly2ZM5Ix1bXN73/8M0KISqUc+uF9TI0+/uqPwhIuQuiDN9ZgBpz/O/XoqesIIa9pUz9+f8PAYsjo" +
+                    "NiuUyitxmWm3ipp47VJpn5mZkZ21hZ+PS9gsXzMTw51fHCouq8UT79j1KxYIC52+bfPySVh2V+IysACFTN6wZqG6w4clr6By" +
+                    "17fH7rYiKsXEyMDNmbMoMsTbw3HYkj3wzfaYcwnJ6fmd3b3vbHk6JNCD3yM8fuZGzp1ysUTq5GC7ennESD/3T9UiXbNVKlXx" +
+                    "KbdTMgpqG1pEIimTRXfgTJkd4rNgXhCFQtbuk0fsLOsb24jUGZVKpd0MAATgH4DX0okFyGSSkREbISSTyb/YeyK/uBpP0ysQ" +
+                    "5xVU5hVULo0OXb964dBMfjh4Lik9HwvXNbYePHpFpVItigzR1RgnB1tjI3ZPr0guV5RV1Pt6O/fJFeVV9djZwtIarO/A9AAh" +
+                    "5OftggUI2nzwyOXribl4mvYOfnsHP7+4uqC4esfb6+67sisqren321QbM1MjXS+XyxUdXT0dOT2ZuSWvbHgiIixgSA+Ovt1/" +
+                    "Sn0dqVcg+r//Hmxt78YOyyrrP/36j/A5AUMz/wdrkU7ZSqV9n317rLj8rvALhZKS8rqS8rqE1Dv/eec5Fouh3SfjYgYAAnCv" +
+                    "kcr60m4V3S6owDtTbMR97PR1rN2amRi+8fIKV2dOeWXD1z+eFImll65lTHO1D53hpZ5Pr0DcxGv/7rPX2SzGngNnsF7pclym" +
+                    "HpWbREK+Xs4pmYUIocJSrq+3c0VVg0wm7+/vSrgIIYVCWVJR12+zT78AELQ5Ob0Ak7qP3tvg5szpFYqbWzpu5ZQKRWKE0Mfv" +
+                    "b7iPNvSUSlV3jwALW1qY4vEJqXk//npePeVXH73s6GCDEPKf7oo/paNUqrr5givXM8//napSoSMxcXNn+VKpFPULBUJxE6/j" +
+                    "0w9fcHHi0KgUhNCBwxex3p/FpL/5ykpP96kFxdV7fz471Lx/sBbplO3RU3FY789k0LdtXu7j6VReVb/npzMCobiS2/jb8dgt" +
+                    "G5/U7hMidWaC7u6hBd4DGBNf/XBy1Ysfr3vls32/nVepEELIzNRo49ol2KjwZvJtLNnq5RHeHo4MOm26l1Pk3EAs8mp89tAM" +
+                    "N69/3M7GwtTEMGJgMNja3qX+XApx8D4daySFpVyEEPYgY019i1AoqahukEr7sMk4Fk/cZjqdhg3ieK2dbR18Y0O2l/vUDWsW" +
+                    "btm47KFrQmSSuZnR00/Ox/s1bh1vaLItG5d5uDlgPZ1SqUq9VYTFR82fEejrxmLSQwI9wodMHf7xWkQwW7lckZB6B4uMDp8R" +
+                    "HDCNxaT7ebs8vnAWFpmSWSCRyrT4ZFzMAGAG8M/AYNBsp5gH+rkvjZ5lZMhCCLV18PEav//3C/t/v6BxSW19i0YMjUpxtLfB" +
+                    "wmw2Ax9g9vXJKQw6drjvqzeJCsDAqk4Vt0kilRWV1CCE5s/2FwjFre3dRWU1dQ39Bkz3ciaRSDrZHD7H/0Jsmkql2vfbeYQQ" +
+                    "hUy2s7WY7um8NDrU6n57BJZMJpkYG3bzBdhaFh4/f7b//Nn+NXW8dz86MLRfjr2ZlZVb2tDcJhRJFIpBvQ+W1aBmRqW4Otmp" +
+                    "JxCLpQOLTrZqC3c2Ghf+47WIYLbqdrqo3SkelssVvJZOR7Ub1PDJuJgBHREIwD0FewxUv2uHDoiYTDq+l0Ua866WmamRPceq" +
+                    "vrFNoVTeKayqqG5ACHl7OtbU824m3y4qramp52lIBXGb161awLG1TM8q4tbx+D1ChVJZ39hW39iWkVO8+5NXDQ1Y91c5ens4" +
+                    "pmYWIoS4dc38HqGJscGoMz/sia9hUSgUGjEsJp00MduUE12LiGaLzX+xs4g0XDQaF59M0N2BAADjjJWFCZNBx9rn1k1PzZ3l" +
+                    "Oy7ZEn9+A+vZsScrzl5O7pMrjI3Y9nZTvD0cbybfvl1QgY928cUi4jaTSKSIsABst1MilXFrebv3xfB7hJ1dvcVltSGBHvdX" +
+                    "41wUEYIJgEKhPHoqTvtCVkdnD977r3xi3tKoUAMDZq9A/OK2Lwn+nKmJIYvFwCYB3NrmOTN9sPiha0eToRYRqu2WpgwGDVtR" +
+                    "rKppmhXcvy3BrW3Gx/v4Y3JaKhX0G/d6+gsumChppVLCw/yx8B8nr2XnlYnEUrFE1tDUlpJZ+PWPMVeuZ060DfjQvrqmGRvn" +
+                    "kkjIx8MJIdTc0tknVyCEOLaWFmbGutq865ujp84nVlQ38nuENCqVybw7+5YrFAghFpOBt+fSirpJvkTr4Wa/ZMFMLJyQeufr" +
+                    "H2MquY19fXKxRFZV06SRGH+iERvG0unUtvbuA4cv6rTo9GiwNxaOS8jOza+QSGVZt8viB5b7J1UtIlrbZ/fbeS0+KzuvXCKV" +
+                    "5RdXX7yahkXOmenDHG2J5v6qMzADAEZh7coFDU1tBcVcfo/wi71/apzVYwFUV7ymOdKoFKyjR6i/6zc3M7K1Nm8eeGgVH/7r" +
+                    "ZHNza2deYVXM+YShI9YAH1eEEJ1O9XCzLymvQwgdiYk7EhM3vmPYcWfDmoVMJv2vyykqlSozpyQzp0TL+N3fxyWvsEr91hbM" +
+                    "C9Tp555dEZlfXN3W3i2WyP635zimCuFzAm4k5U62WkSQdaui6hpai8trxRLZF3tPDDaS88Kzi0fN4b6rMyAAgDYYdNq/tz+X" +
+                    "nFGQnJ7PreMJBGI2m2FuZuzkYBMS6El85V1v6HSqp/tU/BFy/B0lbw+nuwIw2AyCNu98d316VlFufgWvtbO7W0ClUawtzfx8" +
+                    "XJ5cPBt/3HvrpuWHTsSWlNcKhGIta8GTBBKJtGZ5xPxH/a4l5hSVcFvbuyUSmYEB08TYwNLcxMfTydfLeerA9uNbr646fSEx" +
+                    "I6eku7vX3Nw4al7QY1Gh6i9GjIqxEXvXjo0nztzABstODjZrVkQKBKKhAvCP1yKitZ1B2/ne+pvJt1MyC2rqeWKxlMVk2HOm" +
+                    "zJ7pE6X2Iph27q868wBAKk/aP6gAtn+OBb7f/QF4B5ic/PzHpbiEnOVLw9aM/PYsAACjduywBwAAAPCQAgIAAAAAAgAAAAA8" +
+                    "TMAmMHD/sfn5pZufXwp+AACYAQAAAAAgAAAAAAAIAAAAAAACAAAAAIAAAAAAACAAAAAAIAAAAAAACAAAAAAAAgAAAACAAAAA" +
+                    "AAAgAAAAAAAIAAAAAAACAAAAAIAAAAAAAPcJ8DnoyU5Rac1HXx7Gwu++/kxIoAd+KvbGrV+P/Y2F9+zawrG1vH9vs6W16/TF" +
+                    "pJLy2s7uXgszY1cnu/CwgOmeziQSVIFJyrWE7F/+uIwQMjJk/bb3PXAICAAA6ENNfcu/P/tNIpVhh7zWTl5rZ0pm4Vcfvezo" +
+                    "YAP++Qfp5gs2vbUbC+/asdHd5RHwCQgAAIwn566kYL2/u8sj721dTSaTuHW8+OTbZDIsUQIACADwQNPZ1YMF7DlTTIwNEEK+" +
+                    "Xs6+Xs7gGQAAAQB0Q6lUxafcTskoqG1oEYmkTBbdgTNldojPgnlBFEr/mPrE2ZtnLyUjhOw5Vt98+hoWeSMp96dDFxFCbBbj" +
+                    "8I8fYJEKpfJKXGbaraImXrtU2mdmZmRnbeHn4xI2y9fMxBBLo1KpktLzk9LyuXU8kUjCZjNcnDiLIoKD/NyJGOzixCkpr0MI" +
+                    "pd0qXPH4XCsLEz3uWqVC6dlFial3uLXNvUKxiZGBqzPn8YWzprnaE3cLwWTqy9+/7HnnzMWk+JQ8Pl9gY22+KCIkOnwGnhsR" +
+                    "77327p62Dj5CaO3KyGVL5mi5RyK5jWPp7/ziUHFZLf7rO3b9igXCQqdv27x8sPNVF2LTrsVn83uE1lZm0eEzosODYf8GBAC4" +
+                    "10ilfZ99e6y4/G67FQolJeV1JeV1Cal3/vPOcywWQz09CY3STA8euXw9MRc/bO/gt3fw84urC4qrd7y9DiEkk8m/2Hsiv7ga" +
+                    "T9MrEOcVVOYVVC6NDl2/euGoNvt5OV+6mo4QEktkX/9w8qP3N7CYdJ3uuq9P/tUPJ28XVOIxHV09HTk9WbdLTx78D3G36Oo9" +
+                    "hNB3B86kZxVj4frGtl+OXG5u7Vz/TDRB7+nEqLmNe+kT5IeD55LS87FwXWPrwaNXVCrVosgQaI8gAMC48dUPJ0dNc/RUHNb+" +
+                    "mQz6ts3LfTydyqvq9/x0RiAUV3Ibfzseu2Xjk4O6APIoXUByegFCiEwmffTeBjdnTq9Q3NzScSunVCgSYwmOnb6O9f5mJoZv" +
+                    "vLzC1ZlTXtnw9Y8nRWLppWsZ01ztQ2d4ack/ITXvwOFL+GF1bfOX3/+54621VCoFIfTmjh8bm9sRQod+eN+AzRwpk2Onb2C9" +
+                    "P4mEViydGzk3kM1m1tTx/r6eqZNbdPVer0Dc1S34/vOtBmxmzLmE2JtZCKFLV9Nnh3i7OnGIeE8nRs1tfEv/4/c3ENkE7hWI" +
+                    "m3jt3332OpvF2HPgTFFpDULoclwmCMDkBzbZHijkckVC6h0sHB0+IzhgGotJ9/N2eXzhLCwyJbMAf9hmYAw4CnQ6DVtg4bV2" +
+                    "tnXwjQ3ZXu5TN6xZuGXjMuwXbybfxlKuXh7h7eHIoNOmezlFzg3EIq/GZ2vJvLSifv/vF+RyBYmEIsICSCQSQqiwhPv9L3+p" +
+                    "VCqZTM5r6UQImZkaaen95XLFzeT+cXHYLN9nngq3tDBhsxhe06Zu3/I0cbfo4T2E0KbnH7OZYm5kyF6/eiG2gYEQSskoJOI9" +
+                    "XRm1LMa99Amyef3jdjYWpiaGEXMCsJjW9i6FUglNEmYAwLih5T0AjLYOPt7CXZzs8Hg8LJcreC2dOj1bGT7H/0Jsmkql2vfb" +
+                    "eYQQhUy2s7WY7um8NDrUytJU/Rf3/35h/+8XNC6vrW/RkvnluAylUoUQipwb9PL6pe4uj2DL0GlZRcbGBjZTzLBOJGC6q5ZM" +
+                    "2jr4Ykm/Df4+rsMmIOIWBoOuq/doVIq93ZT+tkSl2NtZ8XuECKEmXjsR72Fp9n315riXxXiVPhFoVIqjfX+ebHb/EpNSqerr" +
+                    "k1MYdGi2IADAvUKlUhvckYaL1kSpdk4slg5NsG7VAo6tZXpWEbeOx+8RKpTK+sa2+sa2jJzi3Z+8OqpFQ4fM6jQ193eUbs4c" +
+                    "hFDk3EChSHIkJg6TN2wViERCiwkvJpDG4hbdvTcq2r1naMAax9wmovSJwGTS8f1eEuz8ggAA/xRWlqYMBk0q7UMIVdU0zQru" +
+                    "X3zn1jbjo1Qba3OEEHNgaCYUSfDLK7iNw3SpJFJEWEBEWADWm3Nrebv3xfB7hJ1dvcVltYG+bsyBgfPWTU/NneWrk8GGhqyB" +
+                    "taA67CeeWPRor0B87koKNmJFCC1ZEKp90GplYcJi0rFJQF5h1ZzQ6fq5hUqhEPQeTp9c0dDUZs+xwqytb2rD4m1tLIh4D5vP" +
+                    "EX8KaNSymIjSh2b1AAN7AA+WnlMp4bP9sfC1+KzsvHKJVJZfXH3xahoWOWemD9b4bQc6so7OntTMQrFYGp+Sl5FdPDTPXd8c" +
+                    "PXU+saK6kd8jpFGpTLXnc+QKBZVKCQ/r/8U/Tl7LzisTiaViiayhqS0ls/DrH2OuDGzDDkvYQGedkJp3+mISv0coFErsOVY0" +
+                    "KgVP84id1eh3Hda/9JyUfufU+cSOrh6xWFpaUfe/PceJu4W499Q5eORyS1tXr0B0+M+r2PoPQmjOzOlEvKdr+Y5eFuNd+iwm" +
+                    "A9eA0oo6WNaHGQAwqVm3KqquobW4vFYskX2x94T6KVcnzgvPLsbCQX7uUyxNW9u7EUJ7DpxBCDHotIiwAPWnDDGaWzvzCqti" +
+                    "zicMHXcH+LgihNauXNDQ1FZQzOX3CL/Y+6dGMle1xeihRM4NLKmoS0rLV6nQyb/iT/4VPzTNz39cYrMYj4Z4a8ln7YoFjU3t" +
+                    "d4qqVCoUcz4Bt5Y88JQLQbcQTHZ3BmPAMjY2eP39veqRS6JmYitaRLynE6PmNu6lT6dTPdzssbc0jsTEYatzekz1gMkJZesL" +
+                    "S9WP/76W0l+JF84B70wG2tq78Uc7Zof4qH/xrZLbiD/5vigyxNiIjY125z3qZ2FmLJHKRGKJQqFgs5gujnZPLpm96bnHGHRa" +
+                    "f8FTyMEBHp1dvUKhWIVUPh5Ob726EiGUnVeOEKLRqE891l8BggM8zM2MFAqlUqmUSfvodCrHxnLuo75bNi7DFnCoFMrcWb42" +
+                    "1uYyWZ9YIpP3KQwNmLbWFgHTXZ9eFh4W6qv+mtXQFYaZgZ6O9jZisVQklsjlCmMjNsfGck7o9I1rl0ilsrqGVoRQVm6po4ON" +
+                    "nc2IX7ujUMhhs3ztbC37+uRiiaxPLjczNfTzdnl5w+OW5ibE3UIwWVVNU+6dCoQQg0H7bMdLiERqbe+W9cltrS2eXjZ/1RPz" +
+                    "cMNG9R5C6HJchkgsRQj5ejl7uDloqQyjl8V4lz5CyMfTua2ju6dX2Ncnx2JmBnlOtbe+6wQ67cnFs/slqqUjJbP/CajlS8Oo" +
+                    "ajM54B9kpI6dVJ60X/146/bPscD3uz8ArwHAsMCHMIH7i5E6dtgDAAAAeEgBAQAAAAABAAAAAB4m4CkgANCZ6PkzoufPAD8A" +
+                    "MAMAAAAAQAAAAAAAEAAAAAAABAAAAAAAAQAAAABAAAAAAAAQAAAAAAAEAAAAAAABAAAAAEAAAAAAABAAAAAAAAQAAAAAAAEA" +
+                    "AAAAQAAAAAAAEAAAAABAC/fN3wPokys2vfm1UCTBDmcFe7396ipdM5mgP+UKfyF2cvpQLlecupCYequwvYOvUCgRQhvWLHws" +
+                    "KvRhcBTUSV19+HB67L4RgOzbZXjvjx8asJn3zIBuvmDTW7ux8K4dG91dHoGGNMk5eS7+3JXUSWUS1CIABEAfEtPuaEwI0rOK" +
+                    "FswLgiIERiLtVhEWWBodum5VFIUCC54AcB8KQE+vKK+gEgvbWps3t3QihBLT8kEAAC10dPZggWmu9g9b7w9/tBI89uAIQEpm" +
+                    "gUKpRAixWYwXn12869tjCKHSirqWti5rKzM8mUKpvBKXmXarqInXLpX2mZkZ2Vlb+Pm4hM3yNTMxHDZnqbTv870nCku4CCFL" +
+                    "C5N/vb2OY2s5NNnOLw4Vl9Xihzt2/YoFwkKnb9u8XD2lSqW6EJt2LT6b3yO0tjKLDp8RHR5MIg1KkJSen5SWz63jiUQSNpvh" +
+                    "4sRZFBEc5Oc+qh+USlV8yu2UjILahhaRSMpk0R04U2aH+CyYF4R1cNW1ze9//DNCiEqlHPrhfQadhhD6+Ks/sBv84I012K+c" +
+                    "/zv16KnrCCGvaVM/fn8DGrwA+ut37479FtQzPPDN9phzCcnp+Z3dve9seTok0EP7bSqUyjMXk+JT8vh8gY21+aKIkOjwGRpO" +
+                    "1m7A3p/PJmcU4Ol37zvVH/j0VQfOlFHdOKr9+hWi9lqUV1CJVez+lkmlmBgZuDlzFkWGeHs4asl22Do86jL3qKXM7xEeP3Mj" +
+                    "5065WCJ1crBdvTxCIBDhnjz1207tJai9JZ44e/PspWSEkD3H6ptPX8OuupGU+9Ohi1gzP/zjB0Nt/mXPO1oqBvGUwzLSHgCR" +
+                    "staj5wEB0Gf9JzjAw9fbxcTYgN8jRAglpeWvenIenuzgkcvXE3Pxw/YOfnsHP7+4uqC4esfb64ZmKxZLP9tzrLSiHquIO95e" +
+                    "Z2FmPEZTfzh4Lik9HwvXNbYePHpFpVItigzBYmQy+Rd7T+QXV+PpewXivILKvILKpdGh61cv1N7OP/v2WHH53R5EKJSUlNeV" +
+                    "lNclpN75zzvPsVgMJwdbYyN2T69ILleUVdT7ejv3yRXlVfVY+sLSGqzWYp0FQsjP22Wib0GlQt/uP5V1u4y4D787cCY9qxgL" +
+                    "1ze2/XLkcnNr5/pnosfuQ4Ju1G7/GA0giFyu6Ojq6cjpycwteWXDExFhAcMm07sOay/lXoFox65fW9q6sMOyyvpPv/4jfE4A" +
+                    "QeOJt0QSIo1XxdAvpXYIlrWuPQ8IgA40NrdX1zRj4UdDvMlk0swgz2vx2QihxPQ76gKQnF6AECKTSR+9t8HNmdMrFDe3dNzK" +
+                    "KRWKxEOzFQol//3mSCW3CVsi+PCNZw0MRtxS/vj9DUS273oF4iZe+3efvc5mMfYcOFNUWoMQuhyXiberY6evY5XJzMTwjZdX" +
+                    "uDpzyisbvv7xpEgsvXQtY5qrfegMr5FsOHoqDuu2mAz6ts3LfTydyqvq9/x0RiAUV3Ibfzseu2XjkyQS8vVyTsksRAgVlnJ9" +
+                    "vZ0rqhpkMjmWQ1EJFyGkUChLKur6BcDHZaJvQSAUN/E6Pv3wBRcnDo1KGbW4ewXirm7B959vNWAzY84lxN7MQghdupo+O8Tb" +
+                    "1YlD0IBtm5dv27z8mZc+USpVCKHtr63Crfr16JVR3ajd/t+Px+pXiNprkf90V3xYrVSquvmCK9czz/+dqlKhIzFxc2f5Uod4" +
+                    "T6c6rFMpHz9zA+v9GQzaG5tX+Hg43imq2vvLXwTbLPGWSCITFYBRK4YeKUeFYG3XqeeZVNwHC6MJqf3DfwM209fLGSE0K9gb" +
+                    "i2lp7SqrrMdT0uk0bMjGa+1s6+AbG7K93KduWLNwy8ZlGnn29Sk++vIQ1nJm+Lv/553nCbacUdm8/nE7GwtTE8OIgeFSa3sX" +
+                    "tn4llytuJt/GIlcvj/D2cGTQadO9nCLnBmKRV+OztYwHcT9Eh88IDpjGYtL9vF0eXzgLXyWTSGXqfTrWqgtLuQgh56m2CKGa" +
+                    "+hahUFJR3SCV9mFTXSx+om9hy8ZlHm4ORHp/jE3PP2YzxdzIkL1+9UITY4P+G8woHKMPdXLjSPaP0QCizZJMMjczevrJ+bgI" +
+                    "cet441uHtZSyUqlKHdg/j5oXFBwwjcVihM7wCp/tTzBz4i2RpItbtFQMvVNqry0Ey5r4/cIMQDdUKlVyRj6+/oMNgrynTcVX" +
+                    "gRLT7kxztccShM/xvxCbplKp9v12HiFEIZPtbC2mezovjQ61sjRVz1YildXUtyCEXBzt3nn9GQp5fISQRqU42ttgYTabgY/m" +
+                    "+vrkFAa9rYOPdy77f7+w//cLGpfX1reMlLP6tS5Odng8HpbLFbyWTkcHG3xVp4rbJJHKikpqEELzZ/sLhOLW9u6ispq6hv5f" +
+                    "me7lTCKRJvoWqFSKq5rBRHxobzcFv9bezgor6CZeu4YfdPWhTm4cyf4xGqC9u4m9mZWVW9rQ3CYUSbAXF3C6+QKN9GOpw9pL" +
+                    "uZsvEIul/Z5xHOylBEL5E2+J41Ux9EupHeJlPRH3CwKAEEKFJTX4sxwJqXkJqXkaCdKyil54djE2Olu3agHH1jI9q4hbx+P3" +
+                    "CBVKZX1jW31jW0ZO8e5PXjU0YN0dd5BIKpUKIVRV0/R3XObSgQHgGGEy6XiPOrRvHZWhY89BS9HDLZuqRfdjZmpkz7Gqb2xT" +
+                    "KJV3CqsqqhsQQt6ejjX1vJvJt4tKa2rqeVo2AMb9FlhMuh756I02H+riRr3tH8WAkfnqh5O5+RUjnVUoFJpj5zHUYeKlrF/Z" +
+                    "EW+JSjXX46pzv4CXNfH7BQHQjaT0O9oTCIWSnDvloUGeWGWNCAvAtsskUhm3lrd7Xwy/R9jZ1VtcVqv+8ImhAXPlE/N+Px6L" +
+                    "EDp88ppSpXpi0aPaf2jsvZiVhQmTQccqzdZNT82d5avDtZamDAYNW7qpqmmaFdy/ysytbcZHOjbW5njPXt/YhhA6ezm5T64w" +
+                    "NmLb203x9nC8mXz7dkFFewd/pA2ACb0FgvTJFQ1NbfYcK2xQXN/UhsXb2liM3QCd3DgRHhipFnV09uC9/8on5i2NCjUwYPYK" +
+                    "xC9u+3KkrPSowwQxMzVksxgisRQhVFPPmz3TB59TEr9N7S2RyaD3t1+1tzsruI16Vwz9Uo5XbSfe80w2JvUegFTWl5FdgoVf" +
+                    "Wrfk1G871f8F+rphpxIHVnV3fXP01PnEiupGfo+QRqUymfS78+shA6glC2Y+93QUFj4SE3fuSop2Y1hMBt56SyvqsNVS3cSW" +
+                    "SgkP619F/ePktey8MpFYKpbIGpraUjILv/4x5sr1TG3XDqzAXovPys4rl0hl+cXVF6+mYZFzZvrgjQof2mOb594ejiQS8vFw" +
+                    "Qgg1t3T2yRUIIY6tpR6PPI3lFohz8MjllrauXoHo8J9Xsck7QmjOzOljN0AnN06EB0aqReqvKbCYdDqd2tbefeDwRe2O0rUO" +
+                    "E+++Hw3p7/TjEnLyCirFEllGdnH8kPn3SIzaEm0HVLajsyc1s1Aslsan5GVkF+tdMfROOS5lrVPPAzMAomTmlOCTLLy7xwn0" +
+                    "dcMGTbcLKnoFIiNDdnNrZ15hVcz5hKFKHuDjOjT/JxY9KuuTn/wrHiF07PQNpVK1fGnYSMbQ6VQPN/uS8jqssR2JidNjDLh2" +
+                    "5YKGpraCYi6/R/jF3j81zmpfK1+3KqquobW4vFYskX2x98TgCzkvPLsYP/Sa5kijUrCOHqH+rt/czAh/h06/4f/Yb4EIhgYs" +
+                    "Y2OD19/fO6ini5rp5swZFwOIu3EiPKClFvn7uOQVVqnHL5gXOKoxOtVh4jy7IjK/qKq1vVsokmBvJ5DJpPA5ATeScolcPmpL" +
+                    "DPJzn2Jp2trejRDac+AMQohBp0WEBag/TKlrxdAj5XiVta49DwgAsfWftP7t30fsrIbupQQMSIJCoUzJKFy8IGTnu+vTs4py" +
+                    "8yt4rZ3d3QIqjWJtaebn4/Lk4tkaD3fjrHx8bl+fHHsn5cTZm0qlcuUT80ayZ+um5YdOxJaU1wqEYi2rxlpg0Gn/3v5cckZB" +
+                    "cno+t44nEIjZbIa5mbGTg01IoOewi/J3r2XQdr63/mby7ZTMgpp6nlgsZTEZ9pwps2f6RKm9wYT1Mp7uU/GHl/HXiLw9nO4K" +
+                    "gLeeAjCWWyA2/ERvvrzitJ1VQmpeN19gbWW2KDJkUUTweBlA3I0T5IGRatFbr646fSExI6eku7vX3Nw4al7QY1GhWjpE/eow" +
+                    "QYwMWZ/966XjZ25k55WJJTInB5s1KyIbGluxs+wRWhPOqC2RRqPufG/9kZi4soo6kUTq4erw3NNRldxGLfc7asXQI+V4lbUe" +
+                    "Pc8kgVSetH9Q7dz+ORb4fvcHCAAAYICvfjh5K7cUIeTp7vDJBy/cmx8l/pFO+ACqtmHHCB07FVwDAMBQ/rfneHCAh/e0qZYW" +
+                    "Jl18QVxCDtb7I4Siw4PBPw8GIAAAAAxDfWPrsI+lLl04a87Ac0EACAAAAA8gO95edy0hu7CY29LepVKpzEyM3F0eWTA/yMt9" +
+                    "KjgHBAAAgAcZjq3lC2sW/eNmEP9KM3wBWw/gT2QAAACAAAAAAAAgAAAAAAAIAAAAAAACAAAAAIAAAAAAACAAAAAAAAgAAAAA" +
+                    "AAIAAAAAgAAAAAAAIAAAAAAACAAAAAAAAgAAAACAAAAAAAAgAAAAAAAIAAAAAAACAAAAAIAAAAAAACAAAAAAAAgAAAAAAAIA" +
+                    "AAAAgAAAAAAAIAAAAAAACAAAAAAIAAAAAAACAAAAAIAAAAAAACAAAAAAAAgAAAAAAAIAAAAAgAAAAAAAIAAAAAAACAAAAAAA" +
+                    "AgAAAACAAAAAAAAgAAAAAMA/BXWkE1u3fw7eAQAAgBkAAAAAAAIAAAAAPBCQypP2gxcAAABgBgAAAACAAAAAAAAgAAAAAAAI" +
+                    "AAAAAPCA8P8PsCSR5H4qVgAAAABJRU5ErkJggg==",
+            };
+
         private static byte[] SignPng(string image)
         {
             byte[] png;
@@ -9682,14 +11082,15 @@ namespace Oxide.Plugins
                 return null;
             if (SignPngs.TryGetValue(image, out png))
                 return png;
-            if (!SignImages.TryGetValue(image, out base64))
+            if (!SignImages.TryGetValue(image, out base64) && !ExperienceSignImages.TryGetValue(image, out base64))
                 return null;
             png = Convert.FromBase64String(base64);
             SignPngs[image] = png;
             return png;
         }
 
-        private static bool HasSignImage(string image) => image != null && SignImages.ContainsKey(image);
+        private static bool HasSignImage(string image) => image != null &&
+            (SignImages.ContainsKey(image) || ExperienceSignImages.ContainsKey(image));
 
         // Signage.UpdateSign's checks and storage for texture 0 without a player, then the lock: Locked lets only
         // OwnerID and admins repaint (Signage.CanUpdateSign), and BlockUnlocking makes the UnLockSign RPC refuse
@@ -9848,7 +11249,7 @@ namespace Oxide.Plugins
         private static readonly string[] EventKinds =
         {
             "stale", "topup", "cull", "birth", "adopt", "stray", "released", "reseed", "breeding", "death", "needs",
-            "destroyed", "full", "placement", "repair", "owner", "failure", "build", "upgrade",
+            "destroyed", "full", "placement", "repair", "owner", "failure", "build", "upgrade", "care", "bees",
         };
 
         private static string ReseedLeft(ReseedState reseed)
@@ -10020,9 +11421,12 @@ namespace Oxide.Plugins
             {
                 sb.AppendLine("wiring:");
                 foreach (LayoutConnection link in _config.Layout.Connections)
-                    sb.AppendLine($"  {link}: {(IsWired(link, pass) ? "connected" : "NOT connected")}");
+                    sb.AppendLine($"  {link}: {WireStatus(link, pass)}");
             });
             StatusSection(sb, "power", () => AppendPower(sb, pass));
+            StatusSection(sb, "lighting", () => sb.AppendLine("lighting: " + FarmLightingSummary(pass)));
+            StatusSection(sb, "care", () => sb.AppendLine("care: " + AssistedCareSummary(pass)));
+            StatusSection(sb, "bees", () => AppendBeeStatus(sb, pass));
             StatusSection(sb, "buildings", () => AppendBuildings(sb, pass));
             StatusSection(sb, "parts", () => AppendParts(sb, pass));
             StatusSection(sb, "upgrade", () => sb.AppendLine(UpgradeSummary(pass)));

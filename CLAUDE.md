@@ -278,13 +278,13 @@ version, channel, and Rust protocol.
   instead of an item table, so a block returns its current grade's full cost; a deployable returns itself. The
   defaults charged 60% of that cost and refunded 40%. The `default` group holds `removertool.normal`; admins skip
   its 60 s cooldown and 50-object limit.
-- Night lights: `NightLantern.cs` is uMod's Night Lantern 2.1.3 by k1lly0u (MIT), updated with the same `curl`
-  pattern. At 18:30 in-game it lights every lantern, jack-o'-lantern, Chinese lantern, tuna light, searchlight,
-  campfire, firepit, and fireplace, and at 07:30 it puts them out; they burn fuel as usual.
-  `configs/NightLantern.json` turns off its BBQ, Furnace, LargeFurnace, Refinery, and CursedCauldren types, which it
-  would otherwise light and fuel all night without cooking anything. The automatic switch needs no permission;
-  `/lantern`, which toggles one's own lights by type, needs `nightlantern.<type>`, and `/lantern global` needs
-  `nightlantern.global`.
+- Night lights: `NightLantern.cs` is uMod's Night Lantern 2.1.3 by k1lly0u (MIT), updated with the same `curl` pattern.
+  At 18:30 in-game it lights every lantern, jack-o'-lantern, Chinese lantern, tuna light, searchlight, campfire,
+  firepit, and fireplace, and at 07:30 it puts them out; they burn fuel as usual. The livestock farm vetoes it for its
+  own scheduled lanterns. `configs/NightLantern.json` turns off its BBQ, Furnace, LargeFurnace, Refinery, and
+  CursedCauldren types, which it would otherwise light and fuel all night without cooking anything. The automatic switch
+  needs no permission; `/lantern`, which toggles one's own lights by type, needs `nightlantern.<type>`, and `/lantern
+  global` needs `nightlantern.global`.
 - Monument recyclers: `MonumentAddons.cs` is uMod's Monument Addons 0.21.5 and `MonumentFinder.cs` its required
   Monument Finder 3.1.5, both by WhiteThunder under MIT. Update each with
   `curl -fsSL -o server/carbon/plugins/<Name>.cs https://umod.org/plugins/<Name>.cs`. The `Default` profile in
@@ -370,27 +370,31 @@ version, channel, and Rust protocol.
   `docs/developer-and-admin-switches.md` starts with the client command and lists everything else the flag changes,
   the other client settings the server trusts (`global.god`, `player.infiniteammo`, and more), and creative mode.
 - Livestock farm: `LivestockFarm.cs` is local. `farm.build` over RCON places one farm per identity on Pandora's E6 river
-  meadow from the layout in `configs/LivestockFarm.json` (384 entries and 29 power and water links, the same as its
+  meadow from the layout in `configs/LivestockFarm.json` (394 entries and 30 power and water links, the same as its
   built-in default), every building block in Frontier timber (`Building grade` wood, `Building skin` 10232): a 71-fence
   pen with a gate, 4 Hitch & Troughs, and a field shelter over the herd's cupboard; a 5 x 4 barn by the pen gate holding
   12 boxes and barrels, 2 fridges, and a large battery that a Wind Turbine and 2 roof panels charge; a farmhouse with
   the owner's bed; a water tower whose large catcher feeds two troughs by hose; a fenced garden of 8 planters, 4 of them
   heated around a scarecrow deck, watered by the river pump; 2 static planters it only harvests; a 4-coop chicken run;
-  and painted PANDORA FARM signs. Its lanterns, torches, candles, and hearth are always-lit statics that Night Lantern
-  never switches. Every 30 s it bonds, houses, feeds, waters, milks, and shears the cattle and sheep, tends the coops,
-  harvests, clones, and replants the crops, composts the dung, breeds as a fallback, culls adults above 9 cattle and 9
-  sheep (never a juvenile, whose corpse yields nothing), holds mating while the heads plus the young of current
-  pregnancies reach the cap plus 2 or a due cull cannot run, returns strays, re-places missing structures, restores each
-  block's grade and skin, and repaints a sign whose image is gone. It creates wheat or water only below a stock's
-  minimum and logs each top-up. Damage to the farm from anything but a real player is cancelled; no player upgrades,
-  demolishes, rotates, wallpapers, or builds pieces onto its blocks (deployables still go in, so the owner can furnish
-  the barn and farmhouse), spray-reskins a part, makes its bed public, or repaints its signs, and only the owner may put
-  a lock or door closer on a part. `farm.upgrade` prints, and `farm.upgrade confirm` applies, the change from a standing
-  farm to the config's layout, moving, emptying, and retiring old parts while keeping the herd, chickens, crops, and
-  items. Its record, `data/LivestockFarm/<identity>.json` (untracked), is written only on world saves and unload
-  (`farm.build`, `farm.upgrade confirm`, and `farm.remove confirm` end with one) and is tied to the save's creation
-  time, so after every wipe `farm.build` has to run again. `farm.status`, `farm.upgrade`, `farm.links <building>`,
-  `farm.tick`, `farm.relink`, `farm.repair`, and `farm.remove confirm` need RCON, the server console, or auth level 2.
+  and painted PANDORA FARM signs, an entrance guide, and 8 storage labels. Its 10 deployed lanterns and the 6 barn
+  ceiling lights, behind a switch on the barn's battery branch, follow the farm's own 18:30 to 07:30 schedule, and the
+  plugin vetoes Night Lantern for those lanterns; the torches, candles, and hearth are always-lit statics. Every 30 s it
+  bonds, houses, feeds, waters, milks, and shears the cattle and sheep, tends the coops, harvests, clones, and replants
+  the crops, composts the dung, breeds as a fallback, culls adults above 9 cattle and 9 sheep (never a juvenile, whose
+  corpse yields nothing), holds mating while the heads plus the young of current pregnancies reach the cap plus 2 or a
+  due cull cannot run, returns strays, re-places missing structures, restores each block's grade and skin, and repaints
+  a sign whose image is gone. It creates wheat or water only below a stock's minimum and logs each top-up. Damage to the
+  farm from anything but a real player is cancelled; no player upgrades, demolishes, rotates, wallpapers, or builds
+  pieces onto its blocks (deployables still go in, so the owner can furnish the barn and farmhouse), spray-reskins a
+  part, makes its bed public, or repaints its signs, and only the owner may put a lock or door closer on a part.
+  `farm.upgrade` prints, and `farm.upgrade confirm` applies, the change from a standing farm to the config's layout,
+  moving, emptying, and retiring old parts while keeping the herd, chickens, crops, and items. Its record,
+  `data/LivestockFarm/<identity>.json` (untracked), is written only on world saves and unload (`farm.build`,
+  `farm.upgrade confirm`, and `farm.remove confirm` end with one) and is tied to the save's creation time, so after
+  every wipe `farm.build` has to run again. `farm.status`, `farm.upgrade`, `farm.links <building>`, `farm.tick`,
+  `farm.relink`, `farm.repair`, `farm.remove confirm`, and `farm.summary` need auth level 2, RCON, or the server
+  console. Any player's `/farm` in chat prints the read-only summary that `farm.summary` previews (herd, coops, troughs,
+  garden, fridges, lighting, and full stores), and `/farm help` explains milking, shearing, and player beds.
   `docs/livestock-farm.md` covers the layout, the loop, upgrades, the config, and recovery.
 - Mono profiler: `config.profiler.json` enables it and tracks `Assembly-CSharp`, `Assembly-CSharp-firstpass`, and
   all plugins, modules, and extensions. `carbon/native/libCarbonNative.so` reads that file once at boot, so changes
