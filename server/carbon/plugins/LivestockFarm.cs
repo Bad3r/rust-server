@@ -649,7 +649,7 @@ namespace Oxide.Plugins
                 "assets/prefabs/deployable/cookingworkbench/cookingworkbench.deployed.prefab";
             const string candlesetLargeOnStatic = "assets/bundled/prefabs/static/candleset_large_on.static.prefab";
             const string woodenBenchAMountable = "assets/content/props/wooden_bench/wooden_bench_a_mountable.prefab";
-            const string lanternOnStatic = "assets/bundled/prefabs/static/lantern_on.static.prefab";
+            const string lanternDeployed = "assets/prefabs/deployable/lantern/lantern.deployed.prefab";
             const string scarecrowDeployed = "assets/prefabs/misc/halloween/scarecrow/scarecrow.deployed.prefab";
             const string electricalHeater =
                 "assets/prefabs/deployable/playerioents/electricheater/electrical.heater.prefab";
@@ -1110,10 +1110,10 @@ namespace Oxide.Plugins
                 on: "house-fnd-x2z0", y: 0.099f, building: "house", layer: 9));
             e.Add(Entry("house-bench-porch", "decor", woodenBenchAMountable, 47.95f, -10.5f, 90.0f,
                 on: "house-fnd-x2z2", y: 0.099f, building: "house", layer: 9));
-            e.Add(Entry("house-lantern-1", "decor", lanternOnStatic, 50.15f, -17.65f, 0.0f, on: "house-fnd-x2z0",
-                y: 0.099f, building: "house", layer: 9));
-            e.Add(Entry("house-lantern-2", "decor", lanternOnStatic, 50.15f, -9.35f, 0.0f, on: "house-fnd-x2z2",
-                y: 0.099f, building: "house", layer: 9));
+            e.Add(Entry("house-lantern-1-timed", "decor", lanternDeployed, 50.15f, -17.65f, 0.0f, on: "house-fnd-x2z0",
+                y: 0.099f, building: "house", layer: 9, replaces: "house-lantern-1"));
+            e.Add(Entry("house-lantern-2-timed", "decor", lanternDeployed, 50.15f, -9.35f, 0.0f, on: "house-fnd-x2z2",
+                y: 0.099f, building: "house", layer: 9, replaces: "house-lantern-2"));
             e.Add(Entry("house-torch-1", "decor", torchholderOnStatic, 47.6f, -12.55f, 90.0f, y: 1.9f,
                 building: "house", parent: "house-doorway-x1z1-E-s0", layer: 9));
             e.Add(Entry("house-torch-2", "decor", torchholderOnStatic, 47.6f, -14.45f, 90.0f, y: 1.9f,
@@ -1196,14 +1196,22 @@ namespace Oxide.Plugins
             e.Add(Entry("well-01", "decor", waterwellstatic, 51.5f, 7.6f, 0.0f, layer: 10));
             e.Add(Entry("bench-01", "decor", woodenBenchAMountable, 51.6f, 10.9f, 180.0f, layer: 10));
             e.Add(Entry("logpile-01", "decor", woodPile, 43.0f, -21.0f, 90.0f, layer: 10));
-            e.Add(Entry("lantern-01", "decor", lanternOnStatic, 50.6f, 1.6f, 0.0f, layer: 10));
-            e.Add(Entry("lantern-02", "decor", lanternOnStatic, 48.4f, 4.6f, 0.0f, layer: 10));
-            e.Add(Entry("lantern-03", "decor", lanternOnStatic, 48.6f, 13.3f, 0.0f, layer: 10));
-            e.Add(Entry("lantern-04", "decor", lanternOnStatic, 27.5f, 3.6f, 0.0f, layer: 10));
-            e.Add(Entry("lantern-05", "decor", lanternOnStatic, -3.2f, 22.0f, 0.0f, layer: 10));
-            e.Add(Entry("lantern-06", "decor", lanternOnStatic, 27.4f, -12.5f, 0.0f, layer: 10));
-            e.Add(Entry("lantern-07", "decor", lanternOnStatic, 40.5f, -13.6f, 0.0f, layer: 10));
-            e.Add(Entry("lantern-08", "decor", lanternOnStatic, 30.0f, -0.6f, 0.0f, layer: 10));
+            e.Add(Entry("lantern-01-timed", "decor", lanternDeployed, 50.6f, 1.6f, 0.0f, layer: 10,
+                replaces: "lantern-01"));
+            e.Add(Entry("lantern-02-timed", "decor", lanternDeployed, 48.4f, 4.6f, 0.0f, layer: 10,
+                replaces: "lantern-02"));
+            e.Add(Entry("lantern-03-timed", "decor", lanternDeployed, 48.6f, 13.3f, 0.0f, layer: 10,
+                replaces: "lantern-03"));
+            e.Add(Entry("lantern-04-timed", "decor", lanternDeployed, 27.5f, 3.6f, 0.0f, layer: 10,
+                replaces: "lantern-04"));
+            e.Add(Entry("lantern-05-timed", "decor", lanternDeployed, -3.2f, 22.0f, 0.0f, layer: 10,
+                replaces: "lantern-05"));
+            e.Add(Entry("lantern-06-timed", "decor", lanternDeployed, 27.4f, -12.5f, 0.0f, layer: 10,
+                replaces: "lantern-06"));
+            e.Add(Entry("lantern-07-timed", "decor", lanternDeployed, 40.5f, -13.6f, 0.0f, layer: 10,
+                replaces: "lantern-07"));
+            e.Add(Entry("lantern-08-timed", "decor", lanternDeployed, 30.0f, -0.6f, 0.0f, layer: 10,
+                replaces: "lantern-08"));
             e.Add(Entry("pump-01", "pump", PumpPrefab, 29.5f, 29.3f, 0.0f));
             List<LayoutConnection> c = layout.Connections;
             c.Add(Link("windmill-01", 0, "barn-combiner-01", 0, "power",
@@ -1291,13 +1299,6 @@ namespace Oxide.Plugins
             c.Add(Link("tower-splitter", 1, "trough-02", 0, "water",
                 TowerWire(0f, 2f, 25.65f), TowerWire(1.65f, 2f, 25.65f),
                 GroundWire(1.65f, 25.65f), GroundWire(13.05f, 0f)));
-            foreach (LayoutEntry entry in e.Where(entry => entry.Prefab ==
-                         "assets/bundled/prefabs/static/lantern_on.static.prefab"))
-            {
-                entry.Replaces = entry.Id;
-                entry.Id += "-timed";
-                entry.Prefab = "assets/prefabs/deployable/lantern/lantern.deployed.prefab";
-            }
             return layout;
         }
 
@@ -2015,6 +2016,7 @@ namespace Oxide.Plugins
             _unloaded = true;
             _upkeepTimer?.Destroy();
             _herdTimer?.Destroy();
+            UnlockScheduledLights();
             SaveData();
         }
 
@@ -2471,14 +2473,14 @@ namespace Oxide.Plugins
                 .Select(s => $"{s.Species} {s.Count}/{s.Cap}").ToList();
             sb.AppendLine($"Culling: {(_config.AutoCull ? "automatic (breeder and infant protections apply)" : "disabled; owner manages surplus")}. " +
                           (surplus.Count == 0 ? "Herd within caps." : "Above cap: " + string.Join("; ", surplus) + "."));
-            List<ChickenCoop> coops = pass.Role(RoleCoop).OfType<ChickenCoop>().ToList();
+            List<ChickenCoop> coops = LiveRole(pass, RoleCoop).OfType<ChickenCoop>().ToList();
             sb.AppendLine($"Coops: {coops.Sum(c => c.Animals.Count)} chickens / hatching eggs");
-            List<HitchTrough> troughs = pass.Role(RoleTrough).OfType<HitchTrough>().ToList();
+            List<HitchTrough> troughs = LiveRole(pass, RoleTrough).OfType<HitchTrough>().ToList();
             int dryTroughs = troughs.Count(t => t.WaterStorage == null || t.WaterStorage.GetLiquidCount() <= 0);
             sb.AppendLine(troughs.Count == 0 ? "Troughs: missing; ask an administrator to inspect the farm."
                 : dryTroughs > 0 ? $"Troughs: {dryTroughs}/{troughs.Count} empty; check the water supply."
                     : $"Troughs: all {troughs.Count} contain water.");
-            List<PlanterBox> planters = pass.Role(RolePlanter).OfType<PlanterBox>().ToList();
+            List<PlanterBox> planters = LiveRole(pass, RolePlanter).OfType<PlanterBox>().ToList();
             int dryPlanters = planters.Count(p => p.soilSaturation < _config.DryFraction * p.soilSaturationMax);
             sb.AppendLine(planters.Count == 0 ? "Garden: no planters found."
                 : dryPlanters > 0 ? $"Garden: {dryPlanters}/{planters.Count} beds dry; check irrigation."
@@ -2495,7 +2497,7 @@ namespace Oxide.Plugins
                               "Plant and harvest here; soil and fertilizer stay automatic.");
                 sb.AppendLine("Absence care harvests ripe crops to Feed; player beds are not replanted. /farm help for instructions.");
             }
-            List<Fridge> fridges = pass.Role(RoleFridge).OfType<Fridge>().ToList();
+            List<Fridge> fridges = LiveRole(pass, RoleFridge).OfType<Fridge>().ToList();
             sb.AppendLine(fridges.Count == 0 ? "Cold storage: no fridges found; ask an administrator to inspect."
                 : $"Cold storage: {fridges.Count(f => f.IsPowered())}/{fridges.Count} fridges powered."
                     + (fridges.Any(f => !f.IsPowered()) ? " Check the barn power supply." : string.Empty));
@@ -2520,6 +2522,10 @@ namespace Oxide.Plugins
                 + "Containers are shared; coordinate with the farm owner before taking supplies.");
             return sb.ToString();
         }
+
+        // A role's parts without those farm.upgrade retired, which the upkeep steps skip.
+        private static IEnumerable<BaseEntity> LiveRole(UpkeepPass pass, string role) =>
+            pass.Role(role).Where(e => !pass.Retired.Contains(IdOf(e)));
 
         [ConsoleCommand("farm.tick")]
         private void TickCommand(ConsoleSystem.Arg arg)
@@ -5611,13 +5617,14 @@ namespace Oxide.Plugins
                 return "no such IO slot";
             IOEntity.IOSlot output = from.outputs[link.FromSlot];
             IOEntity.IOSlot input = to.inputs[link.ToSlot];
+            bool connected = output.connectedTo.Get() == to && output.connectedToSlot == link.ToSlot;
             List<Vector3> points;
-            string routeProblem = WirePoints(link, from, to, pass, out points);
-            if (routeProblem != null)
-                return routeProblem;
-            if (output.connectedTo.Get() == to && output.connectedToSlot == link.ToSlot)
+            string routeProblem = CachedWirePoints(link, from, to, pass, connected, out points);
+            if (connected)
             {
-                if (link.Route != null && !SameWirePoints(output, points))
+                if (routeProblem != null)
+                    Failure($"wire-route:{link}", $"wiring {link}: {routeProblem}; its drawing is kept");
+                else if (link.Route != null && !SameWirePoints(output, points))
                 {
                     output.linePoints = points.ToArray();
                     output.slackLevels = new float[points.Count];
@@ -5642,11 +5649,68 @@ namespace Oxide.Plugins
                        "left unwired";
             if (!Connect(from, link.FromSlot, to, link.ToSlot, points))
                 return "ConnectTo refused";
+            if (routeProblem != null)
+                Failure($"wire-route:{link}", $"wiring {link}: {routeProblem}; wired straight until it is back");
             return string.Empty;
+        }
+
+        // Each link's last computed drawing with the poses it came from. A connected link reuses it while its ends
+        // and anchors are the same entities at the same poses; colliders placed under a ground run since are not
+        // noticed until then.
+        private readonly Dictionary<LayoutConnection, WireDrawing> _wireDrawings =
+            new Dictionary<LayoutConnection, WireDrawing>();
+
+        private class WireDrawing
+        {
+            public List<Vector3> Points;
+            public List<BaseEntity> Entities;
+            public List<Vector3> Positions;
+            public List<Quaternion> Rotations;
+
+            public bool Matches(List<BaseEntity> entities)
+            {
+                if (entities.Count != Entities.Count)
+                    return false;
+                for (int i = 0; i < entities.Count; i++)
+                    if (entities[i] == null || entities[i].IsDestroyed || entities[i] != Entities[i] ||
+                        entities[i].transform.position != Positions[i] ||
+                        entities[i].transform.rotation != Rotations[i])
+                        return false;
+                return true;
+            }
+        }
+
+        private string CachedWirePoints(LayoutConnection link, IOEntity from, IOEntity to, UpkeepPass pass,
+            bool reuse, out List<Vector3> points)
+        {
+            var entities = new List<BaseEntity> { from, to };
+            foreach (WirePoint point in link.Route ?? new List<WirePoint>())
+                if (point.Anchor != null)
+                    entities.Add(pass.ById(point.Anchor));
+            WireDrawing drawing;
+            if (reuse && _wireDrawings.TryGetValue(link, out drawing) && drawing.Matches(entities))
+            {
+                points = drawing.Points;
+                return null;
+            }
+            string problem = WirePoints(link, from, to, pass, out points);
+            if (problem != null)
+            {
+                _wireDrawings.Remove(link);
+                return problem;
+            }
+            _wireDrawings[link] = new WireDrawing
+            {
+                Points = points, Entities = entities,
+                Positions = entities.Select(e => e.transform.position).ToList(),
+                Rotations = entities.Select(e => e.transform.rotation).ToList(),
+            };
+            return null;
         }
 
         // Rust stores drawing points in output-local space, starting at the input. Its LineAnchor type is only
         // for moving door bones; fixed surfaces use ordinary points resolved from their supporting entities.
+        // On a missing anchor the points are the straight drawing of a link without a route.
         private string WirePoints(LayoutConnection link, IOEntity from, IOEntity to, UpkeepPass pass,
             out List<Vector3> points)
         {
@@ -5655,37 +5719,33 @@ namespace Oxide.Plugins
             Vector3 end = to.transform.TransformPoint(to.inputs[link.ToSlot].handlePosition);
             var world = new List<Vector3> { start };
             bool ground = false;
+            float lift = 0f;
             foreach (WirePoint point in link.Route ?? new List<WirePoint>())
             {
                 Vector3 next;
                 if (point.Anchor == null)
                 {
-                    next = FarmPoint(point.X, point.Z) + Vector3.up * point.Y;
+                    next = FarmPoint(point.X, point.Z);
+                    next.y = WireRest(next, next.y + WireRestRise, from, to) + point.Y;
                     if (world.Count == 1)
                     {
-                        Vector3 foot = start;
-                        foot.y = TerrainMeta.HeightMap.GetHeight(foot) + point.Y;
-                        world.Add(foot);
+                        world.Add(start.WithY(WireRest(start, start.y, from, to) + point.Y));
                         ground = true;
                     }
                     if (ground)
-                    {
-                        Vector3 previous = world[world.Count - 1];
-                        int steps = Mathf.CeilToInt(Vector3.Distance(previous, next) / 2f);
-                        for (int i = 1; i < steps; i++)
-                        {
-                            Vector3 sample = Vector3.Lerp(previous, next, (float)i / steps);
-                            sample.y = TerrainMeta.HeightMap.GetHeight(sample) + point.Y;
-                            world.Add(sample);
-                        }
-                    }
+                        AddGroundSamples(world, next, point.Y, from, to);
                     ground = true;
+                    lift = point.Y;
                 }
                 else
                 {
                     BaseEntity anchor = pass.ById(point.Anchor);
                     if (anchor == null || anchor.IsDestroyed)
+                    {
+                        points.Add(from.transform.InverseTransformPoint(end));
+                        points.Add(from.transform.InverseTransformPoint(start));
                         return $"route anchor {point.Anchor} is missing";
+                    }
                     next = anchor.transform.TransformPoint(new Vector3(point.X, point.Y, point.Z));
                     ground = false;
                 }
@@ -5693,14 +5753,53 @@ namespace Oxide.Plugins
             }
             if (ground)
             {
-                Vector3 foot = end;
-                foot.y = TerrainMeta.HeightMap.GetHeight(foot) + link.Route[link.Route.Count - 1].Y;
+                Vector3 foot = end.WithY(WireRest(end, end.y, from, to) + lift);
+                AddGroundSamples(world, foot, lift, from, to);
                 world.Add(foot);
             }
             world.Add(end);
             for (int i = world.Count - 1; i >= 0; i--)
                 points.Add(from.transform.InverseTransformPoint(world[i]));
             return null;
+        }
+
+        // Wires and hoses lie on blocks (decks, foundations), deployables (planters), rocks, and terrain.
+        private const int WireRestMask = Rust.Layers.Mask.Construction | Rust.Layers.Mask.Deployed |
+                                         Rust.Layers.Mask.Terrain | Rust.Layers.Mask.World;
+        // How far above the higher end of a ground segment, or above the terrain at a waypoint, the ray starts, so
+        // that it lands on a planter or deck the run crosses instead of starting inside it.
+        private const float WireRestRise = 1f;
+
+        // Points every at most 2 m from the last point to next, each on what lies under it.
+        private static void AddGroundSamples(List<Vector3> world, Vector3 next, float lift, IOEntity from,
+            IOEntity to)
+        {
+            Vector3 previous = world[world.Count - 1];
+            float top = Mathf.Max(previous.y, next.y) + WireRestRise;
+            int steps = Mathf.CeilToInt(Vector3.Distance(previous, next) / 2f);
+            for (int i = 1; i < steps; i++)
+            {
+                Vector3 sample = Vector3.Lerp(previous, next, (float)i / steps);
+                world.Add(sample.WithY(WireRest(sample, top, from, to) + lift));
+            }
+        }
+
+        // The highest surface under point from height top down, never below the terrain and never the two entities
+        // the link joins (a trough counts as its water end). A heater's own parent, the deck, is a surface.
+        private static float WireRest(Vector3 point, float top, IOEntity from, IOEntity to)
+        {
+            float rest = TerrainMeta.HeightMap.GetHeight(point);
+            if (top <= rest)
+                return rest;
+            foreach (RaycastHit hit in Physics.RaycastAll(point.WithY(top), Vector3.down, top - rest + 0.1f,
+                         WireRestMask, QueryTriggerInteraction.Ignore))
+            {
+                IOEntity end = IoEnd(hit.GetEntity());
+                if (end != null && (end == from || end == to))
+                    continue;
+                rest = Mathf.Max(rest, hit.point.y);
+            }
+            return rest;
         }
 
         private static bool SameWirePoints(IOEntity.IOSlot output, List<Vector3> points) =>
@@ -5719,7 +5818,7 @@ namespace Oxide.Plugins
             IOEntity from = IoEnd(pass.ById(link.From));
             IOEntity to = IoEnd(pass.ById(link.To));
             List<Vector3> points;
-            string problem = WirePoints(link, from, to, pass, out points);
+            string problem = CachedWirePoints(link, from, to, pass, true, out points);
             if (problem != null)
                 return $"connected; {problem}";
             IOEntity.IOSlot output = from.outputs[link.FromSlot];
@@ -5741,7 +5840,9 @@ namespace Oxide.Plugins
             return true;
         }
 
-        // Sweeps the dropped items OnEntitySpawned tracked within the farm radius (dung, eggs), no area query.
+        private const string LanternPrefab = "assets/prefabs/deployable/lantern/lantern.deployed.prefab";
+        private const string LightSwitchPrefab = "assets/prefabs/deployable/playerioents/simpleswitch/switch.prefab";
+
         private static void ValidateLightingConfig(Configuration config, List<string> problems)
         {
             CheckRange(problems, "Farm lights sunrise hour", config.LightSunrise, 0f, 24f);
@@ -5754,7 +5855,38 @@ namespace Oxide.Plugins
                 problems.Add("Farm lighting switch layout ID must not be empty");
             if (config.ScheduledLightIds == null || config.ScheduledLightIds.Any(string.IsNullOrWhiteSpace) ||
                 config.ScheduledLightIds.Distinct().Count() != config.ScheduledLightIds.Count)
+            {
                 problems.Add("Scheduled decorative light layout IDs must be a non-null list of unique non-empty IDs");
+                return;
+            }
+            // ConfigProblems reports a missing Layout.
+            if (config.Layout?.Entries == null)
+                return;
+            var entries = new Dictionary<string, LayoutEntry>();
+            foreach (LayoutEntry entry in config.Layout.Entries)
+                if (!string.IsNullOrEmpty(entry?.Id) && !entries.ContainsKey(entry.Id))
+                    entries[entry.Id] = entry;
+            LayoutEntry lightSwitch;
+            if (!string.IsNullOrWhiteSpace(config.LightSwitchId))
+            {
+                if (!entries.TryGetValue(config.LightSwitchId, out lightSwitch))
+                    problems.Add($"Farm lighting switch layout ID {config.LightSwitchId} names no layout entry");
+                else if (!string.Equals(lightSwitch.Prefab, LightSwitchPrefab, StringComparison.OrdinalIgnoreCase))
+                    problems.Add($"Farm lighting switch {config.LightSwitchId} must be a {LightSwitchPrefab} entry");
+            }
+            foreach (string id in config.ScheduledLightIds)
+            {
+                LayoutEntry light;
+                if (!entries.TryGetValue(id, out light))
+                    problems.Add($"Scheduled decorative light {id} names no layout entry");
+                else if (!string.Equals(light.Prefab, LanternPrefab, StringComparison.OrdinalIgnoreCase))
+                    problems.Add($"Scheduled decorative light {id} must be a {LanternPrefab} entry");
+            }
+            var scheduled = new HashSet<string>(config.ScheduledLightIds);
+            foreach (LayoutEntry entry in entries.Values)
+                if (string.Equals(entry.Prefab, LanternPrefab, StringComparison.OrdinalIgnoreCase) &&
+                    !scheduled.Contains(entry.Id))
+                    problems.Add($"lantern {entry.Id} is missing from Scheduled decorative light layout IDs");
         }
 
         private bool FarmLightsWanted()
@@ -5766,14 +5898,30 @@ namespace Oxide.Plugins
         private static bool LightsAtHour(float hour, float sunrise, float sunset) =>
             hour >= sunset || hour < sunrise;
 
+        // Net ids of the scheduled lights' live records, rebuilt at most every ScheduledLightsRefresh seconds: Night
+        // Lantern asks once per light, several a second at dusk and dawn. A killed light leaves _structureIds at once.
+        private readonly HashSet<ulong> _scheduledLights = new HashSet<ulong>();
+        private float _scheduledLightsAt = float.NegativeInfinity;
+        private const float ScheduledLightsRefresh = 5f;
+
         private bool IsScheduledFarmLight(BaseEntity entity)
         {
-            if (!_config.ScheduleLighting || entity == null || _data == null || !_data.Built ||
-                _disabled != null || _config.ScheduledLightIds == null)
+            if (!_config.ScheduleLighting || entity == null || _data == null || !_data.Built || _disabled != null)
                 return false;
             ulong id = IdOf(entity);
-            return _data.Structures.Any(r => !r.Retired && !r.Missing && r.NetId == id &&
-                                            _config.ScheduledLightIds.Contains(r.Id));
+            if (!_structureIds.Contains(id))
+                return false;
+            float now = Time.realtimeSinceStartup;
+            if (now - _scheduledLightsAt >= ScheduledLightsRefresh)
+            {
+                var ids = new HashSet<string>(_config.ScheduledLightIds);
+                _scheduledLights.Clear();
+                foreach (StructureRecord rec in _data.Structures)
+                    if (!rec.Retired && !rec.Missing && rec.NetId != 0 && rec.Id != null && ids.Contains(rec.Id))
+                        _scheduledLights.Add(rec.NetId);
+                _scheduledLightsAt = now;
+            }
+            return _scheduledLights.Contains(id);
         }
 
         private object OnNightLanternToggle(BaseEntity entity, bool enabled) =>
@@ -5781,7 +5929,12 @@ namespace Oxide.Plugins
 
         private void LightingStep(UpkeepPass pass)
         {
-            if (!_config.ScheduleLighting || TOD_Sky.Instance == null)
+            if (!_config.ScheduleLighting)
+            {
+                UnlockScheduledLights();
+                return;
+            }
+            if (TOD_Sky.Instance == null)
                 return;
             bool wanted = FarmLightsWanted();
             ElectricSwitch lightSwitch = pass.ById(_config.LightSwitchId) as ElectricSwitch;
@@ -5802,6 +5955,14 @@ namespace Oxide.Plugins
                         Failure("lighting:" + id, $"{id} is not a controllable lantern; layout upgrade required");
                         return;
                     }
+                    if (lantern.inventory == null)
+                    {
+                        Failure("lighting:" + id, $"{id} has no fuel inventory");
+                        return;
+                    }
+                    // Locked, the fuel the farm creates can only burn: players can neither take nor add any.
+                    if (!lantern.inventory.IsLocked())
+                        lantern.inventory.SetLocked(true);
                     if (!wanted && lantern.IsOn())
                         lantern.StopCooking();
                     else if (wanted)
@@ -5814,13 +5975,24 @@ namespace Oxide.Plugins
             }
         }
 
+        // Players fuel the lanterns themselves while the schedule is off or the plugin is unloaded.
+        private void UnlockScheduledLights()
+        {
+            if (_data == null || _config?.ScheduledLightIds == null)
+                return;
+            var ids = new HashSet<string>(_config.ScheduledLightIds);
+            foreach (StructureRecord rec in _data.Structures)
+            {
+                var lantern = rec.Id != null && ids.Contains(rec.Id)
+                    ? FindEntity(rec.NetId) as BaseFuelLightSource
+                    : null;
+                if (lantern?.inventory != null && lantern.inventory.IsLocked())
+                    lantern.inventory.SetLocked(false);
+            }
+        }
+
         private void EnsureLightFuel(ItemContainer inventory, string shortname, string id)
         {
-            if (inventory == null)
-            {
-                Failure("lighting:" + id, $"{id} has no fuel inventory");
-                return;
-            }
             if (inventory.itemList.Any(i => i.info.shortname == shortname && !i.isBroken && i.amount > 0))
                 return;
             Item fuel = ItemManager.CreateByName(shortname, 1);
@@ -5833,7 +6005,9 @@ namespace Oxide.Plugins
             {
                 fuel.Remove();
                 Failure("lighting:" + id, $"{id} fuel inventory cannot accept {shortname}");
+                return;
             }
+            Event("topup", $"{id}: {shortname} 0 below 1, created {shortname} x1");
         }
 
         private string FarmLightingSummary(UpkeepPass pass)
@@ -5855,6 +6029,7 @@ namespace Oxide.Plugins
                    $"{barnLights.Count} on{pending}";
         }
 
+        // Sweeps the dropped items OnEntitySpawned tracked within the farm radius (dung, eggs), no area query.
         private void SweepStep(UpkeepPass pass)
         {
             if (_dropped.Count == 0)
